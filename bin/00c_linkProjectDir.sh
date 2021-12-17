@@ -2,14 +2,18 @@
 
 scriptName=$(basename $0)
 if [ $# -lt 3 ]; then
-  echo "error: usage $scriptName indputDir project_name input_meta_file(subset to relevant rows)"
-    echo "example $scriptName"
+  echo "error: usage $scriptName inputDir project_name input_meta_file(subset to relevant rows)"
+    echo "example: "$scriptName" /public/groups/kimlab/seqData/2020-09-30_exoRNABiomarkersPancAndCovid/bioIvt_covid\\
+	    exRNA_disease_biomarkers\\
+	    /public/groups/kimlab/seqData/2020-09-30_exoRNABiomarkersPancAndCovid/bioIvt_covid/ROSTER.csv\\
+	    /public/groups/kimlab/exRNA_disease_biomarkers/data/input_data/bioIvt_covid"
     exit 1
 fi
 
 inputDir="$1"
 projName="$2"
 metaData="$3"
+destinationDir="$4"
 
 sampleName="$(basename "$inputDir")"
 
@@ -29,11 +33,10 @@ if [[ ! -d "$groupsProjDir"/data ]]; then
 
 fi
 
-scratchDir="$groupsProjDir"/data/"$sampleName"
 
-if [[ ! -d "$scratchDir" ]]; then
+if [[ ! -d "$destinationDir" ]]; then
 
-  mkdir "$scratchDir"
+  mkdir "$destinationDir"
 
 fi
 
@@ -42,12 +45,12 @@ while IFS=, read run name; do
   echo "$run" -- "$name"
   sampleDir="$name"
 
-  if [[ ! -d "$scratchDir"/"$sampleDir" ]]; then
+  if [[ ! -d "$destinationDir"/"$sampleDir" ]]; then
 
-   mkdir "$scratchDir"/"$sampleDir"
+   mkdir "$destinationDir"/"$sampleDir"
 
   fi
    
-  ln -s $inputDir/"$run"*fastq.gz "$scratchDir"/"$sampleDir"/
+  ln -s $inputDir/"$run"*fastq.gz "$destinationDir"/"$sampleDir"/
 
 done<"${metaData}"

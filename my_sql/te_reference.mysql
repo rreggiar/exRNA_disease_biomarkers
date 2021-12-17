@@ -1,0 +1,1 @@
+mysql --user=genome --host=genome-mysql.cse.ucsc.edu -N -A -D hg38 -e 'select * from oregannoAttr inner join oreganno on oreganno.id = oregannoAttr.id where oregannoAttr.attribute = "TFbs"' | sed 's/\ (var.2)/.var.2/g; s/NULL/\t/g' | awk '{OFS="\t"} {print $5,$6,$7,$3,$4,$9}' > oreganno_tfbs.bed

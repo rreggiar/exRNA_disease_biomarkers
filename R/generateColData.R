@@ -6,8 +6,9 @@
 ##+ for organizing RNAseq data
 
 # data/
-## experiment_name/
-### sample_name -- condition.rep.input_vol* *(if needed)
+## input_data
+### experiment_name/
+#### sample_name -- condition.rep.input_vol* *(if needed)
 
 #[tximeta vignette](https://bioconductor.org/packages/devel/bioc/vignettes/tximeta/inst/doc/tximeta.html#Analysis_starts_with_sample_table)
 #[alevin process aware](https://combine-lab.github.io/alevin-tutorial/2020/alevin-velocity/)

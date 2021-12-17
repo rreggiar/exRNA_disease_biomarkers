@@ -1,0 +1,383 @@
+[2021-12-16 23:37:34,362] multiqc                                            [DEBUG  ]  No MultiQC config found: /public/groups/kimlab/.install_bin/anaconda3/lib/python3.7/site-packages/multiqc_config.yaml
+[2021-12-16 23:37:34,362] multiqc                                            [DEBUG  ]  No MultiQC config found: /public/home/rreggiar/.multiqc_config.yaml
+[2021-12-16 23:37:34,362] multiqc                                            [DEBUG  ]  No MultiQC config found: multiqc_config.yaml
+[2021-12-16 23:37:34,363] multiqc                                            [DEBUG  ]  Command used: /public/groups/kimlab/.install_bin/anaconda3/bin/multiqc /public/groups/kimlab/exRNA_disease_biomarkers/data/input_data/pittsburgh_ctrl --filename multiqc..2021-12-16-23.32.25-PST -o /public/groups/kimlab/exRNA_disease_biomarkers/data/output_data/rna_qc
+[2021-12-16 23:37:35,105] multiqc                                            [WARNING]  MultiQC Version v1.11 now available!
+[2021-12-16 23:37:35,105] multiqc                                            [INFO   ]  This is MultiQC v1.9
+[2021-12-16 23:37:35,105] multiqc                                            [DEBUG  ]  Command     : /public/groups/kimlab/.install_bin/anaconda3/bin/multiqc /public/groups/kimlab/exRNA_disease_biomarkers/data/input_data/pittsburgh_ctrl --filename multiqc..2021-12-16-23.32.25-PST -o /public/groups/kimlab/exRNA_disease_biomarkers/data/output_data/rna_qc
+[2021-12-16 23:37:35,105] multiqc                                            [DEBUG  ]  Working dir : /public/groups/kimlab/exRNA_disease_biomarkers/bin
+[2021-12-16 23:37:35,105] multiqc                                            [INFO   ]  Template    : default
+[2021-12-16 23:37:35,105] multiqc                                            [DEBUG  ]  Running Python 3.7.6 (default, Jan  8 2020, 19:59:22)  [GCC 7.3.0]
+[2021-12-16 23:37:35,106] multiqc                                            [INFO   ]  Searching   : /public/groups/kimlab/exRNA_disease_biomarkers/data/input_data/pittsburgh_ctrl
+[2021-12-16 23:37:35,106] multiqc                                            [DEBUG  ]  Analysing modules: custom_content, conpair, peddy, somalier, methylQA, mosdepth, phantompeakqualtools, qualimap, preseq, quast, qorts, rna_seqc, rockhopper, rsem, rseqc, busco, goleft_indexcov, disambiguate, supernova, deeptools, sargasso, verifybamid, mirtrace, happy, mirtop, homer, macs2, theta2, snpeff, gatk, htseq, bcftools, featureCounts, fgbio, dragen, dedup, damageprofiler, biobambam2, mtnucratio, picard, prokka, samblaster, samtools, sexdeterrmine, bamtools, jellyfish, vcftools, longranger, stacks, varscan2, bbmap, bismark, biscuit, hicexplorer, hicup, hicpro, salmon, kallisto, slamdunk, star, hisat2, tophat, bowtie2, bowtie1, snpsplit, kat, leehom, adapterRemoval, clipandmerge, cutadapt, flexbar, kaiju, kraken, malt, trimmomatic, sickle, skewer, sortmerna, biobloomtools, fastq_screen, afterqc, fastp, fastqc, pycoqc, minionqc, multivcfanalyzer, clusterflow, bcl2fastq, interop, ivar, flash, seqyclean
+[2021-12-16 23:37:35,107] multiqc                                            [DEBUG  ]  Using temporary directory for creating report: /data/tmp/tmpsqpwot2m
+[2021-12-16 23:37:35,393] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: PH623_S202_R1_001.fastq.gz
+[2021-12-16 23:37:35,393] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: PH623_S202_R2_001.fastq.gz
+[2021-12-16 23:37:35,394] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: ctrl.10.0.4_output_forward_paired.fq.gz
+[2021-12-16 23:37:35,394] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: ctrl.10.0.4_output_reverse_paired.fq.gz
+[2021-12-16 23:37:35,461] multiqc                                            [DEBUG  ]  File ignored by hicexplorer because it exceeded search pattern filesize limit: ctrl.10.0.4_output_forward_paired_fastqc.html
+[2021-12-16 23:37:35,473] multiqc                                            [DEBUG  ]  File ignored by longranger/invocation because it exceeded search pattern filesize limit: ctrl.10.0.4_output_forward_paired_fastqc.html
+[2021-12-16 23:37:35,473] multiqc                                            [DEBUG  ]  File ignored by rockhopper because it exceeded search pattern filesize limit: ctrl.10.0.4_output_forward_paired_fastqc.html
+[2021-12-16 23:37:35,473] multiqc                                            [DEBUG  ]  File ignored by rseqc/bam_stat because it exceeded search pattern filesize limit: ctrl.10.0.4_output_forward_paired_fastqc.html
+[2021-12-16 23:37:35,473] multiqc                                            [DEBUG  ]  File ignored by rseqc/junction_annotation because it exceeded search pattern filesize limit: ctrl.10.0.4_output_forward_paired_fastqc.html
+[2021-12-16 23:37:35,474] multiqc                                            [DEBUG  ]  File ignored by rseqc/read_distribution because it exceeded search pattern filesize limit: ctrl.10.0.4_output_forward_paired_fastqc.html
+[2021-12-16 23:37:35,474] multiqc                                            [DEBUG  ]  File ignored by rseqc/infer_experiment because it exceeded search pattern filesize limit: ctrl.10.0.4_output_forward_paired_fastqc.html
+[2021-12-16 23:37:35,636] multiqc                                            [DEBUG  ]  File ignored by hicexplorer because it exceeded search pattern filesize limit: ctrl.10.0.4_output_reverse_paired_fastqc.html
+[2021-12-16 23:37:35,645] multiqc                                            [DEBUG  ]  File ignored by longranger/invocation because it exceeded search pattern filesize limit: ctrl.10.0.4_output_reverse_paired_fastqc.html
+[2021-12-16 23:37:35,645] multiqc                                            [DEBUG  ]  File ignored by rockhopper because it exceeded search pattern filesize limit: ctrl.10.0.4_output_reverse_paired_fastqc.html
+[2021-12-16 23:37:35,646] multiqc                                            [DEBUG  ]  File ignored by rseqc/bam_stat because it exceeded search pattern filesize limit: ctrl.10.0.4_output_reverse_paired_fastqc.html
+[2021-12-16 23:37:35,646] multiqc                                            [DEBUG  ]  File ignored by rseqc/junction_annotation because it exceeded search pattern filesize limit: ctrl.10.0.4_output_reverse_paired_fastqc.html
+[2021-12-16 23:37:35,646] multiqc                                            [DEBUG  ]  File ignored by rseqc/read_distribution because it exceeded search pattern filesize limit: ctrl.10.0.4_output_reverse_paired_fastqc.html
+[2021-12-16 23:37:35,646] multiqc                                            [DEBUG  ]  File ignored by rseqc/infer_experiment because it exceeded search pattern filesize limit: ctrl.10.0.4_output_reverse_paired_fastqc.html
+[2021-12-16 23:37:35,895] multiqc                                            [DEBUG  ]  File ignored by hicexplorer because it exceeded search pattern filesize limit: salmon_quant.log
+[2021-12-16 23:37:35,905] multiqc                                            [DEBUG  ]  File ignored by longranger/invocation because it exceeded search pattern filesize limit: salmon_quant.log
+[2021-12-16 23:37:36,063] multiqc                                            [DEBUG  ]  File ignored by hicexplorer because it exceeded search pattern filesize limit: ambig_info.tsv
+[2021-12-16 23:37:36,072] multiqc                                            [DEBUG  ]  File ignored by longranger/invocation because it exceeded search pattern filesize limit: ambig_info.tsv
+[2021-12-16 23:37:36,072] multiqc                                            [DEBUG  ]  File ignored by rockhopper because it exceeded search pattern filesize limit: ambig_info.tsv
+[2021-12-16 23:37:36,072] multiqc                                            [DEBUG  ]  File ignored by rseqc/bam_stat because it exceeded search pattern filesize limit: ambig_info.tsv
+[2021-12-16 23:37:36,073] multiqc                                            [DEBUG  ]  File ignored by rseqc/junction_annotation because it exceeded search pattern filesize limit: ambig_info.tsv
+[2021-12-16 23:37:36,073] multiqc                                            [DEBUG  ]  File ignored by rseqc/read_distribution because it exceeded search pattern filesize limit: ambig_info.tsv
+[2021-12-16 23:37:36,073] multiqc                                            [DEBUG  ]  File ignored by rseqc/infer_experiment because it exceeded search pattern filesize limit: ambig_info.tsv
+[2021-12-16 23:37:41,667] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: PH625_S203_R1_001.fastq.gz
+[2021-12-16 23:37:41,668] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: PH625_S203_R2_001.fastq.gz
+[2021-12-16 23:37:41,668] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: ctrl.11.1.1_output_forward_paired.fq.gz
+[2021-12-16 23:37:41,668] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: ctrl.11.1.1_output_reverse_paired.fq.gz
+[2021-12-16 23:37:41,698] multiqc                                            [DEBUG  ]  File ignored by hicexplorer because it exceeded search pattern filesize limit: ctrl.11.1.1_output_forward_paired_fastqc.html
+[2021-12-16 23:37:41,708] multiqc                                            [DEBUG  ]  File ignored by longranger/invocation because it exceeded search pattern filesize limit: ctrl.11.1.1_output_forward_paired_fastqc.html
+[2021-12-16 23:37:41,708] multiqc                                            [DEBUG  ]  File ignored by rockhopper because it exceeded search pattern filesize limit: ctrl.11.1.1_output_forward_paired_fastqc.html
+[2021-12-16 23:37:41,709] multiqc                                            [DEBUG  ]  File ignored by rseqc/bam_stat because it exceeded search pattern filesize limit: ctrl.11.1.1_output_forward_paired_fastqc.html
+[2021-12-16 23:37:41,709] multiqc                                            [DEBUG  ]  File ignored by rseqc/junction_annotation because it exceeded search pattern filesize limit: ctrl.11.1.1_output_forward_paired_fastqc.html
+[2021-12-16 23:37:41,709] multiqc                                            [DEBUG  ]  File ignored by rseqc/read_distribution because it exceeded search pattern filesize limit: ctrl.11.1.1_output_forward_paired_fastqc.html
+[2021-12-16 23:37:41,709] multiqc                                            [DEBUG  ]  File ignored by rseqc/infer_experiment because it exceeded search pattern filesize limit: ctrl.11.1.1_output_forward_paired_fastqc.html
+[2021-12-16 23:37:41,874] multiqc                                            [DEBUG  ]  File ignored by hicexplorer because it exceeded search pattern filesize limit: ctrl.11.1.1_output_reverse_paired_fastqc.html
+[2021-12-16 23:37:41,885] multiqc                                            [DEBUG  ]  File ignored by longranger/invocation because it exceeded search pattern filesize limit: ctrl.11.1.1_output_reverse_paired_fastqc.html
+[2021-12-16 23:37:41,885] multiqc                                            [DEBUG  ]  File ignored by rockhopper because it exceeded search pattern filesize limit: ctrl.11.1.1_output_reverse_paired_fastqc.html
+[2021-12-16 23:37:41,885] multiqc                                            [DEBUG  ]  File ignored by rseqc/bam_stat because it exceeded search pattern filesize limit: ctrl.11.1.1_output_reverse_paired_fastqc.html
+[2021-12-16 23:37:41,885] multiqc                                            [DEBUG  ]  File ignored by rseqc/junction_annotation because it exceeded search pattern filesize limit: ctrl.11.1.1_output_reverse_paired_fastqc.html
+[2021-12-16 23:37:41,885] multiqc                                            [DEBUG  ]  File ignored by rseqc/read_distribution because it exceeded search pattern filesize limit: ctrl.11.1.1_output_reverse_paired_fastqc.html
+[2021-12-16 23:37:41,885] multiqc                                            [DEBUG  ]  File ignored by rseqc/infer_experiment because it exceeded search pattern filesize limit: ctrl.11.1.1_output_reverse_paired_fastqc.html
+[2021-12-16 23:37:42,129] multiqc                                            [DEBUG  ]  File ignored by hicexplorer because it exceeded search pattern filesize limit: salmon_quant.log
+[2021-12-16 23:37:42,139] multiqc                                            [DEBUG  ]  File ignored by longranger/invocation because it exceeded search pattern filesize limit: salmon_quant.log
+[2021-12-16 23:37:42,276] multiqc                                            [DEBUG  ]  File ignored by hicexplorer because it exceeded search pattern filesize limit: ambig_info.tsv
+[2021-12-16 23:37:42,286] multiqc                                            [DEBUG  ]  File ignored by longranger/invocation because it exceeded search pattern filesize limit: ambig_info.tsv
+[2021-12-16 23:37:42,286] multiqc                                            [DEBUG  ]  File ignored by rockhopper because it exceeded search pattern filesize limit: ambig_info.tsv
+[2021-12-16 23:37:42,286] multiqc                                            [DEBUG  ]  File ignored by rseqc/bam_stat because it exceeded search pattern filesize limit: ambig_info.tsv
+[2021-12-16 23:37:42,286] multiqc                                            [DEBUG  ]  File ignored by rseqc/junction_annotation because it exceeded search pattern filesize limit: ambig_info.tsv
+[2021-12-16 23:37:42,286] multiqc                                            [DEBUG  ]  File ignored by rseqc/read_distribution because it exceeded search pattern filesize limit: ambig_info.tsv
+[2021-12-16 23:37:42,286] multiqc                                            [DEBUG  ]  File ignored by rseqc/infer_experiment because it exceeded search pattern filesize limit: ambig_info.tsv
+[2021-12-16 23:37:47,646] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: PH586_S207_R1_001.fastq.gz
+[2021-12-16 23:37:47,646] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: PH586_S207_R2_001.fastq.gz
+[2021-12-16 23:37:47,647] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: ctrl.12.1.1_output_forward_paired.fq.gz
+[2021-12-16 23:37:47,647] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: ctrl.12.1.1_output_reverse_paired.fq.gz
+[2021-12-16 23:37:47,678] multiqc                                            [DEBUG  ]  File ignored by hicexplorer because it exceeded search pattern filesize limit: ctrl.12.1.1_output_forward_paired_fastqc.html
+[2021-12-16 23:37:47,690] multiqc                                            [DEBUG  ]  File ignored by longranger/invocation because it exceeded search pattern filesize limit: ctrl.12.1.1_output_forward_paired_fastqc.html
+[2021-12-16 23:37:47,690] multiqc                                            [DEBUG  ]  File ignored by rockhopper because it exceeded search pattern filesize limit: ctrl.12.1.1_output_forward_paired_fastqc.html
+[2021-12-16 23:37:47,690] multiqc                                            [DEBUG  ]  File ignored by rseqc/bam_stat because it exceeded search pattern filesize limit: ctrl.12.1.1_output_forward_paired_fastqc.html
+[2021-12-16 23:37:47,690] multiqc                                            [DEBUG  ]  File ignored by rseqc/junction_annotation because it exceeded search pattern filesize limit: ctrl.12.1.1_output_forward_paired_fastqc.html
+[2021-12-16 23:37:47,690] multiqc                                            [DEBUG  ]  File ignored by rseqc/read_distribution because it exceeded search pattern filesize limit: ctrl.12.1.1_output_forward_paired_fastqc.html
+[2021-12-16 23:37:47,690] multiqc                                            [DEBUG  ]  File ignored by rseqc/infer_experiment because it exceeded search pattern filesize limit: ctrl.12.1.1_output_forward_paired_fastqc.html
+[2021-12-16 23:37:47,835] multiqc                                            [DEBUG  ]  File ignored by hicexplorer because it exceeded search pattern filesize limit: ctrl.12.1.1_output_reverse_paired_fastqc.html
+[2021-12-16 23:37:47,847] multiqc                                            [DEBUG  ]  File ignored by longranger/invocation because it exceeded search pattern filesize limit: ctrl.12.1.1_output_reverse_paired_fastqc.html
+[2021-12-16 23:37:47,847] multiqc                                            [DEBUG  ]  File ignored by rockhopper because it exceeded search pattern filesize limit: ctrl.12.1.1_output_reverse_paired_fastqc.html
+[2021-12-16 23:37:47,847] multiqc                                            [DEBUG  ]  File ignored by rseqc/bam_stat because it exceeded search pattern filesize limit: ctrl.12.1.1_output_reverse_paired_fastqc.html
+[2021-12-16 23:37:47,847] multiqc                                            [DEBUG  ]  File ignored by rseqc/junction_annotation because it exceeded search pattern filesize limit: ctrl.12.1.1_output_reverse_paired_fastqc.html
+[2021-12-16 23:37:47,847] multiqc                                            [DEBUG  ]  File ignored by rseqc/read_distribution because it exceeded search pattern filesize limit: ctrl.12.1.1_output_reverse_paired_fastqc.html
+[2021-12-16 23:37:47,847] multiqc                                            [DEBUG  ]  File ignored by rseqc/infer_experiment because it exceeded search pattern filesize limit: ctrl.12.1.1_output_reverse_paired_fastqc.html
+[2021-12-16 23:37:48,090] multiqc                                            [DEBUG  ]  File ignored by hicexplorer because it exceeded search pattern filesize limit: salmon_quant.log
+[2021-12-16 23:37:48,100] multiqc                                            [DEBUG  ]  File ignored by longranger/invocation because it exceeded search pattern filesize limit: salmon_quant.log
+[2021-12-16 23:37:48,229] multiqc                                            [DEBUG  ]  File ignored by hicexplorer because it exceeded search pattern filesize limit: ambig_info.tsv
+[2021-12-16 23:37:48,237] multiqc                                            [DEBUG  ]  File ignored by longranger/invocation because it exceeded search pattern filesize limit: ambig_info.tsv
+[2021-12-16 23:37:48,238] multiqc                                            [DEBUG  ]  File ignored by rockhopper because it exceeded search pattern filesize limit: ambig_info.tsv
+[2021-12-16 23:37:48,238] multiqc                                            [DEBUG  ]  File ignored by rseqc/bam_stat because it exceeded search pattern filesize limit: ambig_info.tsv
+[2021-12-16 23:37:48,238] multiqc                                            [DEBUG  ]  File ignored by rseqc/junction_annotation because it exceeded search pattern filesize limit: ambig_info.tsv
+[2021-12-16 23:37:48,238] multiqc                                            [DEBUG  ]  File ignored by rseqc/read_distribution because it exceeded search pattern filesize limit: ambig_info.tsv
+[2021-12-16 23:37:48,238] multiqc                                            [DEBUG  ]  File ignored by rseqc/infer_experiment because it exceeded search pattern filesize limit: ambig_info.tsv
+[2021-12-16 23:37:53,445] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: PH620_S210_R1_001.fastq.gz
+[2021-12-16 23:37:53,446] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: PH620_S210_R2_001.fastq.gz
+[2021-12-16 23:37:53,446] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: ctrl.13.0.7_output_forward_paired.fq.gz
+[2021-12-16 23:37:53,446] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: ctrl.13.0.7_output_reverse_paired.fq.gz
+[2021-12-16 23:37:53,474] multiqc                                            [DEBUG  ]  File ignored by hicexplorer because it exceeded search pattern filesize limit: ctrl.13.0.7_output_reverse_paired_fastqc.html
+[2021-12-16 23:37:53,485] multiqc                                            [DEBUG  ]  File ignored by longranger/invocation because it exceeded search pattern filesize limit: ctrl.13.0.7_output_reverse_paired_fastqc.html
+[2021-12-16 23:37:53,485] multiqc                                            [DEBUG  ]  File ignored by rockhopper because it exceeded search pattern filesize limit: ctrl.13.0.7_output_reverse_paired_fastqc.html
+[2021-12-16 23:37:53,485] multiqc                                            [DEBUG  ]  File ignored by rseqc/bam_stat because it exceeded search pattern filesize limit: ctrl.13.0.7_output_reverse_paired_fastqc.html
+[2021-12-16 23:37:53,485] multiqc                                            [DEBUG  ]  File ignored by rseqc/junction_annotation because it exceeded search pattern filesize limit: ctrl.13.0.7_output_reverse_paired_fastqc.html
+[2021-12-16 23:37:53,486] multiqc                                            [DEBUG  ]  File ignored by rseqc/read_distribution because it exceeded search pattern filesize limit: ctrl.13.0.7_output_reverse_paired_fastqc.html
+[2021-12-16 23:37:53,486] multiqc                                            [DEBUG  ]  File ignored by rseqc/infer_experiment because it exceeded search pattern filesize limit: ctrl.13.0.7_output_reverse_paired_fastqc.html
+[2021-12-16 23:37:53,635] multiqc                                            [DEBUG  ]  File ignored by hicexplorer because it exceeded search pattern filesize limit: ctrl.13.0.7_output_forward_paired_fastqc.html
+[2021-12-16 23:37:53,646] multiqc                                            [DEBUG  ]  File ignored by longranger/invocation because it exceeded search pattern filesize limit: ctrl.13.0.7_output_forward_paired_fastqc.html
+[2021-12-16 23:37:53,646] multiqc                                            [DEBUG  ]  File ignored by rockhopper because it exceeded search pattern filesize limit: ctrl.13.0.7_output_forward_paired_fastqc.html
+[2021-12-16 23:37:53,646] multiqc                                            [DEBUG  ]  File ignored by rseqc/bam_stat because it exceeded search pattern filesize limit: ctrl.13.0.7_output_forward_paired_fastqc.html
+[2021-12-16 23:37:53,646] multiqc                                            [DEBUG  ]  File ignored by rseqc/junction_annotation because it exceeded search pattern filesize limit: ctrl.13.0.7_output_forward_paired_fastqc.html
+[2021-12-16 23:37:53,646] multiqc                                            [DEBUG  ]  File ignored by rseqc/read_distribution because it exceeded search pattern filesize limit: ctrl.13.0.7_output_forward_paired_fastqc.html
+[2021-12-16 23:37:53,646] multiqc                                            [DEBUG  ]  File ignored by rseqc/infer_experiment because it exceeded search pattern filesize limit: ctrl.13.0.7_output_forward_paired_fastqc.html
+[2021-12-16 23:37:53,905] multiqc                                            [DEBUG  ]  File ignored by hicexplorer because it exceeded search pattern filesize limit: salmon_quant.log
+[2021-12-16 23:37:53,915] multiqc                                            [DEBUG  ]  File ignored by longranger/invocation because it exceeded search pattern filesize limit: salmon_quant.log
+[2021-12-16 23:37:54,056] multiqc                                            [DEBUG  ]  File ignored by hicexplorer because it exceeded search pattern filesize limit: ambig_info.tsv
+[2021-12-16 23:37:54,067] multiqc                                            [DEBUG  ]  File ignored by longranger/invocation because it exceeded search pattern filesize limit: ambig_info.tsv
+[2021-12-16 23:37:54,067] multiqc                                            [DEBUG  ]  File ignored by rockhopper because it exceeded search pattern filesize limit: ambig_info.tsv
+[2021-12-16 23:37:54,068] multiqc                                            [DEBUG  ]  File ignored by rseqc/bam_stat because it exceeded search pattern filesize limit: ambig_info.tsv
+[2021-12-16 23:37:54,068] multiqc                                            [DEBUG  ]  File ignored by rseqc/junction_annotation because it exceeded search pattern filesize limit: ambig_info.tsv
+[2021-12-16 23:37:54,068] multiqc                                            [DEBUG  ]  File ignored by rseqc/read_distribution because it exceeded search pattern filesize limit: ambig_info.tsv
+[2021-12-16 23:37:54,068] multiqc                                            [DEBUG  ]  File ignored by rseqc/infer_experiment because it exceeded search pattern filesize limit: ambig_info.tsv
+[2021-12-16 23:37:59,294] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: PH626_S205_R1_001.fastq.gz
+[2021-12-16 23:37:59,294] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: PH626_S205_R2_001.fastq.gz
+[2021-12-16 23:37:59,295] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: ctrl.4.1.3_output_forward_paired.fq.gz
+[2021-12-16 23:37:59,295] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: ctrl.4.1.3_output_reverse_paired.fq.gz
+[2021-12-16 23:37:59,322] multiqc                                            [DEBUG  ]  File ignored by hicexplorer because it exceeded search pattern filesize limit: ctrl.4.1.3_output_forward_paired_fastqc.html
+[2021-12-16 23:37:59,333] multiqc                                            [DEBUG  ]  File ignored by longranger/invocation because it exceeded search pattern filesize limit: ctrl.4.1.3_output_forward_paired_fastqc.html
+[2021-12-16 23:37:59,334] multiqc                                            [DEBUG  ]  File ignored by rockhopper because it exceeded search pattern filesize limit: ctrl.4.1.3_output_forward_paired_fastqc.html
+[2021-12-16 23:37:59,334] multiqc                                            [DEBUG  ]  File ignored by rseqc/bam_stat because it exceeded search pattern filesize limit: ctrl.4.1.3_output_forward_paired_fastqc.html
+[2021-12-16 23:37:59,334] multiqc                                            [DEBUG  ]  File ignored by rseqc/junction_annotation because it exceeded search pattern filesize limit: ctrl.4.1.3_output_forward_paired_fastqc.html
+[2021-12-16 23:37:59,334] multiqc                                            [DEBUG  ]  File ignored by rseqc/read_distribution because it exceeded search pattern filesize limit: ctrl.4.1.3_output_forward_paired_fastqc.html
+[2021-12-16 23:37:59,334] multiqc                                            [DEBUG  ]  File ignored by rseqc/infer_experiment because it exceeded search pattern filesize limit: ctrl.4.1.3_output_forward_paired_fastqc.html
+[2021-12-16 23:37:59,488] multiqc                                            [DEBUG  ]  File ignored by hicexplorer because it exceeded search pattern filesize limit: ctrl.4.1.3_output_reverse_paired_fastqc.html
+[2021-12-16 23:37:59,500] multiqc                                            [DEBUG  ]  File ignored by longranger/invocation because it exceeded search pattern filesize limit: ctrl.4.1.3_output_reverse_paired_fastqc.html
+[2021-12-16 23:37:59,500] multiqc                                            [DEBUG  ]  File ignored by rockhopper because it exceeded search pattern filesize limit: ctrl.4.1.3_output_reverse_paired_fastqc.html
+[2021-12-16 23:37:59,500] multiqc                                            [DEBUG  ]  File ignored by rseqc/bam_stat because it exceeded search pattern filesize limit: ctrl.4.1.3_output_reverse_paired_fastqc.html
+[2021-12-16 23:37:59,500] multiqc                                            [DEBUG  ]  File ignored by rseqc/junction_annotation because it exceeded search pattern filesize limit: ctrl.4.1.3_output_reverse_paired_fastqc.html
+[2021-12-16 23:37:59,500] multiqc                                            [DEBUG  ]  File ignored by rseqc/read_distribution because it exceeded search pattern filesize limit: ctrl.4.1.3_output_reverse_paired_fastqc.html
+[2021-12-16 23:37:59,500] multiqc                                            [DEBUG  ]  File ignored by rseqc/infer_experiment because it exceeded search pattern filesize limit: ctrl.4.1.3_output_reverse_paired_fastqc.html
+[2021-12-16 23:37:59,760] multiqc                                            [DEBUG  ]  File ignored by hicexplorer because it exceeded search pattern filesize limit: salmon_quant.log
+[2021-12-16 23:37:59,771] multiqc                                            [DEBUG  ]  File ignored by longranger/invocation because it exceeded search pattern filesize limit: salmon_quant.log
+[2021-12-16 23:37:59,910] multiqc                                            [DEBUG  ]  File ignored by hicexplorer because it exceeded search pattern filesize limit: ambig_info.tsv
+[2021-12-16 23:37:59,921] multiqc                                            [DEBUG  ]  File ignored by longranger/invocation because it exceeded search pattern filesize limit: ambig_info.tsv
+[2021-12-16 23:37:59,921] multiqc                                            [DEBUG  ]  File ignored by rockhopper because it exceeded search pattern filesize limit: ambig_info.tsv
+[2021-12-16 23:37:59,921] multiqc                                            [DEBUG  ]  File ignored by rseqc/bam_stat because it exceeded search pattern filesize limit: ambig_info.tsv
+[2021-12-16 23:37:59,921] multiqc                                            [DEBUG  ]  File ignored by rseqc/junction_annotation because it exceeded search pattern filesize limit: ambig_info.tsv
+[2021-12-16 23:37:59,921] multiqc                                            [DEBUG  ]  File ignored by rseqc/read_distribution because it exceeded search pattern filesize limit: ambig_info.tsv
+[2021-12-16 23:37:59,921] multiqc                                            [DEBUG  ]  File ignored by rseqc/infer_experiment because it exceeded search pattern filesize limit: ambig_info.tsv
+[2021-12-16 23:38:05,050] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: PH605_S208_R1_001.fastq.gz
+[2021-12-16 23:38:05,050] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: PH605_S208_R2_001.fastq.gz
+[2021-12-16 23:38:05,050] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: ctrl.5.1.3_output_forward_paired.fq.gz
+[2021-12-16 23:38:05,051] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: ctrl.5.1.3_output_reverse_paired.fq.gz
+[2021-12-16 23:38:05,081] multiqc                                            [DEBUG  ]  File ignored by hicexplorer because it exceeded search pattern filesize limit: ctrl.5.1.3_output_forward_paired_fastqc.html
+[2021-12-16 23:38:05,092] multiqc                                            [DEBUG  ]  File ignored by longranger/invocation because it exceeded search pattern filesize limit: ctrl.5.1.3_output_forward_paired_fastqc.html
+[2021-12-16 23:38:05,093] multiqc                                            [DEBUG  ]  File ignored by rockhopper because it exceeded search pattern filesize limit: ctrl.5.1.3_output_forward_paired_fastqc.html
+[2021-12-16 23:38:05,093] multiqc                                            [DEBUG  ]  File ignored by rseqc/bam_stat because it exceeded search pattern filesize limit: ctrl.5.1.3_output_forward_paired_fastqc.html
+[2021-12-16 23:38:05,093] multiqc                                            [DEBUG  ]  File ignored by rseqc/junction_annotation because it exceeded search pattern filesize limit: ctrl.5.1.3_output_forward_paired_fastqc.html
+[2021-12-16 23:38:05,093] multiqc                                            [DEBUG  ]  File ignored by rseqc/read_distribution because it exceeded search pattern filesize limit: ctrl.5.1.3_output_forward_paired_fastqc.html
+[2021-12-16 23:38:05,093] multiqc                                            [DEBUG  ]  File ignored by rseqc/infer_experiment because it exceeded search pattern filesize limit: ctrl.5.1.3_output_forward_paired_fastqc.html
+[2021-12-16 23:38:05,239] multiqc                                            [DEBUG  ]  File ignored by hicexplorer because it exceeded search pattern filesize limit: ctrl.5.1.3_output_reverse_paired_fastqc.html
+[2021-12-16 23:38:05,250] multiqc                                            [DEBUG  ]  File ignored by longranger/invocation because it exceeded search pattern filesize limit: ctrl.5.1.3_output_reverse_paired_fastqc.html
+[2021-12-16 23:38:05,251] multiqc                                            [DEBUG  ]  File ignored by rockhopper because it exceeded search pattern filesize limit: ctrl.5.1.3_output_reverse_paired_fastqc.html
+[2021-12-16 23:38:05,251] multiqc                                            [DEBUG  ]  File ignored by rseqc/bam_stat because it exceeded search pattern filesize limit: ctrl.5.1.3_output_reverse_paired_fastqc.html
+[2021-12-16 23:38:05,251] multiqc                                            [DEBUG  ]  File ignored by rseqc/junction_annotation because it exceeded search pattern filesize limit: ctrl.5.1.3_output_reverse_paired_fastqc.html
+[2021-12-16 23:38:05,251] multiqc                                            [DEBUG  ]  File ignored by rseqc/read_distribution because it exceeded search pattern filesize limit: ctrl.5.1.3_output_reverse_paired_fastqc.html
+[2021-12-16 23:38:05,251] multiqc                                            [DEBUG  ]  File ignored by rseqc/infer_experiment because it exceeded search pattern filesize limit: ctrl.5.1.3_output_reverse_paired_fastqc.html
+[2021-12-16 23:38:05,502] multiqc                                            [DEBUG  ]  File ignored by hicexplorer because it exceeded search pattern filesize limit: salmon_quant.log
+[2021-12-16 23:38:05,512] multiqc                                            [DEBUG  ]  File ignored by longranger/invocation because it exceeded search pattern filesize limit: salmon_quant.log
+[2021-12-16 23:38:05,650] multiqc                                            [DEBUG  ]  File ignored by hicexplorer because it exceeded search pattern filesize limit: ambig_info.tsv
+[2021-12-16 23:38:05,660] multiqc                                            [DEBUG  ]  File ignored by longranger/invocation because it exceeded search pattern filesize limit: ambig_info.tsv
+[2021-12-16 23:38:05,660] multiqc                                            [DEBUG  ]  File ignored by rockhopper because it exceeded search pattern filesize limit: ambig_info.tsv
+[2021-12-16 23:38:05,660] multiqc                                            [DEBUG  ]  File ignored by rseqc/bam_stat because it exceeded search pattern filesize limit: ambig_info.tsv
+[2021-12-16 23:38:05,660] multiqc                                            [DEBUG  ]  File ignored by rseqc/junction_annotation because it exceeded search pattern filesize limit: ambig_info.tsv
+[2021-12-16 23:38:05,660] multiqc                                            [DEBUG  ]  File ignored by rseqc/read_distribution because it exceeded search pattern filesize limit: ambig_info.tsv
+[2021-12-16 23:38:05,661] multiqc                                            [DEBUG  ]  File ignored by rseqc/infer_experiment because it exceeded search pattern filesize limit: ambig_info.tsv
+[2021-12-16 23:38:10,795] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: PH624_S212_R1_001.fastq.gz
+[2021-12-16 23:38:10,796] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: PH624_S212_R2_001.fastq.gz
+[2021-12-16 23:38:10,796] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: ctrl.6.1.5_output_forward_paired.fq.gz
+[2021-12-16 23:38:10,796] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: ctrl.6.1.5_output_reverse_paired.fq.gz
+[2021-12-16 23:38:10,822] multiqc                                            [DEBUG  ]  File ignored by hicexplorer because it exceeded search pattern filesize limit: ctrl.6.1.5_output_forward_paired_fastqc.html
+[2021-12-16 23:38:10,832] multiqc                                            [DEBUG  ]  File ignored by longranger/invocation because it exceeded search pattern filesize limit: ctrl.6.1.5_output_forward_paired_fastqc.html
+[2021-12-16 23:38:10,832] multiqc                                            [DEBUG  ]  File ignored by rockhopper because it exceeded search pattern filesize limit: ctrl.6.1.5_output_forward_paired_fastqc.html
+[2021-12-16 23:38:10,832] multiqc                                            [DEBUG  ]  File ignored by rseqc/bam_stat because it exceeded search pattern filesize limit: ctrl.6.1.5_output_forward_paired_fastqc.html
+[2021-12-16 23:38:10,832] multiqc                                            [DEBUG  ]  File ignored by rseqc/junction_annotation because it exceeded search pattern filesize limit: ctrl.6.1.5_output_forward_paired_fastqc.html
+[2021-12-16 23:38:10,833] multiqc                                            [DEBUG  ]  File ignored by rseqc/read_distribution because it exceeded search pattern filesize limit: ctrl.6.1.5_output_forward_paired_fastqc.html
+[2021-12-16 23:38:10,833] multiqc                                            [DEBUG  ]  File ignored by rseqc/infer_experiment because it exceeded search pattern filesize limit: ctrl.6.1.5_output_forward_paired_fastqc.html
+[2021-12-16 23:38:10,978] multiqc                                            [DEBUG  ]  File ignored by hicexplorer because it exceeded search pattern filesize limit: ctrl.6.1.5_output_reverse_paired_fastqc.html
+[2021-12-16 23:38:10,988] multiqc                                            [DEBUG  ]  File ignored by longranger/invocation because it exceeded search pattern filesize limit: ctrl.6.1.5_output_reverse_paired_fastqc.html
+[2021-12-16 23:38:10,989] multiqc                                            [DEBUG  ]  File ignored by rockhopper because it exceeded search pattern filesize limit: ctrl.6.1.5_output_reverse_paired_fastqc.html
+[2021-12-16 23:38:10,989] multiqc                                            [DEBUG  ]  File ignored by rseqc/bam_stat because it exceeded search pattern filesize limit: ctrl.6.1.5_output_reverse_paired_fastqc.html
+[2021-12-16 23:38:10,989] multiqc                                            [DEBUG  ]  File ignored by rseqc/junction_annotation because it exceeded search pattern filesize limit: ctrl.6.1.5_output_reverse_paired_fastqc.html
+[2021-12-16 23:38:10,989] multiqc                                            [DEBUG  ]  File ignored by rseqc/read_distribution because it exceeded search pattern filesize limit: ctrl.6.1.5_output_reverse_paired_fastqc.html
+[2021-12-16 23:38:10,989] multiqc                                            [DEBUG  ]  File ignored by rseqc/infer_experiment because it exceeded search pattern filesize limit: ctrl.6.1.5_output_reverse_paired_fastqc.html
+[2021-12-16 23:38:11,231] multiqc                                            [DEBUG  ]  File ignored by hicexplorer because it exceeded search pattern filesize limit: salmon_quant.log
+[2021-12-16 23:38:11,241] multiqc                                            [DEBUG  ]  File ignored by longranger/invocation because it exceeded search pattern filesize limit: salmon_quant.log
+[2021-12-16 23:38:11,373] multiqc                                            [DEBUG  ]  File ignored by hicexplorer because it exceeded search pattern filesize limit: ambig_info.tsv
+[2021-12-16 23:38:11,383] multiqc                                            [DEBUG  ]  File ignored by longranger/invocation because it exceeded search pattern filesize limit: ambig_info.tsv
+[2021-12-16 23:38:11,383] multiqc                                            [DEBUG  ]  File ignored by rockhopper because it exceeded search pattern filesize limit: ambig_info.tsv
+[2021-12-16 23:38:11,383] multiqc                                            [DEBUG  ]  File ignored by rseqc/bam_stat because it exceeded search pattern filesize limit: ambig_info.tsv
+[2021-12-16 23:38:11,383] multiqc                                            [DEBUG  ]  File ignored by rseqc/junction_annotation because it exceeded search pattern filesize limit: ambig_info.tsv
+[2021-12-16 23:38:11,383] multiqc                                            [DEBUG  ]  File ignored by rseqc/read_distribution because it exceeded search pattern filesize limit: ambig_info.tsv
+[2021-12-16 23:38:11,383] multiqc                                            [DEBUG  ]  File ignored by rseqc/infer_experiment because it exceeded search pattern filesize limit: ambig_info.tsv
+[2021-12-16 23:38:16,503] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: PH617_S209_R1_001.fastq.gz
+[2021-12-16 23:38:16,503] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: PH617_S209_R2_001.fastq.gz
+[2021-12-16 23:38:16,503] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: ctrl.7.1.2_output_forward_paired.fq.gz
+[2021-12-16 23:38:16,503] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: ctrl.7.1.2_output_reverse_paired.fq.gz
+[2021-12-16 23:38:16,533] multiqc                                            [DEBUG  ]  File ignored by hicexplorer because it exceeded search pattern filesize limit: ctrl.7.1.2_output_forward_paired_fastqc.html
+[2021-12-16 23:38:16,544] multiqc                                            [DEBUG  ]  File ignored by longranger/invocation because it exceeded search pattern filesize limit: ctrl.7.1.2_output_forward_paired_fastqc.html
+[2021-12-16 23:38:16,545] multiqc                                            [DEBUG  ]  File ignored by rockhopper because it exceeded search pattern filesize limit: ctrl.7.1.2_output_forward_paired_fastqc.html
+[2021-12-16 23:38:16,545] multiqc                                            [DEBUG  ]  File ignored by rseqc/bam_stat because it exceeded search pattern filesize limit: ctrl.7.1.2_output_forward_paired_fastqc.html
+[2021-12-16 23:38:16,545] multiqc                                            [DEBUG  ]  File ignored by rseqc/junction_annotation because it exceeded search pattern filesize limit: ctrl.7.1.2_output_forward_paired_fastqc.html
+[2021-12-16 23:38:16,545] multiqc                                            [DEBUG  ]  File ignored by rseqc/read_distribution because it exceeded search pattern filesize limit: ctrl.7.1.2_output_forward_paired_fastqc.html
+[2021-12-16 23:38:16,545] multiqc                                            [DEBUG  ]  File ignored by rseqc/infer_experiment because it exceeded search pattern filesize limit: ctrl.7.1.2_output_forward_paired_fastqc.html
+[2021-12-16 23:38:16,695] multiqc                                            [DEBUG  ]  File ignored by hicexplorer because it exceeded search pattern filesize limit: ctrl.7.1.2_output_reverse_paired_fastqc.html
+[2021-12-16 23:38:16,706] multiqc                                            [DEBUG  ]  File ignored by longranger/invocation because it exceeded search pattern filesize limit: ctrl.7.1.2_output_reverse_paired_fastqc.html
+[2021-12-16 23:38:16,706] multiqc                                            [DEBUG  ]  File ignored by rockhopper because it exceeded search pattern filesize limit: ctrl.7.1.2_output_reverse_paired_fastqc.html
+[2021-12-16 23:38:16,706] multiqc                                            [DEBUG  ]  File ignored by rseqc/bam_stat because it exceeded search pattern filesize limit: ctrl.7.1.2_output_reverse_paired_fastqc.html
+[2021-12-16 23:38:16,706] multiqc                                            [DEBUG  ]  File ignored by rseqc/junction_annotation because it exceeded search pattern filesize limit: ctrl.7.1.2_output_reverse_paired_fastqc.html
+[2021-12-16 23:38:16,707] multiqc                                            [DEBUG  ]  File ignored by rseqc/read_distribution because it exceeded search pattern filesize limit: ctrl.7.1.2_output_reverse_paired_fastqc.html
+[2021-12-16 23:38:16,707] multiqc                                            [DEBUG  ]  File ignored by rseqc/infer_experiment because it exceeded search pattern filesize limit: ctrl.7.1.2_output_reverse_paired_fastqc.html
+[2021-12-16 23:38:16,968] multiqc                                            [DEBUG  ]  File ignored by hicexplorer because it exceeded search pattern filesize limit: salmon_quant.log
+[2021-12-16 23:38:16,979] multiqc                                            [DEBUG  ]  File ignored by longranger/invocation because it exceeded search pattern filesize limit: salmon_quant.log
+[2021-12-16 23:38:17,121] multiqc                                            [DEBUG  ]  File ignored by hicexplorer because it exceeded search pattern filesize limit: ambig_info.tsv
+[2021-12-16 23:38:17,132] multiqc                                            [DEBUG  ]  File ignored by longranger/invocation because it exceeded search pattern filesize limit: ambig_info.tsv
+[2021-12-16 23:38:17,132] multiqc                                            [DEBUG  ]  File ignored by rockhopper because it exceeded search pattern filesize limit: ambig_info.tsv
+[2021-12-16 23:38:17,132] multiqc                                            [DEBUG  ]  File ignored by rseqc/bam_stat because it exceeded search pattern filesize limit: ambig_info.tsv
+[2021-12-16 23:38:17,132] multiqc                                            [DEBUG  ]  File ignored by rseqc/junction_annotation because it exceeded search pattern filesize limit: ambig_info.tsv
+[2021-12-16 23:38:17,132] multiqc                                            [DEBUG  ]  File ignored by rseqc/read_distribution because it exceeded search pattern filesize limit: ambig_info.tsv
+[2021-12-16 23:38:17,133] multiqc                                            [DEBUG  ]  File ignored by rseqc/infer_experiment because it exceeded search pattern filesize limit: ambig_info.tsv
+[2021-12-16 23:38:22,242] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: PH621_S211_R1_001.fastq.gz
+[2021-12-16 23:38:22,242] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: PH621_S211_R2_001.fastq.gz
+[2021-12-16 23:38:22,242] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: ctrl.8.1.2_output_forward_paired.fq.gz
+[2021-12-16 23:38:22,242] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: ctrl.8.1.2_output_reverse_paired.fq.gz
+[2021-12-16 23:38:22,274] multiqc                                            [DEBUG  ]  File ignored by hicexplorer because it exceeded search pattern filesize limit: ctrl.8.1.2_output_forward_paired_fastqc.html
+[2021-12-16 23:38:22,285] multiqc                                            [DEBUG  ]  File ignored by longranger/invocation because it exceeded search pattern filesize limit: ctrl.8.1.2_output_forward_paired_fastqc.html
+[2021-12-16 23:38:22,285] multiqc                                            [DEBUG  ]  File ignored by rockhopper because it exceeded search pattern filesize limit: ctrl.8.1.2_output_forward_paired_fastqc.html
+[2021-12-16 23:38:22,285] multiqc                                            [DEBUG  ]  File ignored by rseqc/bam_stat because it exceeded search pattern filesize limit: ctrl.8.1.2_output_forward_paired_fastqc.html
+[2021-12-16 23:38:22,286] multiqc                                            [DEBUG  ]  File ignored by rseqc/junction_annotation because it exceeded search pattern filesize limit: ctrl.8.1.2_output_forward_paired_fastqc.html
+[2021-12-16 23:38:22,286] multiqc                                            [DEBUG  ]  File ignored by rseqc/read_distribution because it exceeded search pattern filesize limit: ctrl.8.1.2_output_forward_paired_fastqc.html
+[2021-12-16 23:38:22,286] multiqc                                            [DEBUG  ]  File ignored by rseqc/infer_experiment because it exceeded search pattern filesize limit: ctrl.8.1.2_output_forward_paired_fastqc.html
+[2021-12-16 23:38:22,438] multiqc                                            [DEBUG  ]  File ignored by hicexplorer because it exceeded search pattern filesize limit: ctrl.8.1.2_output_reverse_paired_fastqc.html
+[2021-12-16 23:38:22,450] multiqc                                            [DEBUG  ]  File ignored by longranger/invocation because it exceeded search pattern filesize limit: ctrl.8.1.2_output_reverse_paired_fastqc.html
+[2021-12-16 23:38:22,450] multiqc                                            [DEBUG  ]  File ignored by rockhopper because it exceeded search pattern filesize limit: ctrl.8.1.2_output_reverse_paired_fastqc.html
+[2021-12-16 23:38:22,450] multiqc                                            [DEBUG  ]  File ignored by rseqc/bam_stat because it exceeded search pattern filesize limit: ctrl.8.1.2_output_reverse_paired_fastqc.html
+[2021-12-16 23:38:22,450] multiqc                                            [DEBUG  ]  File ignored by rseqc/junction_annotation because it exceeded search pattern filesize limit: ctrl.8.1.2_output_reverse_paired_fastqc.html
+[2021-12-16 23:38:22,450] multiqc                                            [DEBUG  ]  File ignored by rseqc/read_distribution because it exceeded search pattern filesize limit: ctrl.8.1.2_output_reverse_paired_fastqc.html
+[2021-12-16 23:38:22,450] multiqc                                            [DEBUG  ]  File ignored by rseqc/infer_experiment because it exceeded search pattern filesize limit: ctrl.8.1.2_output_reverse_paired_fastqc.html
+[2021-12-16 23:38:22,710] multiqc                                            [DEBUG  ]  File ignored by hicexplorer because it exceeded search pattern filesize limit: salmon_quant.log
+[2021-12-16 23:38:22,721] multiqc                                            [DEBUG  ]  File ignored by longranger/invocation because it exceeded search pattern filesize limit: salmon_quant.log
+[2021-12-16 23:38:22,863] multiqc                                            [DEBUG  ]  File ignored by hicexplorer because it exceeded search pattern filesize limit: ambig_info.tsv
+[2021-12-16 23:38:22,874] multiqc                                            [DEBUG  ]  File ignored by longranger/invocation because it exceeded search pattern filesize limit: ambig_info.tsv
+[2021-12-16 23:38:22,875] multiqc                                            [DEBUG  ]  File ignored by rockhopper because it exceeded search pattern filesize limit: ambig_info.tsv
+[2021-12-16 23:38:22,875] multiqc                                            [DEBUG  ]  File ignored by rseqc/bam_stat because it exceeded search pattern filesize limit: ambig_info.tsv
+[2021-12-16 23:38:22,875] multiqc                                            [DEBUG  ]  File ignored by rseqc/junction_annotation because it exceeded search pattern filesize limit: ambig_info.tsv
+[2021-12-16 23:38:22,875] multiqc                                            [DEBUG  ]  File ignored by rseqc/read_distribution because it exceeded search pattern filesize limit: ambig_info.tsv
+[2021-12-16 23:38:22,875] multiqc                                            [DEBUG  ]  File ignored by rseqc/infer_experiment because it exceeded search pattern filesize limit: ambig_info.tsv
+[2021-12-16 23:38:28,160] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: PH618_S201_R1_001.fastq.gz
+[2021-12-16 23:38:28,160] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: PH618_S201_R2_001.fastq.gz
+[2021-12-16 23:38:28,161] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: ctrl.9.1.2_output_forward_paired.fq.gz
+[2021-12-16 23:38:28,161] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: ctrl.9.1.2_output_reverse_paired.fq.gz
+[2021-12-16 23:38:28,192] multiqc                                            [DEBUG  ]  File ignored by hicexplorer because it exceeded search pattern filesize limit: ctrl.9.1.2_output_reverse_paired_fastqc.html
+[2021-12-16 23:38:28,203] multiqc                                            [DEBUG  ]  File ignored by longranger/invocation because it exceeded search pattern filesize limit: ctrl.9.1.2_output_reverse_paired_fastqc.html
+[2021-12-16 23:38:28,203] multiqc                                            [DEBUG  ]  File ignored by rockhopper because it exceeded search pattern filesize limit: ctrl.9.1.2_output_reverse_paired_fastqc.html
+[2021-12-16 23:38:28,204] multiqc                                            [DEBUG  ]  File ignored by rseqc/bam_stat because it exceeded search pattern filesize limit: ctrl.9.1.2_output_reverse_paired_fastqc.html
+[2021-12-16 23:38:28,204] multiqc                                            [DEBUG  ]  File ignored by rseqc/junction_annotation because it exceeded search pattern filesize limit: ctrl.9.1.2_output_reverse_paired_fastqc.html
+[2021-12-16 23:38:28,204] multiqc                                            [DEBUG  ]  File ignored by rseqc/read_distribution because it exceeded search pattern filesize limit: ctrl.9.1.2_output_reverse_paired_fastqc.html
+[2021-12-16 23:38:28,204] multiqc                                            [DEBUG  ]  File ignored by rseqc/infer_experiment because it exceeded search pattern filesize limit: ctrl.9.1.2_output_reverse_paired_fastqc.html
+[2021-12-16 23:38:28,366] multiqc                                            [DEBUG  ]  File ignored by hicexplorer because it exceeded search pattern filesize limit: ctrl.9.1.2_output_forward_paired_fastqc.html
+[2021-12-16 23:38:28,378] multiqc                                            [DEBUG  ]  File ignored by longranger/invocation because it exceeded search pattern filesize limit: ctrl.9.1.2_output_forward_paired_fastqc.html
+[2021-12-16 23:38:28,378] multiqc                                            [DEBUG  ]  File ignored by rockhopper because it exceeded search pattern filesize limit: ctrl.9.1.2_output_forward_paired_fastqc.html
+[2021-12-16 23:38:28,378] multiqc                                            [DEBUG  ]  File ignored by rseqc/bam_stat because it exceeded search pattern filesize limit: ctrl.9.1.2_output_forward_paired_fastqc.html
+[2021-12-16 23:38:28,378] multiqc                                            [DEBUG  ]  File ignored by rseqc/junction_annotation because it exceeded search pattern filesize limit: ctrl.9.1.2_output_forward_paired_fastqc.html
+[2021-12-16 23:38:28,379] multiqc                                            [DEBUG  ]  File ignored by rseqc/read_distribution because it exceeded search pattern filesize limit: ctrl.9.1.2_output_forward_paired_fastqc.html
+[2021-12-16 23:38:28,379] multiqc                                            [DEBUG  ]  File ignored by rseqc/infer_experiment because it exceeded search pattern filesize limit: ctrl.9.1.2_output_forward_paired_fastqc.html
+[2021-12-16 23:38:28,664] multiqc                                            [DEBUG  ]  File ignored by hicexplorer because it exceeded search pattern filesize limit: salmon_quant.log
+[2021-12-16 23:38:28,675] multiqc                                            [DEBUG  ]  File ignored by longranger/invocation because it exceeded search pattern filesize limit: salmon_quant.log
+[2021-12-16 23:38:28,811] multiqc                                            [DEBUG  ]  File ignored by hicexplorer because it exceeded search pattern filesize limit: ambig_info.tsv
+[2021-12-16 23:38:28,822] multiqc                                            [DEBUG  ]  File ignored by longranger/invocation because it exceeded search pattern filesize limit: ambig_info.tsv
+[2021-12-16 23:38:28,822] multiqc                                            [DEBUG  ]  File ignored by rockhopper because it exceeded search pattern filesize limit: ambig_info.tsv
+[2021-12-16 23:38:28,822] multiqc                                            [DEBUG  ]  File ignored by rseqc/bam_stat because it exceeded search pattern filesize limit: ambig_info.tsv
+[2021-12-16 23:38:28,822] multiqc                                            [DEBUG  ]  File ignored by rseqc/junction_annotation because it exceeded search pattern filesize limit: ambig_info.tsv
+[2021-12-16 23:38:28,822] multiqc                                            [DEBUG  ]  File ignored by rseqc/read_distribution because it exceeded search pattern filesize limit: ambig_info.tsv
+[2021-12-16 23:38:28,822] multiqc                                            [DEBUG  ]  File ignored by rseqc/infer_experiment because it exceeded search pattern filesize limit: ambig_info.tsv
+[2021-12-16 23:38:35,002] multiqc.plots.bargraph                             [DEBUG  ]  Using matplotlib version 3.1.3
+[2021-12-16 23:38:35,004] multiqc.plots.linegraph                            [DEBUG  ]  Using matplotlib version 3.1.3
+[2021-12-16 23:38:35,006] multiqc                                            [DEBUG  ]  No samples found: custom_content
+[2021-12-16 23:38:35,018] multiqc                                            [DEBUG  ]  No samples found: conpair
+[2021-12-16 23:38:35,029] multiqc                                            [DEBUG  ]  No samples found: peddy
+[2021-12-16 23:38:35,038] multiqc                                            [DEBUG  ]  No samples found: somalier
+[2021-12-16 23:38:35,046] multiqc                                            [DEBUG  ]  No samples found: methylQA
+[2021-12-16 23:38:35,062] multiqc                                            [DEBUG  ]  No samples found: mosdepth
+[2021-12-16 23:38:35,070] multiqc                                            [DEBUG  ]  No samples found: phantompeakqualtools
+[2021-12-16 23:38:35,077] multiqc                                            [DEBUG  ]  No samples found: qualimap
+[2021-12-16 23:38:35,087] multiqc                                            [DEBUG  ]  No samples found: preseq
+[2021-12-16 23:38:35,096] multiqc                                            [DEBUG  ]  No samples found: quast
+[2021-12-16 23:38:35,104] multiqc                                            [DEBUG  ]  No samples found: qorts
+[2021-12-16 23:38:35,112] multiqc                                            [DEBUG  ]  No samples found: rna_seqc
+[2021-12-16 23:38:35,120] multiqc                                            [DEBUG  ]  No samples found: rockhopper
+[2021-12-16 23:38:35,129] multiqc                                            [DEBUG  ]  No samples found: rsem
+[2021-12-16 23:38:35,148] multiqc                                            [DEBUG  ]  No samples found: rseqc
+[2021-12-16 23:38:35,156] multiqc                                            [DEBUG  ]  No samples found: busco
+[2021-12-16 23:38:35,165] multiqc                                            [DEBUG  ]  No samples found: goleft_indexcov
+[2021-12-16 23:38:35,176] multiqc                                            [DEBUG  ]  No samples found: disambiguate
+[2021-12-16 23:38:35,186] multiqc                                            [DEBUG  ]  No samples found: supernova
+[2021-12-16 23:38:35,208] multiqc                                            [DEBUG  ]  No samples found: deeptools
+[2021-12-16 23:38:35,219] multiqc                                            [DEBUG  ]  No samples found: sargasso
+[2021-12-16 23:38:35,229] multiqc                                            [DEBUG  ]  No samples found: verifybamid
+[2021-12-16 23:38:35,238] multiqc                                            [DEBUG  ]  No samples found: mirtrace
+[2021-12-16 23:38:35,248] multiqc                                            [DEBUG  ]  No samples found: happy
+[2021-12-16 23:38:35,258] multiqc                                            [DEBUG  ]  No samples found: mirtop
+[2021-12-16 23:38:35,272] multiqc                                            [DEBUG  ]  No samples found: homer
+[2021-12-16 23:38:35,284] multiqc                                            [DEBUG  ]  No samples found: macs2
+[2021-12-16 23:38:35,295] multiqc                                            [DEBUG  ]  No samples found: theta2
+[2021-12-16 23:38:35,307] multiqc                                            [DEBUG  ]  No samples found: snpeff
+[2021-12-16 23:38:35,319] multiqc                                            [DEBUG  ]  No samples found: gatk
+[2021-12-16 23:38:35,327] multiqc                                            [DEBUG  ]  No samples found: htseq
+[2021-12-16 23:38:35,338] multiqc                                            [DEBUG  ]  No samples found: bcftools
+[2021-12-16 23:38:35,348] multiqc                                            [DEBUG  ]  No samples found: featureCounts
+[2021-12-16 23:38:35,358] multiqc                                            [DEBUG  ]  No samples found: fgbio
+[2021-12-16 23:38:35,378] multiqc                                            [DEBUG  ]  No samples found: dragen
+[2021-12-16 23:38:35,386] multiqc                                            [DEBUG  ]  No samples found: dedup
+[2021-12-16 23:38:35,394] multiqc                                            [DEBUG  ]  No samples found: damageprofiler
+[2021-12-16 23:38:35,427] multiqc                                            [DEBUG  ]  No samples found: biobambam2
+[2021-12-16 23:38:35,435] multiqc                                            [DEBUG  ]  No samples found: mtnucratio
+[2021-12-16 23:38:35,440] multiqc                                            [DEBUG  ]  No samples found: picard
+[2021-12-16 23:38:35,449] multiqc                                            [DEBUG  ]  No samples found: prokka
+[2021-12-16 23:38:35,457] multiqc                                            [DEBUG  ]  No samples found: samblaster
+[2021-12-16 23:38:35,471] multiqc                                            [DEBUG  ]  No samples found: samtools
+[2021-12-16 23:38:35,479] multiqc                                            [DEBUG  ]  No samples found: sexdeterrmine
+[2021-12-16 23:38:35,489] multiqc                                            [DEBUG  ]  No samples found: bamtools
+[2021-12-16 23:38:35,498] multiqc                                            [DEBUG  ]  No samples found: jellyfish
+[2021-12-16 23:38:35,514] multiqc                                            [DEBUG  ]  No samples found: vcftools
+[2021-12-16 23:38:35,524] multiqc                                            [DEBUG  ]  No samples found: longranger
+[2021-12-16 23:38:35,539] multiqc                                            [DEBUG  ]  No samples found: stacks
+[2021-12-16 23:38:35,548] multiqc                                            [DEBUG  ]  No samples found: varscan2
+[2021-12-16 23:38:35,571] multiqc                                            [DEBUG  ]  No samples found: bbmap
+[2021-12-16 23:38:35,579] multiqc                                            [DEBUG  ]  No samples found: bismark
+[2021-12-16 23:38:35,588] multiqc                                            [DEBUG  ]  No samples found: biscuit
+[2021-12-16 23:38:35,597] multiqc                                            [DEBUG  ]  No samples found: hicexplorer
+[2021-12-16 23:38:35,605] multiqc                                            [DEBUG  ]  No samples found: hicup
+[2021-12-16 23:38:35,614] multiqc                                            [DEBUG  ]  No samples found: hicpro
+[2021-12-16 23:38:35,657] multiqc.modules.salmon.salmon                      [INFO   ]  Found 10 meta reports
+[2021-12-16 23:38:35,658] multiqc.modules.salmon.salmon                      [INFO   ]  Found 10 fragment length distributions
+[2021-12-16 23:38:35,799] multiqc                                            [DEBUG  ]  No samples found: kallisto
+[2021-12-16 23:38:35,807] multiqc                                            [DEBUG  ]  No samples found: slamdunk
+[2021-12-16 23:38:35,816] multiqc                                            [DEBUG  ]  No samples found: star
+[2021-12-16 23:38:35,824] multiqc                                            [DEBUG  ]  No samples found: hisat2
+[2021-12-16 23:38:35,832] multiqc                                            [DEBUG  ]  No samples found: tophat
+[2021-12-16 23:38:35,841] multiqc                                            [DEBUG  ]  No samples found: bowtie2
+[2021-12-16 23:38:35,849] multiqc                                            [DEBUG  ]  No samples found: bowtie1
+[2021-12-16 23:38:35,858] multiqc                                            [DEBUG  ]  No samples found: snpsplit
+[2021-12-16 23:38:35,866] multiqc                                            [DEBUG  ]  No samples found: kat
+[2021-12-16 23:38:35,874] multiqc                                            [DEBUG  ]  No samples found: leehom
+[2021-12-16 23:38:35,883] multiqc                                            [DEBUG  ]  No samples found: adapterRemoval
+[2021-12-16 23:38:35,891] multiqc                                            [DEBUG  ]  No samples found: clipandmerge
+[2021-12-16 23:38:35,900] multiqc                                            [DEBUG  ]  No samples found: cutadapt
+[2021-12-16 23:38:35,908] multiqc                                            [DEBUG  ]  No samples found: flexbar
+[2021-12-16 23:38:35,916] multiqc                                            [DEBUG  ]  No samples found: kaiju
+[2021-12-16 23:38:35,924] multiqc                                            [DEBUG  ]  No samples found: kraken
+[2021-12-16 23:38:35,933] multiqc                                            [DEBUG  ]  No samples found: malt
+[2021-12-16 23:38:35,941] multiqc                                            [DEBUG  ]  No samples found: trimmomatic
+[2021-12-16 23:38:35,950] multiqc                                            [DEBUG  ]  No samples found: sickle
+[2021-12-16 23:38:35,958] multiqc                                            [DEBUG  ]  No samples found: skewer
+[2021-12-16 23:38:35,967] multiqc                                            [DEBUG  ]  No samples found: sortmerna
+[2021-12-16 23:38:35,975] multiqc                                            [DEBUG  ]  No samples found: biobloomtools
+[2021-12-16 23:38:35,984] multiqc                                            [DEBUG  ]  No samples found: fastq_screen
+[2021-12-16 23:38:35,992] multiqc                                            [DEBUG  ]  No samples found: afterqc
+[2021-12-16 23:38:36,000] multiqc                                            [DEBUG  ]  No samples found: fastp
+[2021-12-16 23:38:37,025] multiqc.modules.fastqc.fastqc                      [INFO   ]  Found 20 reports
+[2021-12-16 23:38:37,328] multiqc                                            [DEBUG  ]  No samples found: pycoqc
+[2021-12-16 23:38:37,336] multiqc                                            [DEBUG  ]  No samples found: minionqc
+[2021-12-16 23:38:37,343] multiqc                                            [DEBUG  ]  No samples found: multivcfanalyzer
+[2021-12-16 23:38:37,352] multiqc                                            [DEBUG  ]  No samples found: clusterflow
+[2021-12-16 23:38:37,361] multiqc                                            [DEBUG  ]  No samples found: bcl2fastq
+[2021-12-16 23:38:37,369] multiqc                                            [DEBUG  ]  No samples found: interop
+[2021-12-16 23:38:37,377] multiqc                                            [DEBUG  ]  No samples found: ivar
+[2021-12-16 23:38:37,385] multiqc                                            [DEBUG  ]  No samples found: flash
+[2021-12-16 23:38:37,393] multiqc                                            [DEBUG  ]  No samples found: seqyclean
+[2021-12-16 23:38:37,456] multiqc                                            [INFO   ]  Compressing plot data
+[2021-12-16 23:38:38,259] multiqc                                            [INFO   ]  Report      : ../data/output_data/rna_qc/multiqc..2021-12-16-23.32.25-PST.html
+[2021-12-16 23:38:38,259] multiqc                                            [INFO   ]  Data        : ../data/output_data/rna_qc/multiqc..2021-12-16-23.32.25-PST_data
+[2021-12-16 23:38:38,259] multiqc                                            [DEBUG  ]  Moving data file from '/data/tmp/tmpsqpwot2m/multiqc_data' to '/public/groups/kimlab/exRNA_disease_biomarkers/data/output_data/rna_qc/multiqc..2021-12-16-23.32.25-PST_data'
+[2021-12-16 23:38:38,696] multiqc                                            [INFO   ]  MultiQC complete

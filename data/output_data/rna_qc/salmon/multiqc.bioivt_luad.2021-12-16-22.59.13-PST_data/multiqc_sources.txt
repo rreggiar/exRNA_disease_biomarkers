@@ -1,0 +1,10 @@
+Module	Section	Sample Name	Source
+Salmon	all_sections	luad.1.0.30_sel.align.gencode.v38.salmon.v1.6.0.sidx_2021-12-16-22.02.19-PST	/public/groups/kimlab/exRNA_disease_biomarkers/data/input_data/bioIvt_luad/luad.1.0.30/luad.1.0.30_sel.align.gencode.v38.salmon.v1.6.0.sidx_2021-12-16-22.02.19-PST/libParams/flenDist.txt
+Salmon	all_sections	luad.2.0.30_sel.align.gencode.v38.salmon.v1.6.0.sidx_2021-12-16-22.28.43-PST	/public/groups/kimlab/exRNA_disease_biomarkers/data/input_data/bioIvt_luad/luad.2.0.30/luad.2.0.30_sel.align.gencode.v38.salmon.v1.6.0.sidx_2021-12-16-22.28.43-PST/libParams/flenDist.txt
+Salmon	all_sections	luad.3.0.30_sel.align.gencode.v38.salmon.v1.6.0.sidx_2021-12-16-22.28.43-PST	/public/groups/kimlab/exRNA_disease_biomarkers/data/input_data/bioIvt_luad/luad.3.0.30/luad.3.0.30_sel.align.gencode.v38.salmon.v1.6.0.sidx_2021-12-16-22.28.43-PST/libParams/flenDist.txt
+FastQC	all_sections	luad.1.0.30_output_reverse_paired	/public/groups/kimlab/exRNA_disease_biomarkers/data/input_data/bioIvt_luad/luad.1.0.30/luad.1.0.30_output_reverse_paired_fastqc.zip
+FastQC	all_sections	luad.1.0.30_output_forward_paired	/public/groups/kimlab/exRNA_disease_biomarkers/data/input_data/bioIvt_luad/luad.1.0.30/luad.1.0.30_output_forward_paired_fastqc.zip
+FastQC	all_sections	luad.2.0.30_output_reverse_paired	/public/groups/kimlab/exRNA_disease_biomarkers/data/input_data/bioIvt_luad/luad.2.0.30/luad.2.0.30_output_reverse_paired_fastqc.zip
+FastQC	all_sections	luad.2.0.30_output_forward_paired	/public/groups/kimlab/exRNA_disease_biomarkers/data/input_data/bioIvt_luad/luad.2.0.30/luad.2.0.30_output_forward_paired_fastqc.zip
+FastQC	all_sections	luad.3.0.30_output_forward_paired	/public/groups/kimlab/exRNA_disease_biomarkers/data/input_data/bioIvt_luad/luad.3.0.30/luad.3.0.30_output_forward_paired_fastqc.zip
+FastQC	all_sections	luad.3.0.30_output_reverse_paired	/public/groups/kimlab/exRNA_disease_biomarkers/data/input_data/bioIvt_luad/luad.3.0.30/luad.3.0.30_output_reverse_paired_fastqc.zip

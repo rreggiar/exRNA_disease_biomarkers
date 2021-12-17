@@ -7,7 +7,7 @@
 scriptName=$(basename $0)
 if [ $# -lt 2 ]; then
     echo "error: usage "$scriptName" sampleDir outputDir"
-    echo "example "$scriptName" /scratch/kimlab/projects/exoRNA-biomarkers-panc/data/a549_0.2MOI_24hr"
+    echo "example "$scriptName" /public/groups/kimlab/projects/exoRNA-biomarkers-panc/data/a549_0.2MOI_24hr /public/groups/kimlab/projects/exoRNA/exoRNA-biomarkers-panc/data/output_data_qc "
     exit 1
 fi
 
@@ -15,7 +15,7 @@ sampleDir="$1"
 
 outputDir="$2"
 
-dateStamp="$(bash dateStamp.sh)"
+dateStamp="$(bash helper_dateStamp.sh)"
 
 cmdList="$@"
 

@@ -117,6 +117,9 @@ function runTrimmomatic() {
 				TRAILING:3 \
 				SLIDINGWINDOW:4:15 \
 				MINLEN:36
+			
+			# remove the unpaired reads
+			rm "$inputDir"/$(basename "$inputDir")*unpaired.fq.gz
 
 			exitStatus=$?
 			if [ "$exitStatus" -ne 0 ]; then

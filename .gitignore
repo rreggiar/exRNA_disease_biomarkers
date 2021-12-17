@@ -40,3 +40,6 @@ vignettes/*.pdf
 
 # raw data
 data/input_data/
+
+# tmp data (too big)
+tmp/

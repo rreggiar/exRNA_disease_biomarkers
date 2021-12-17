@@ -23,4 +23,4 @@ echo "cmd: "$scriptName" "$cmdList""
 
 fastqc -t 8 "$sampleDir"/*/*.fq.gz #--outdir "$outputDir"
 
-multiqc "$sampleDir" --filename multiqc."$(basename "$inputDir")"."${dateStamp}" -o "$outputDir"
+multiqc "$sampleDir" --filename multiqc."$(basename "$sampleDir")"."${dateStamp}" -o "$outputDir"

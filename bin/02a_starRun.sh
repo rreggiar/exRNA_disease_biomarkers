@@ -30,22 +30,32 @@ inputDir="$1"
 twoPassArg="$2"
 editArg="$3"
 starGenome="$4"
-firstPassDir="$inputDir"/$(basename "$starGenome")_${dateStamp}_star_out
-rnaEditDir="$inputDir"/rna_editing_$(basename "$starGenome")_${dateStamp}_star_out
+
+if [[ `ls -d "$inputDir"/$(basename "$starGenome")_*_star_out` ]]; then
+	firstPassDir=`ls -d "$inputDir"/$(basename "$starGenome")_*_star_out`
+else
+	firstPassDir="$inputDir"/$(basename "$starGenome")_${dateStamp}_star_out
+fi
+
 secondPassDir=$firstPassDir/second_pass_out
+
+rnaEditDir="$inputDir"/rna_editing_$(basename "$starGenome")_${dateStamp}_star_out
 
 #set -x
 echo "input:" "$inputDir"
 echo "firstPassDir:" "$firstPassDir"
 echo "secondPassDir:" "$secondPassDir"
-#set +x 
+#set +x
+
+exit 1
+
 
 function runStarFirstPass() {
 	inputDir="$1"
 	firstPassDir="$2"
 	starGenome="$3"
 
-	if [ ! -f [ $(basename "$starGenome")_*_star_out/Aligned.out.sam ]; then
+	if [ ! -f $firstPassDir/Aligned.out.sam ]; then
 
 		mkdir "$firstPassDir"
 
@@ -59,7 +69,7 @@ function runStarFirstPass() {
 			--outFilterMultimapNmax 50 \
 			--outFileNamePrefix "$firstPassDir"/ 
 
-    fi
+    	fi
 }
 
 function runStarSecondPass() {

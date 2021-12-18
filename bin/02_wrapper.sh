@@ -8,7 +8,7 @@ edit="edit=T"
 
 for inputDataPath in $projectDir/data/input_data/*; do
 	
-	starGenome='/public/groups/kimlab/genomes.annotations/HG.38/'
+	starGenome='/public/groups/kimlab/genomes.annotations/hg38_star_2.7.9a/'
 
 	# input args
 	#sampleDir="$1"

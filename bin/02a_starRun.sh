@@ -52,12 +52,12 @@ function runStarFirstPass() {
 		trim_fwd=`ls "$inputDir"/*_output_forward_paired.fq.gz`
 		trim_rev=`ls "$inputDir"/*_output_reverse_paired.fq.gz`
 
-        STAR --genomeDir "$starGenome" \
-	        --readFilesIn <(gunzip -c "$trim_fwd") <(gunzip -c "$trim_rev") \
-	        --runThreadN 8 \
-	        --outMultimapperOrder Random \
-	        --outFilterMultimapNmax 50 \
-	        --outFileNamePrefix "$firstPassDir"/ 
+		STAR --genomeDir "$starGenome" \
+			--readFilesIn <(gunzip -c "$trim_fwd") <(gunzip -c "$trim_rev") \
+			--runThreadN 8 \
+			--outMultimapperOrder Random \
+			--outFilterMultimapNmax 50 \
+			--outFileNamePrefix "$firstPassDir"/ 
 
     fi
 }
@@ -81,19 +81,19 @@ function runStarSecondPass() {
 
 			mkdir "$secondPassDir"
 
-		  trim_fwd=`ls "$inputDir"/*_output_forward_paired.fq.gz`
-		  trim_rev=`ls "$inputDir"/*_output_reverse_paired.fq.gz`
+			  trim_fwd=`ls "$inputDir"/*_output_forward_paired.fq.gz`
+			  trim_rev=`ls "$inputDir"/*_output_reverse_paired.fq.gz`
 
-		  STAR --genomeDir "$starGenome" \
-			  --readFilesIn <(gunzip -c "$trim_fwd") <(gunzip -c "$trim_rev") \
-			  --runThreadN 8 \
-			  --sjdbFileChrStartEnd "$starMasterDir"/*/*_star_out/SJ.out.tab \
-			  --outFilterMultimapNmax 50 \
-			  --outReadsUnmapped Fastx \
-			  --outMultimapperOrder Random \
-			  --outSAMtype BAM SortedByCoordinate \
-			  --outFileNamePrefix "$secondPassDir"/
-    fi
+			  STAR --genomeDir "$starGenome" \
+				  --readFilesIn <(gunzip -c "$trim_fwd") <(gunzip -c "$trim_rev") \
+				  --runThreadN 8 \
+				  --sjdbFileChrStartEnd "$starMasterDir"/*/*_star_out/SJ.out.tab \
+				  --outFilterMultimapNmax 50 \
+				  --outReadsUnmapped Fastx \
+				  --outMultimapperOrder Random \
+				  --outSAMtype BAM SortedByCoordinate \
+				  --outFileNamePrefix "$secondPassDir"/
+		fi
 
   done
 }
@@ -110,11 +110,11 @@ function runStarForRNAEditing() {
 		trim_fwd=`ls "$inputDir"/*_output_forward_paired.fq.gz`
 		trim_rev=`ls "$inputDir"/*_output_reverse_paired.fq.gz`
 
-        STAR --genomeDir $starGenome \
-	        --readFilesIn <(gunzip -c $trim1) <(gunzip -c $trim2) \
-	        --outFilterMatchNminOverLread 0.95 \
-	        --outSAMtype BAM SortedByCoordinate \
-	        --outFileNamePrefix "$rnaEditDir"/
+		STAR --genomeDir $starGenome \
+			--readFilesIn <(gunzip -c $trim1) <(gunzip -c $trim2) \
+			--outFilterMatchNminOverLread 0.95 \
+			--outSAMtype BAM SortedByCoordinate \
+			--outFileNamePrefix "$rnaEditDir"/
 
     fi   
 }

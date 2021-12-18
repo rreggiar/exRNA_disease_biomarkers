@@ -32,7 +32,7 @@ editArg="$3"
 starGenome="$4"
 firstPassDir="$inputDir"/$(basename "$starGenome")_${dateStamp}_star_out
 rnaEditDir="$inputDir"/rna_editing_$(basename "$starGenome")_${dateStamp}_star_out
-secondPassDir=$firstPassDir/second_pass_out
+secondPassDir=$(basename "$starGenome")_*_star_out/second_pass_out
 
 #set -x
 echo "input:" "$inputDir"

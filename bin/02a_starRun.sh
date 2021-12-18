@@ -40,22 +40,6 @@ echo "firstPassDir:" "$firstPassDir"
 echo "secondPassDir:" "$secondPassDir"
 #set +x 
 
-## activate correct env
-#function condaCheck() {
-	# source the conda script so this shell has access
-#	source /public/groups/kimlab/.install_bin/anaconda3/etc/profile.d/conda.sh
-
-#	reqEnv="aale.analysis.env"
-#	env=$(basename "$CONDA_PREFIX")
-
-#	if [[ env != reqEnv ]]; then
-#		echo "switching from "$env" to "$reqEnv""
-#		conda activate $reqEnv
-#	else
-#		echo ""$reqEnv" is active"
-#	fi
-#}
-
 function runStarFirstPass() {
 	inputDir="$1"
 	firstPassDir="$2"
@@ -86,8 +70,6 @@ function runStarSecondPass() {
 
 	cd "$inputDir"
 	cd ../
-
-	# starMasterDir == "$inputDir"/..
 
 	starMasterDir=$PWD
 
@@ -136,8 +118,6 @@ function runStarForRNAEditing() {
 
     fi   
 }
-
-#condaCheck
 
 runStarFirstPass "${inputDir}" "${firstPassDir}" "${starGenome}"
 

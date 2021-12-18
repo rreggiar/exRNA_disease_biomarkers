@@ -24,7 +24,7 @@ for inputDir in "$sampleDir"/*; do
 
 	set -x 
 
-	./starRun.sh "$inputDir" "$2pass" "$edit" "$starGenome" "$dateStamp"
+	./02a_starRun.sh "$inputDir" "$2pass" "$edit" "$starGenome" "$dateStamp"
 
 	exitStatus=$?
 	if [ $? -ne 0 ]; then

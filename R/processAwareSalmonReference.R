@@ -34,27 +34,27 @@ grl <- eisaR::getFeatureRanges(
     verbose = TRUE
 )
 
-# cat('genome')
-# genome <- Biostrings::readDNAStringSet(
-#     file.path(input.dir, 'GRCh38.primary_assembly.genome.fa.gz')
-# )
+ cat('genome')
+ genome <- Biostrings::readDNAStringSet(
+     file.path(input.dir, 'GRCh38.primary_assembly.genome.fa.gz')
+ )
 
-# cat('seqs')
-# names(genome) <- sapply(strsplit(names(genome), " "), .subset, 1)
-# seqs <- GenomicFeatures::extractTranscriptSeqs(
-#     x = genome, 
-#     transcripts = grl
-# )
+ cat('seqs')
+ names(genome) <- sapply(strsplit(names(genome), " "), .subset, 1)
+ seqs <- GenomicFeatures::extractTranscriptSeqs(
+     x = genome, 
+     transcripts = grl
+ )
 
-# cat('fasta')
-# Biostrings::writeXStringSet(
-#     seqs, filepath = file.path(input.dir, paste0('gencode.v', gencode.version, '.annotation.expanded.fa'))
-# )
-# cat('gtf out')
-# eisaR::exportToGtf(
-#     grl, 
-#     filepath = file.path(input.dir, paste0('gencode.v', gencode.version, '.annotation.expanded.gtf'))
-# )
+ cat('fasta')
+ Biostrings::writeXStringSet(
+     seqs, filepath = file.path(input.dir, paste0('gencode.v', gencode.version, '.annotation.expanded.fa'))
+ )
+ cat('gtf out')
+ eisaR::exportToGtf(
+     grl, 
+     filepath = file.path(input.dir, paste0('gencode.v', gencode.version, '.annotation.expanded.gtf'))
+ )
 
 write.table(
     metadata(grl)$corrgene, 

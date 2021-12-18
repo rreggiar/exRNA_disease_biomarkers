@@ -47,8 +47,6 @@ echo "firstPassDir:" "$firstPassDir"
 echo "secondPassDir:" "$secondPassDir"
 #set +x
 
-exit 1
-
 
 function runStarFirstPass() {
 	inputDir="$1"

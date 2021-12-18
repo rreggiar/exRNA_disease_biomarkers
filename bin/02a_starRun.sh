@@ -73,9 +73,12 @@ function runStarSecondPass() {
 
 	starMasterDir=$PWD
 
+
 	for inputSample in $PWD/*; do
 
 		cd "$inputSample"
+
+		secondPassDir=$inputSample/second_pass_out
 
 		if [ ! -d "$secondPassDir" ]; then
 

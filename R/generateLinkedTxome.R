@@ -9,7 +9,7 @@ suppressPackageStartupMessages({
   library(rjson)
 })
 
-paths.in <- paths.in <- scan(file=file("stdin", "r"), what="character", n=2)
+paths.in <- scan(file=file("stdin", "r"), what="character", n=2)
 index.dir <- "/public/groups/kimlab/indexes"
 
 # if (length(paths.in) < 2) {
@@ -64,7 +64,7 @@ if (!file.exists(file.path(input.dir,
 		paste0('gencode.v', gencode.version, '.process.aware.json')))){
 
 		print('process aware')
-		indexType = 'process.aware.json'
+		indexType = 'process.aware.salmon'
 		linkedTxomeWrap(indexType)
 	}
 }

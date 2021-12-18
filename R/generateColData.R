@@ -25,20 +25,15 @@ parse.input <- function(data.path, output.name){
 
     files <- dir(file.path(data.path))
 
-    # names(files) <- files
     output.files <- list.files(data.path, full.names = TRUE)
     names(output.files) <- output.files
 
     print('output.files:')
     print(output.files)
     
-    #output.files.samples <- list.files(output.files, full.names = TRUE)
-    #names(output.files.samples) <- output.files.samples
-
-
     # creates empty df to fill with sample info
     sample.info <- data.frame('files' = file.path(),
-    						  'names' = character(),
+    			      'names' = character(),
                               'condition' = character(),
                               'rep' = numeric(),
                               'input_vol' = numeric())
@@ -46,18 +41,19 @@ parse.input <- function(data.path, output.name){
     # iteratively add to the empyty df the parsed sample names
     # here with format 'condition.rep'
     lapply(output.files, function(x){
+		   x.path <- Sys.glob(file.path(x,paste0("*v35.",output.name,"*"), "quant.sf"))[1]
+		   x <- basename(x)
+		   sample.split <- str_split(x, '[.]', n=4)[[1]]
+		   condition <- sample.split[1]
+		   rep <- sample.split[2]
+		   input_vol <- as.numeric(paste0(sample.split[3], '.', sample.split[4]))
 
-    		x.path <- Sys.glob(file.path(x,paste0("*v35.",output.name,"*"), "quant.sf"))[1]
-    		x <- basename(x)
-            sample.split <- str_split(x, '[.]', n=4)[[1]]
-            condition <- sample.split[1]
-            rep <- sample.split[2]
-            input_vol <- as.numeric(paste0(sample.split[3], '.', sample.split[4]))
             temp.df <- data.frame('files' = x.path,
-            					  'names' = x,
+            			  'names' = x,
                                   'condition' = condition,
                                   'rep' = rep,
                                   'input_vol' = input_vol)
+
             sample.info <<- rbind(sample.info, temp.df)
     })
 
@@ -66,8 +62,7 @@ parse.input <- function(data.path, output.name){
     sample.info.df <<- 
         sample.info %>%
         bind_rows() %>%
-        filter(! is.na(files)) #%>%
-        # mutate(condition = relevel(as.factor(condition), ref = 'ctrl'))
+        filter(! is.na(files))
 
     print(sample.info.df)
 }
@@ -78,7 +73,7 @@ data.path <- paths.in[1]
 txome.path <- paths.in[2]
 output.name <- paths.in[3]
 txome.tsv <- paths.in[4]
-
+outpath <- paths.in[5]
 
 outpath <- file.path("/public/groups/kimlab/pittsburgh_pah_exoRNA/output.data/")
 
@@ -123,16 +118,16 @@ if (output.name == 'ucsc.rmsk.salmon'){
 	print('save gene h5')
 	saveHDF5SummarizedExperiment(gxi, dir=paste0(outpath,paste0(output.name, '_gene_h5_se')), replace=TRUE)
 
-	#if (!is.null(txome.tsv)){
-	#	cg <- read.delim(txome.tsv, header = TRUE, as.is = TRUE)
-	#
-	#	colnames(cg)[colnames(cg) == 'intron'] <- 'unspliced'
-	#	split.gxi <- tximeta::splitSE(gxi, cg, assayName = 'counts')
-	#
-	#	saveHDF5SummarizedExperiment(split.gxi, 
-	#		dir=paste0(outpath,paste0(output.name, '_gene_split_h5_se')), 
-	#		replace=TRUE)
-	#}
+	if (!is.null(txome.tsv)){
+		cg <- read.delim(txome.tsv, header = TRUE, as.is = TRUE)
+	
+		colnames(cg)[colnames(cg) == 'intron'] <- 'unspliced'
+		split.gxi <- tximeta::splitSE(gxi, cg, assayName = 'counts')
+	
+		saveHDF5SummarizedExperiment(split.gxi, 
+			dir=paste0(outpath,paste0(output.name, '_gene_split_h5_se')), 
+			replace=TRUE)
+	}
 
 }
 

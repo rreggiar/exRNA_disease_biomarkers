@@ -375,6 +375,7 @@ dependencies:
   - setuptools=59.6.0=py39hf3d152e_0
   - six=1.16.0=pyh6c4a22f_0
   - sqlite=3.37.0=h9cd32fc_0
+  - star=2.7.9a=h9ee0642_0
   - sysroot_linux-64=2.12=he073ed8_15
   - tbb=2020.2=h4bd325d_4
   - terminado=0.12.1=py39hf3d152e_1

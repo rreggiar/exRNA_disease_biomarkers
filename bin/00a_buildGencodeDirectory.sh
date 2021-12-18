@@ -161,7 +161,7 @@ function makeProcessAwareReferences(){
 	set -x
 
 	if [ ! -f "$outputDir"/"gencode.v""$version"".annotation.expanded.fa" ]; then
-		echo "$outputDir" | Rscript ../R/processAwareSalmonReference.R
+		echo "$outputDir" | Rscript ../R/00r1_processAwareSalmonReference.R
 	fi
 
 	set +x
@@ -235,7 +235,7 @@ function makeSalmonIndexes(){
 
 			if [ -d "$kimlabIndexDir"/"sel.align.gencode.v""$version"".process.aware.salmon.v""$salmonVersion"".sidx" ]; then
 
-				echo "$outputDir" "$salmonVersion" | Rscript ../R/generateLinkedTxome.R
+				echo "$outputDir" "$salmonVersion" | Rscript ../R/00r2_generateLinkedTxome.R
 			fi
 
 		fi

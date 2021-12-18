@@ -20,5 +20,17 @@ nohup ./01_trimAndSalmon.sh /public/groups/kimlab/exRNA_disease_biomarkers/data/
 
 ....
 
+```  
+
+Generate a new *STAR* genome for `v2.7.9a`:  
 ```
+nohup STAR --runThreadN 24 --runMode genomeGenerate \
+	--genomeDir /public/groups/kimlab/genomes.annotations/hg38_star_2.7.9a \
+	--genomeFastaFiles /public/groups/kimlab/genomes.annotations/GRCh38.p13.genome.fa \
+	2>&1 > tmp/logs/STAR_genomeGenerate_2.7.9a_log.txt &
+```  
+
+Running *STAR*: [code](bin/02_wrapper.sh) 
+
+
 

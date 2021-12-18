@@ -3,8 +3,8 @@
 # array of jobs to execute the entire project's rna quant and qc workload
 
 projectDir=$1 # /public/groups/kimlab/exRNA_disease_biomarkers/
-twoPass="T"
-edit="T"
+twoPass="2pass=T"
+edit="edit=T"
 
 for inputDataPath in $projectDir/data/input_data/*; do
 	

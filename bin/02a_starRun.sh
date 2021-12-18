@@ -78,7 +78,7 @@ function runStarSecondPass() {
 
 		cd "$inputSample"
 
-		secondPassDir=$inputSample/second_pass_out
+		secondPassDir=$inputSample/$(basename "$starGenome")_*_star_out/second_pass_out
 
 		if [ ! -d "$secondPassDir" ]; then
 

@@ -32,7 +32,7 @@ editArg="$3"
 starGenome="$4"
 firstPassDir="$inputDir"/$(basename "$starGenome")_${dateStamp}_star_out
 rnaEditDir="$inputDir"/rna_editing_$(basename "$starGenome")_${dateStamp}_star_out
-secondPassDir=$(basename "$starGenome")_*_star_out/second_pass_out
+secondPassDir=$firstPassDir/second_pass_out
 
 #set -x
 echo "input:" "$inputDir"
@@ -67,39 +67,26 @@ function runStarSecondPass() {
 	inputDir="$1"
 	secondPassDir="$2"
 	starGenome="$3"
+	starMasterDir=${PWD%/*}
 
-	cd "$inputDir"
-	cd ../
+	if [ ! -d "$secondPassDir" ]; then
 
-	starMasterDir=$PWD
+		mkdir "$secondPassDir"
 
+		trim_fwd=`ls "$inputDir"/*_output_forward_paired.fq.gz`
+		trim_rev=`ls "$inputDir"/*_output_reverse_paired.fq.gz`
 
-	for inputSample in $PWD/*; do
+		STAR --genomeDir "$starGenome" \
+			  --readFilesIn <(gunzip -c "$trim_fwd") <(gunzip -c "$trim_rev") \
+			  --runThreadN 8 \
+			  --sjdbFileChrStartEnd "$starMasterDir"/*/$(basename "$starGenome")_*_star_out/SJ.out.tab \
+			  --outFilterMultimapNmax 50 \
+			  --outReadsUnmapped Fastx \
+			  --outMultimapperOrder Random \
+			  --outSAMtype BAM SortedByCoordinate \
+			  --outFileNamePrefix "$secondPassDir"/
+	fi
 
-		cd "$inputSample"
-
-		currentStarDir=`ls -d $inputSample/$(basename "$starGenome")_*_star_out`
-		secondPassDir=$currentStarDir/second_pass_out
-
-		if [ ! -d "$secondPassDir" ]; then
-
-			mkdir "$secondPassDir"
-
-			trim_fwd=`ls "$inputDir"/*_output_forward_paired.fq.gz`
-			trim_rev=`ls "$inputDir"/*_output_reverse_paired.fq.gz`
-
-			STAR --genomeDir "$starGenome" \
-				  --readFilesIn <(gunzip -c "$trim_fwd") <(gunzip -c "$trim_rev") \
-				  --runThreadN 8 \
-				  --sjdbFileChrStartEnd "$starMasterDir"/*/*_star_out/SJ.out.tab \
-				  --outFilterMultimapNmax 50 \
-				  --outReadsUnmapped Fastx \
-				  --outMultimapperOrder Random \
-				  --outSAMtype BAM SortedByCoordinate \
-				  --outFileNamePrefix "$secondPassDir"/
-		fi
-
-  done
 }
 
 function runStarForRNAEditing() {

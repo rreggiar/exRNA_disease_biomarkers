@@ -30,52 +30,44 @@ inputDir="$1"
 twoPassArg="$2"
 editArg="$3"
 starGenome="$4"
-firstPassDir="$inputDir"/$(basename "$starGenome")_${dateStamp}_star_out
-rnaEditDir="$inputDir"/rna_editing_$(basename "$starGenome")_${dateStamp}_star_out
+
+if [[ `ls -d "$inputDir"/$(basename "$starGenome")_*_star_out` ]]; then
+	firstPassDir=`ls -d "$inputDir"/$(basename "$starGenome")_*_star_out`
+else
+	firstPassDir="$inputDir"/$(basename "$starGenome")_${dateStamp}_star_out
+fi
+
 secondPassDir=$firstPassDir/second_pass_out
+
+rnaEditDir="$inputDir"/rna_editing_$(basename "$starGenome")_${dateStamp}_star_out
 
 #set -x
 echo "input:" "$inputDir"
 echo "firstPassDir:" "$firstPassDir"
 echo "secondPassDir:" "$secondPassDir"
-#set +x 
+#set +x
 
-## activate correct env
-#function condaCheck() {
-	# source the conda script so this shell has access
-#	source /public/groups/kimlab/.install_bin/anaconda3/etc/profile.d/conda.sh
-
-#	reqEnv="aale.analysis.env"
-#	env=$(basename "$CONDA_PREFIX")
-
-#	if [[ env != reqEnv ]]; then
-#		echo "switching from "$env" to "$reqEnv""
-#		conda activate $reqEnv
-#	else
-#		echo ""$reqEnv" is active"
-#	fi
-#}
 
 function runStarFirstPass() {
 	inputDir="$1"
 	firstPassDir="$2"
 	starGenome="$3"
 
-	if [ ! -f "$firstPassDir"/Aligned.out.sam ]; then
+	if [ ! -f $firstPassDir/Aligned.out.sam ]; then
 
 		mkdir "$firstPassDir"
 
 		trim_fwd=`ls "$inputDir"/*_output_forward_paired.fq.gz`
 		trim_rev=`ls "$inputDir"/*_output_reverse_paired.fq.gz`
 
-        STAR --genomeDir "$starGenome" \
-	        --readFilesIn <(gunzip -c "$trim_fwd") <(gunzip -c "$trim_rev") \
-	        --runThreadN 8 \
-	        --outMultimapperOrder Random \
-	        --outFilterMultimapNmax 50 \
-	        --outFileNamePrefix "$firstPassDir"/ 
+		STAR --genomeDir "$starGenome" \
+			--readFilesIn <(gunzip -c "$trim_fwd") <(gunzip -c "$trim_rev") \
+			--runThreadN 8 \
+			--outMultimapperOrder Random \
+			--outFilterMultimapNmax 50 \
+			--outFileNamePrefix "$firstPassDir"/ 
 
-    fi
+    	fi
 }
 
 function runStarSecondPass() {
@@ -83,37 +75,26 @@ function runStarSecondPass() {
 	inputDir="$1"
 	secondPassDir="$2"
 	starGenome="$3"
+	starMasterDir=${PWD%/*}
 
-	cd "$inputDir"
-	cd ../
+	if [ ! -d "$secondPassDir" ]; then
 
-	# starMasterDir == "$inputDir"/..
+		mkdir "$secondPassDir"
 
-	starMasterDir=$PWD
+		trim_fwd=`ls "$inputDir"/*_output_forward_paired.fq.gz`
+		trim_rev=`ls "$inputDir"/*_output_reverse_paired.fq.gz`
 
-	for inputSample in $PWD/*; do
-
-		cd "$inputSample"
-
-		if [ ! -d "$secondPassDir" ]; then
-
-			mkdir "$secondPassDir"
-
-		  trim_fwd=`ls "$inputDir"/*_output_forward_paired.fq.gz`
-		  trim_rev=`ls "$inputDir"/*_output_reverse_paired.fq.gz`
-
-		  STAR --genomeDir "$starGenome" \
+		STAR --genomeDir "$starGenome" \
 			  --readFilesIn <(gunzip -c "$trim_fwd") <(gunzip -c "$trim_rev") \
 			  --runThreadN 8 \
-			  --sjdbFileChrStartEnd "$starMasterDir"/*/*_star_out/SJ.out.tab \
+			  --sjdbFileChrStartEnd "$starMasterDir"/*/$(basename "$starGenome")_*_star_out/SJ.out.tab \
 			  --outFilterMultimapNmax 50 \
 			  --outReadsUnmapped Fastx \
 			  --outMultimapperOrder Random \
 			  --outSAMtype BAM SortedByCoordinate \
 			  --outFileNamePrefix "$secondPassDir"/
-    fi
+	fi
 
-  done
 }
 
 function runStarForRNAEditing() {
@@ -121,23 +102,21 @@ function runStarForRNAEditing() {
 	rnaEditDir="$2"
 	starGenome="$3"
 
-	if [ ! -f "$rnaEditDir"/*.bam ]; then
+	if [ ! -f rna_editing_$(basename "$starGenome")_*_star_out/*.bam ]; then
 
 		mkdir "$rnaEditDir"
 
 		trim_fwd=`ls "$inputDir"/*_output_forward_paired.fq.gz`
 		trim_rev=`ls "$inputDir"/*_output_reverse_paired.fq.gz`
 
-        STAR --genomeDir $starGenome \
-	        --readFilesIn <(gunzip -c $trim1) <(gunzip -c $trim2) \
-	        --outFilterMatchNminOverLread 0.95 \
-	        --outSAMtype BAM SortedByCoordinate \
-	        --outFileNamePrefix "$rnaEditDir"/
+		STAR --genomeDir $starGenome \
+			--readFilesIn <(gunzip -c $trim1) <(gunzip -c $trim2) \
+			--outFilterMatchNminOverLread 0.95 \
+			--outSAMtype BAM SortedByCoordinate \
+			--outFileNamePrefix "$rnaEditDir"/
 
     fi   
 }
-
-#condaCheck
 
 runStarFirstPass "${inputDir}" "${firstPassDir}" "${starGenome}"
 

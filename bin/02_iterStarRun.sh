@@ -13,7 +13,7 @@ fi
 
 sampleDir="$1"
 starGenome="$2"
-2pass="$3"
+twoPass="$3"
 edit="$4"
 
 dateStamp="$(bash helper_dateStamp.sh)"
@@ -24,7 +24,7 @@ for inputDir in "$sampleDir"/*; do
 
 	set -x 
 
-	./starRun.sh "$inputDir" "$2pass" "$edit" "$starGenome" "$dateStamp"
+	./02a_starRun.sh "$inputDir" "$twoPass" "$edit" "$starGenome" "$dateStamp"
 
 	exitStatus=$?
 	if [ $? -ne 0 ]; then

@@ -81,10 +81,10 @@ function runStarSecondPass() {
 
 			mkdir "$secondPassDir"
 
-			  trim_fwd=`ls "$inputDir"/*_output_forward_paired.fq.gz`
-			  trim_rev=`ls "$inputDir"/*_output_reverse_paired.fq.gz`
+			trim_fwd=`ls "$inputDir"/*_output_forward_paired.fq.gz`
+			trim_rev=`ls "$inputDir"/*_output_reverse_paired.fq.gz`
 
-			  STAR --genomeDir "$starGenome" \
+			STAR --genomeDir "$starGenome" \
 				  --readFilesIn <(gunzip -c "$trim_fwd") <(gunzip -c "$trim_rev") \
 				  --runThreadN 8 \
 				  --sjdbFileChrStartEnd "$starMasterDir"/*/*_star_out/SJ.out.tab \

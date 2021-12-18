@@ -1,0 +1,61 @@
+Sample	FastQC_mqc-generalstats-fastqc-percent_duplicates	FastQC_mqc-generalstats-fastqc-percent_gc	FastQC_mqc-generalstats-fastqc-avg_sequence_length	FastQC_mqc-generalstats-fastqc-percent_fails	FastQC_mqc-generalstats-fastqc-total_sequences	Salmon_mqc-generalstats-salmon-percent_mapped	Salmon_mqc-generalstats-salmon-num_mapped
+covid.381.0.80_output_forward_paired	18.993056048301696	46.0	107.58960613847128	9.090909090909092	5566728.0		
+covid.381.0.80_output_reverse_paired	18.862074843255	46.0	106.89699281157621	9.090909090909092	5566728.0		
+covid.381.0.80_sel.align.gencode.v38.process.aware.salmon.v1.6.0.sidx_2021-12-17-18.07.18-PST						0.0	0
+covid.381.0.80_sel.align.gencode.v38.salmon.v1.6.0.sidx_2021-12-16-22.28.43-PST						17.201002096743366	957533
+covid.381.0.80_sel.align.gencode.v38.ucsc.rmsk.salmon.v1.6.0.sidx_2021-12-17-14.33.58-PST						50.144591221270375	2791413
+covid.396.0.68_output_forward_paired	41.542268455104846	44.0	128.6962210904898	0.0	3718586.0		
+covid.396.0.68_output_reverse_paired	41.207393351860176	45.0	127.88686210296063	0.0	3718586.0		
+covid.396.0.68_sel.align.gencode.v38.process.aware.salmon.v1.6.0.sidx_2021-12-17-18.07.18-PST						0.0	0
+covid.396.0.68_sel.align.gencode.v38.salmon.v1.6.0.sidx_2021-12-16-22.28.43-PST						59.335699107133735	2206449
+covid.396.0.68_sel.align.gencode.v38.ucsc.rmsk.salmon.v1.6.0.sidx_2021-12-17-14.33.58-PST						70.88129735334883	2635782
+covid.400.0.56_output_forward_paired	40.32501164862475	45.0	124.86849097979233	9.090909090909092	3587944.0		
+covid.400.0.56_output_reverse_paired	40.05471231739176	45.0	124.05829661778445	9.090909090909092	3587944.0		
+covid.400.0.56_sel.align.gencode.v38.process.aware.salmon.v1.6.0.sidx_2021-12-17-18.07.18-PST						0.0	0
+covid.400.0.56_sel.align.gencode.v38.salmon.v1.6.0.sidx_2021-12-16-22.28.43-PST						66.18503521794096	2374682
+covid.400.0.56_sel.align.gencode.v38.ucsc.rmsk.salmon.v1.6.0.sidx_2021-12-17-14.33.58-PST						74.31618219236421	2666423
+covid.411.0.75_output_forward_paired	50.09451984809391	44.0	125.71302366893319	18.181818181818183	4586772.0		
+covid.411.0.75_output_reverse_paired	49.91932141533678	44.0	125.062811275555	9.090909090909092	4586772.0		
+covid.411.0.75_sel.align.gencode.v38.process.aware.salmon.v1.6.0.sidx_2021-12-17-18.07.18-PST						0.0	0
+covid.411.0.75_sel.align.gencode.v38.salmon.v1.6.0.sidx_2021-12-16-22.28.43-PST						69.40706884929097	3183544
+covid.411.0.75_sel.align.gencode.v38.ucsc.rmsk.salmon.v1.6.0.sidx_2021-12-17-14.33.58-PST						77.25552959684937	3543535
+covid.412.0.64_output_forward_paired	65.06371526529631	43.0	119.94371269877003	18.181818181818183	4513256.0		
+covid.412.0.64_output_reverse_paired	64.5080663731463	43.0	119.28145777682454	18.181818181818183	4513256.0		
+covid.412.0.64_sel.align.gencode.v38.process.aware.salmon.v1.6.0.sidx_2021-12-17-18.07.18-PST						0.0	0
+covid.412.0.64_sel.align.gencode.v38.salmon.v1.6.0.sidx_2021-12-16-22.28.43-PST						75.85315346614506	3423447
+covid.412.0.64_sel.align.gencode.v38.ucsc.rmsk.salmon.v1.6.0.sidx_2021-12-17-14.33.58-PST						80.01487174669462	3611276
+covid.426.0.80_output_forward_paired	33.23422883241925	45.0	123.4858611179323	0.0	4577236.0		
+covid.426.0.80_output_reverse_paired	33.21082722942896	45.0	122.6937258642552	0.0	4577236.0		
+covid.426.0.80_sel.align.gencode.v38.process.aware.salmon.v1.6.0.sidx_2021-12-17-18.07.18-PST						0.0	0
+covid.426.0.80_sel.align.gencode.v38.salmon.v1.6.0.sidx_2021-12-16-22.28.43-PST						41.99879577981122	1922384
+covid.426.0.80_sel.align.gencode.v38.ucsc.rmsk.salmon.v1.6.0.sidx_2021-12-17-14.33.58-PST						61.12492342540345	2797832
+covid.427.0.80_output_forward_paired	8.343057039011953	44.0	117.43226419317766	0.0	5057148.0		
+covid.427.0.80_output_reverse_paired	8.392659191874642	44.0	116.68538927474538	0.0	5057148.0		
+covid.427.0.80_sel.align.gencode.v38.process.aware.salmon.v1.6.0.sidx_2021-12-17-18.07.18-PST						0.0	0
+covid.427.0.80_sel.align.gencode.v38.salmon.v1.6.0.sidx_2021-12-16-22.28.43-PST						7.669896154907866	387878
+covid.427.0.80_sel.align.gencode.v38.ucsc.rmsk.salmon.v1.6.0.sidx_2021-12-17-14.33.58-PST						37.45660597633291	1894236
+covid.432.0.58_output_forward_paired	50.11348988549806	43.0	121.62009261186988	18.181818181818183	4750363.0		
+covid.432.0.58_output_reverse_paired	49.40813599504005	43.0	120.53526814687635	9.090909090909092	4750363.0		
+covid.432.0.58_sel.align.gencode.v38.process.aware.salmon.v1.6.0.sidx_2021-12-17-18.07.18-PST						0.0	0
+covid.432.0.58_sel.align.gencode.v38.salmon.v1.6.0.sidx_2021-12-16-22.28.43-PST						62.499581610921105	2968957
+covid.432.0.58_sel.align.gencode.v38.ucsc.rmsk.salmon.v1.6.0.sidx_2021-12-17-14.33.58-PST						70.87346798549922	3366747
+covid.440.0.60_output_forward_paired	35.20141509034606	43.0	122.55610073321974	0.0	4133413.0		
+covid.440.0.60_output_reverse_paired	35.04740679608871	43.0	121.76639087359526	0.0	4133413.0		
+covid.440.0.60_sel.align.gencode.v38.process.aware.salmon.v1.6.0.sidx_2021-12-17-18.07.18-PST						0.0	0
+covid.440.0.60_sel.align.gencode.v38.salmon.v1.6.0.sidx_2021-12-16-22.28.43-PST						50.766908605551876	2098406
+covid.440.0.60_sel.align.gencode.v38.ucsc.rmsk.salmon.v1.6.0.sidx_2021-12-17-14.33.58-PST						63.63283804449254	2630208
+covid.441.0.64_output_forward_paired	68.56261794964433	43.0	125.13953930082236	18.181818181818183	5475547.0		
+covid.441.0.64_output_reverse_paired	67.98359504317534	43.0	124.35842209006698	18.181818181818183	5475547.0		
+covid.441.0.64_sel.align.gencode.v38.process.aware.salmon.v1.6.0.sidx_2021-12-17-18.07.18-PST						0.0	0
+covid.441.0.64_sel.align.gencode.v38.salmon.v1.6.0.sidx_2021-12-16-22.28.43-PST						76.29566507236628	4177605
+covid.441.0.64_sel.align.gencode.v38.ucsc.rmsk.salmon.v1.6.0.sidx_2021-12-17-14.33.58-PST						79.24139816533399	4338900
+covid.442.0.61_output_forward_paired	61.036476123324654	43.0	121.06979966344142	18.181818181818183	4097355.0		
+covid.442.0.61_output_reverse_paired	60.39737796907905	43.0	120.32054581553221	18.181818181818183	4097355.0		
+covid.442.0.61_sel.align.gencode.v38.process.aware.salmon.v1.6.0.sidx_2021-12-17-18.07.18-PST						0.0	0
+covid.442.0.61_sel.align.gencode.v38.salmon.v1.6.0.sidx_2021-12-16-22.28.43-PST						79.6789148121166	3264728
+covid.442.0.61_sel.align.gencode.v38.ucsc.rmsk.salmon.v1.6.0.sidx_2021-12-17-14.33.58-PST						83.16882476622114	3407722
+covid.450.0.84_output_forward_paired	36.22404435705735	43.0	123.10733641796551	0.0	4190451.0		
+covid.450.0.84_output_reverse_paired	36.04136408996973	43.0	122.29517610395635	9.090909090909092	4190451.0		
+covid.450.0.84_sel.align.gencode.v38.process.aware.salmon.v1.6.0.sidx_2021-12-17-18.07.18-PST						0.0	0
+covid.450.0.84_sel.align.gencode.v38.salmon.v1.6.0.sidx_2021-12-16-22.28.43-PST						48.013710218780744	2011991
+covid.450.0.84_sel.align.gencode.v38.ucsc.rmsk.salmon.v1.6.0.sidx_2021-12-17-14.33.58-PST						61.27586266967445	2567735

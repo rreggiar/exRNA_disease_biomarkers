@@ -45,7 +45,7 @@ function runStarFirstPass() {
 	firstPassDir="$2"
 	starGenome="$3"
 
-	if [ ! -f "$firstPassDir"/Aligned.out.sam ]; then
+	if [ ! -f [ $(basename "$starGenome")_*_star_out/Aligned.out.sam ]; then
 
 		mkdir "$firstPassDir"
 
@@ -103,7 +103,7 @@ function runStarForRNAEditing() {
 	rnaEditDir="$2"
 	starGenome="$3"
 
-	if [ ! -f "$rnaEditDir"/*.bam ]; then
+	if [ ! -f rna_editing_$(basename "$starGenome")_*_star_out/*.bam ]; then
 
 		mkdir "$rnaEditDir"
 

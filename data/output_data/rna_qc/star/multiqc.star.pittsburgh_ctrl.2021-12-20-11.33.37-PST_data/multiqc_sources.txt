@@ -1,0 +1,2 @@
+Module	Section	Sample Name	Source
+STAR	SummaryLog	Log.final.out	/public/groups/kimlab/exRNA_disease_biomarkers/data/input_data/pittsburgh_ctrl/ctrl.9.1.2/hg38_star_2.7.9a_2021-12-18-22.16.46-PST_star_out/second_pass_out/Log.final.out

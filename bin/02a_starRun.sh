@@ -39,12 +39,19 @@ fi
 
 secondPassDir=$firstPassDir/second_pass_out
 
-rnaEditDir="$inputDir"/rna_editing_$(basename "$starGenome")_${dateStamp}_star_out
+if [[ `ls -d "$inputDir"/rna_editing_$(basename "$starGenome")_*_star_out` ]]; then
+	rnaEditDir=`ls -d "$inputDir"/rna_editing_$(basename "$starGenome")_*_star_out`
+else
+	rnaEditDir="$inputDir"/rna_editing_$(basename "$starGenome")_${dateStamp}_star_out
+fi
+
+#rnaEditDir="$inputDir"/rna_editing_$(basename "$starGenome")_${dateStamp}_star_out
 
 #set -x
 echo "input:" "$inputDir"
 echo "firstPassDir:" "$firstPassDir"
 echo "secondPassDir:" "$secondPassDir"
+echo "rnaEditDir:" "$rnaEditDir"
 #set +x
 
 
@@ -75,7 +82,9 @@ function runStarSecondPass() {
 	inputDir="$1"
 	secondPassDir="$2"
 	starGenome="$3"
-	starMasterDir=${PWD%/*}
+	starMasterDir=${inputDir%/*}
+
+	echo $starMasterDir
 
 	if [ ! -d "$secondPassDir" ]; then
 
@@ -102,7 +111,7 @@ function runStarForRNAEditing() {
 	rnaEditDir="$2"
 	starGenome="$3"
 
-	if [ ! -f rna_editing_$(basename "$starGenome")_*_star_out/*.bam ]; then
+	if [ ! "$rnaEditDir" ]; then
 
 		mkdir "$rnaEditDir"
 
@@ -127,7 +136,6 @@ fi
 if [[ "$editArg" == "edit=T" ]]; then
 	runStarForRNAEditing "${inputDir}" "${rnaEditDir}" "${starGenome}"
 fi
-
 
 
 

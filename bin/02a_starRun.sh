@@ -37,7 +37,7 @@ else
 	firstPassDir="$inputDir"/$(basename "$starGenome")_${dateStamp}_star_out
 fi
 
-secondPassDir=$firstPassDir/second_pass_out
+secondPassDir=$firstPassDir/"$inputDir"_second_pass_out
 
 if [[ `ls -d "$inputDir"/rna_editing_$(basename "$starGenome")_*_star_out` ]]; then
 	rnaEditDir=`ls -d "$inputDir"/rna_editing_$(basename "$starGenome")_*_star_out`

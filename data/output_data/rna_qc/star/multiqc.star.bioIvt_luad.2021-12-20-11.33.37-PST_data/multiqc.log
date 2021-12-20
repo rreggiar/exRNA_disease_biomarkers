@@ -1,0 +1,301 @@
+[2021-12-20 11:33:42,011] multiqc                                            [DEBUG  ]  This is MultiQC v1.11
+[2021-12-20 11:33:42,026] multiqc                                            [DEBUG  ]  No MultiQC config found: /public/groups/kimlab/.install_bin/anaconda3/envs/exRNA_disease_biomarkers/lib/python3.9/site-packages/multiqc_config.yaml
+[2021-12-20 11:33:42,027] multiqc                                            [DEBUG  ]  No MultiQC config found: /public/home/rreggiar/.multiqc_config.yaml
+[2021-12-20 11:33:42,028] multiqc                                            [DEBUG  ]  No MultiQC config found: multiqc_config.yaml
+[2021-12-20 11:33:42,028] multiqc                                            [DEBUG  ]  Command used: /public/groups/kimlab/.install_bin/anaconda3/envs/exRNA_disease_biomarkers/bin/multiqc /public/groups/kimlab/exRNA_disease_biomarkers//data/input_data/bioIvt_luad/luad.1.0.30/hg38_star_2.7.9a_2021-12-18-22.16.46-PST_star_out/second_pass_out/Aligned.sortedByCoord.out.bam /public/groups/kimlab/exRNA_disease_biomarkers//data/input_data/bioIvt_luad/luad.1.0.30/hg38_star_2.7.9a_2021-12-18-22.16.46-PST_star_out/second_pass_out/Log.final.out /public/groups/kimlab/exRNA_disease_biomarkers//data/input_data/bioIvt_luad/luad.1.0.30/hg38_star_2.7.9a_2021-12-18-22.16.46-PST_star_out/second_pass_out/Log.out /public/groups/kimlab/exRNA_disease_biomarkers//data/input_data/bioIvt_luad/luad.1.0.30/hg38_star_2.7.9a_2021-12-18-22.16.46-PST_star_out/second_pass_out/Log.progress.out /public/groups/kimlab/exRNA_disease_biomarkers//data/input_data/bioIvt_luad/luad.1.0.30/hg38_star_2.7.9a_2021-12-18-22.16.46-PST_star_out/second_pass_out/SJ.out.tab /public/groups/kimlab/exRNA_disease_biomarkers//data/input_data/bioIvt_luad/luad.1.0.30/hg38_star_2.7.9a_2021-12-18-22.16.46-PST_star_out/second_pass_out/_STARgenome /public/groups/kimlab/exRNA_disease_biomarkers//data/input_data/bioIvt_luad/luad.1.0.30/hg38_star_2.7.9a_2021-12-18-22.16.46-PST_star_out/second_pass_out/_STARtmp /public/groups/kimlab/exRNA_disease_biomarkers//data/input_data/bioIvt_luad/luad.1.0.30/hg38_star_2.7.9a_2021-12-18-22.16.46-PST_star_out/second_pass_out/Unmapped.out.mate1 /public/groups/kimlab/exRNA_disease_biomarkers//data/input_data/bioIvt_luad/luad.1.0.30/hg38_star_2.7.9a_2021-12-18-22.16.46-PST_star_out/second_pass_out/Unmapped.out.mate2 /public/groups/kimlab/exRNA_disease_biomarkers//data/input_data/bioIvt_luad/luad.2.0.30/hg38_star_2.7.9a_2021-12-18-22.16.46-PST_star_out/second_pass_out/Aligned.sortedByCoord.out.bam /public/groups/kimlab/exRNA_disease_biomarkers//data/input_data/bioIvt_luad/luad.2.0.30/hg38_star_2.7.9a_2021-12-18-22.16.46-PST_star_out/second_pass_out/Log.final.out /public/groups/kimlab/exRNA_disease_biomarkers//data/input_data/bioIvt_luad/luad.2.0.30/hg38_star_2.7.9a_2021-12-18-22.16.46-PST_star_out/second_pass_out/Log.out /public/groups/kimlab/exRNA_disease_biomarkers//data/input_data/bioIvt_luad/luad.2.0.30/hg38_star_2.7.9a_2021-12-18-22.16.46-PST_star_out/second_pass_out/Log.progress.out /public/groups/kimlab/exRNA_disease_biomarkers//data/input_data/bioIvt_luad/luad.2.0.30/hg38_star_2.7.9a_2021-12-18-22.16.46-PST_star_out/second_pass_out/SJ.out.tab /public/groups/kimlab/exRNA_disease_biomarkers//data/input_data/bioIvt_luad/luad.2.0.30/hg38_star_2.7.9a_2021-12-18-22.16.46-PST_star_out/second_pass_out/_STARgenome /public/groups/kimlab/exRNA_disease_biomarkers//data/input_data/bioIvt_luad/luad.2.0.30/hg38_star_2.7.9a_2021-12-18-22.16.46-PST_star_out/second_pass_out/_STARtmp /public/groups/kimlab/exRNA_disease_biomarkers//data/input_data/bioIvt_luad/luad.2.0.30/hg38_star_2.7.9a_2021-12-18-22.16.46-PST_star_out/second_pass_out/Unmapped.out.mate1 /public/groups/kimlab/exRNA_disease_biomarkers//data/input_data/bioIvt_luad/luad.2.0.30/hg38_star_2.7.9a_2021-12-18-22.16.46-PST_star_out/second_pass_out/Unmapped.out.mate2 /public/groups/kimlab/exRNA_disease_biomarkers//data/input_data/bioIvt_luad/luad.3.0.30/hg38_star_2.7.9a_2021-12-18-22.16.46-PST_star_out/second_pass_out/Aligned.sortedByCoord.out.bam /public/groups/kimlab/exRNA_disease_biomarkers//data/input_data/bioIvt_luad/luad.3.0.30/hg38_star_2.7.9a_2021-12-18-22.16.46-PST_star_out/second_pass_out/Log.final.out /public/groups/kimlab/exRNA_disease_biomarkers//data/input_data/bioIvt_luad/luad.3.0.30/hg38_star_2.7.9a_2021-12-18-22.16.46-PST_star_out/second_pass_out/Log.out /public/groups/kimlab/exRNA_disease_biomarkers//data/input_data/bioIvt_luad/luad.3.0.30/hg38_star_2.7.9a_2021-12-18-22.16.46-PST_star_out/second_pass_out/Log.progress.out /public/groups/kimlab/exRNA_disease_biomarkers//data/input_data/bioIvt_luad/luad.3.0.30/hg38_star_2.7.9a_2021-12-18-22.16.46-PST_star_out/second_pass_out/SJ.out.tab /public/groups/kimlab/exRNA_disease_biomarkers//data/input_data/bioIvt_luad/luad.3.0.30/hg38_star_2.7.9a_2021-12-18-22.16.46-PST_star_out/second_pass_out/_STARgenome /public/groups/kimlab/exRNA_disease_biomarkers//data/input_data/bioIvt_luad/luad.3.0.30/hg38_star_2.7.9a_2021-12-18-22.16.46-PST_star_out/second_pass_out/_STARtmp /public/groups/kimlab/exRNA_disease_biomarkers//data/input_data/bioIvt_luad/luad.3.0.30/hg38_star_2.7.9a_2021-12-18-22.16.46-PST_star_out/second_pass_out/Unmapped.out.mate1 /public/groups/kimlab/exRNA_disease_biomarkers//data/input_data/bioIvt_luad/luad.3.0.30/hg38_star_2.7.9a_2021-12-18-22.16.46-PST_star_out/second_pass_out/Unmapped.out.mate2 --filename multiqc.star.bioIvt_luad.2021-12-20-11.33.37-PST -o /public/groups/kimlab/exRNA_disease_biomarkers/data/output_data/rna_qc/star/
+[2021-12-20 11:33:43,975] multiqc                                            [DEBUG  ]  Latest MultiQC version is v1.11
+[2021-12-20 11:33:43,976] multiqc                                            [DEBUG  ]  Command     : /public/groups/kimlab/.install_bin/anaconda3/envs/exRNA_disease_biomarkers/bin/multiqc /public/groups/kimlab/exRNA_disease_biomarkers//data/input_data/bioIvt_luad/luad.1.0.30/hg38_star_2.7.9a_2021-12-18-22.16.46-PST_star_out/second_pass_out/Aligned.sortedByCoord.out.bam /public/groups/kimlab/exRNA_disease_biomarkers//data/input_data/bioIvt_luad/luad.1.0.30/hg38_star_2.7.9a_2021-12-18-22.16.46-PST_star_out/second_pass_out/Log.final.out /public/groups/kimlab/exRNA_disease_biomarkers//data/input_data/bioIvt_luad/luad.1.0.30/hg38_star_2.7.9a_2021-12-18-22.16.46-PST_star_out/second_pass_out/Log.out /public/groups/kimlab/exRNA_disease_biomarkers//data/input_data/bioIvt_luad/luad.1.0.30/hg38_star_2.7.9a_2021-12-18-22.16.46-PST_star_out/second_pass_out/Log.progress.out /public/groups/kimlab/exRNA_disease_biomarkers//data/input_data/bioIvt_luad/luad.1.0.30/hg38_star_2.7.9a_2021-12-18-22.16.46-PST_star_out/second_pass_out/SJ.out.tab /public/groups/kimlab/exRNA_disease_biomarkers//data/input_data/bioIvt_luad/luad.1.0.30/hg38_star_2.7.9a_2021-12-18-22.16.46-PST_star_out/second_pass_out/_STARgenome /public/groups/kimlab/exRNA_disease_biomarkers//data/input_data/bioIvt_luad/luad.1.0.30/hg38_star_2.7.9a_2021-12-18-22.16.46-PST_star_out/second_pass_out/_STARtmp /public/groups/kimlab/exRNA_disease_biomarkers//data/input_data/bioIvt_luad/luad.1.0.30/hg38_star_2.7.9a_2021-12-18-22.16.46-PST_star_out/second_pass_out/Unmapped.out.mate1 /public/groups/kimlab/exRNA_disease_biomarkers//data/input_data/bioIvt_luad/luad.1.0.30/hg38_star_2.7.9a_2021-12-18-22.16.46-PST_star_out/second_pass_out/Unmapped.out.mate2 /public/groups/kimlab/exRNA_disease_biomarkers//data/input_data/bioIvt_luad/luad.2.0.30/hg38_star_2.7.9a_2021-12-18-22.16.46-PST_star_out/second_pass_out/Aligned.sortedByCoord.out.bam /public/groups/kimlab/exRNA_disease_biomarkers//data/input_data/bioIvt_luad/luad.2.0.30/hg38_star_2.7.9a_2021-12-18-22.16.46-PST_star_out/second_pass_out/Log.final.out /public/groups/kimlab/exRNA_disease_biomarkers//data/input_data/bioIvt_luad/luad.2.0.30/hg38_star_2.7.9a_2021-12-18-22.16.46-PST_star_out/second_pass_out/Log.out /public/groups/kimlab/exRNA_disease_biomarkers//data/input_data/bioIvt_luad/luad.2.0.30/hg38_star_2.7.9a_2021-12-18-22.16.46-PST_star_out/second_pass_out/Log.progress.out /public/groups/kimlab/exRNA_disease_biomarkers//data/input_data/bioIvt_luad/luad.2.0.30/hg38_star_2.7.9a_2021-12-18-22.16.46-PST_star_out/second_pass_out/SJ.out.tab /public/groups/kimlab/exRNA_disease_biomarkers//data/input_data/bioIvt_luad/luad.2.0.30/hg38_star_2.7.9a_2021-12-18-22.16.46-PST_star_out/second_pass_out/_STARgenome /public/groups/kimlab/exRNA_disease_biomarkers//data/input_data/bioIvt_luad/luad.2.0.30/hg38_star_2.7.9a_2021-12-18-22.16.46-PST_star_out/second_pass_out/_STARtmp /public/groups/kimlab/exRNA_disease_biomarkers//data/input_data/bioIvt_luad/luad.2.0.30/hg38_star_2.7.9a_2021-12-18-22.16.46-PST_star_out/second_pass_out/Unmapped.out.mate1 /public/groups/kimlab/exRNA_disease_biomarkers//data/input_data/bioIvt_luad/luad.2.0.30/hg38_star_2.7.9a_2021-12-18-22.16.46-PST_star_out/second_pass_out/Unmapped.out.mate2 /public/groups/kimlab/exRNA_disease_biomarkers//data/input_data/bioIvt_luad/luad.3.0.30/hg38_star_2.7.9a_2021-12-18-22.16.46-PST_star_out/second_pass_out/Aligned.sortedByCoord.out.bam /public/groups/kimlab/exRNA_disease_biomarkers//data/input_data/bioIvt_luad/luad.3.0.30/hg38_star_2.7.9a_2021-12-18-22.16.46-PST_star_out/second_pass_out/Log.final.out /public/groups/kimlab/exRNA_disease_biomarkers//data/input_data/bioIvt_luad/luad.3.0.30/hg38_star_2.7.9a_2021-12-18-22.16.46-PST_star_out/second_pass_out/Log.out /public/groups/kimlab/exRNA_disease_biomarkers//data/input_data/bioIvt_luad/luad.3.0.30/hg38_star_2.7.9a_2021-12-18-22.16.46-PST_star_out/second_pass_out/Log.progress.out /public/groups/kimlab/exRNA_disease_biomarkers//data/input_data/bioIvt_luad/luad.3.0.30/hg38_star_2.7.9a_2021-12-18-22.16.46-PST_star_out/second_pass_out/SJ.out.tab /public/groups/kimlab/exRNA_disease_biomarkers//data/input_data/bioIvt_luad/luad.3.0.30/hg38_star_2.7.9a_2021-12-18-22.16.46-PST_star_out/second_pass_out/_STARgenome /public/groups/kimlab/exRNA_disease_biomarkers//data/input_data/bioIvt_luad/luad.3.0.30/hg38_star_2.7.9a_2021-12-18-22.16.46-PST_star_out/second_pass_out/_STARtmp /public/groups/kimlab/exRNA_disease_biomarkers//data/input_data/bioIvt_luad/luad.3.0.30/hg38_star_2.7.9a_2021-12-18-22.16.46-PST_star_out/second_pass_out/Unmapped.out.mate1 /public/groups/kimlab/exRNA_disease_biomarkers//data/input_data/bioIvt_luad/luad.3.0.30/hg38_star_2.7.9a_2021-12-18-22.16.46-PST_star_out/second_pass_out/Unmapped.out.mate2 --filename multiqc.star.bioIvt_luad.2021-12-20-11.33.37-PST -o /public/groups/kimlab/exRNA_disease_biomarkers/data/output_data/rna_qc/star/
+[2021-12-20 11:33:43,976] multiqc                                            [DEBUG  ]  Working dir : /public/groups/kimlab/exRNA_disease_biomarkers/bin
+[2021-12-20 11:33:43,976] multiqc                                            [DEBUG  ]  Template    : default
+[2021-12-20 11:33:43,976] multiqc                                            [DEBUG  ]  Running Python 3.9.7 | packaged by conda-forge | (default, Sep 29 2021, 19:20:46)  [GCC 9.4.0]
+[2021-12-20 11:33:43,976] multiqc                                            [DEBUG  ]  Analysing modules: custom_content, ccs, ngsderive, purple, conpair, lima, peddy, somalier, methylQA, mosdepth, phantompeakqualtools, qualimap, preseq, quast, qorts, rna_seqc, rockhopper, rsem, rseqc, busco, bustools, goleft_indexcov, gffcompare, disambiguate, supernova, deeptools, sargasso, verifybamid, mirtrace, happy, mirtop, sambamba, homer, hops, macs2, theta2, snpeff, gatk, htseq, bcftools, featureCounts, fgbio, dragen, dedup, damageprofiler, biobambam2, jcvi, mtnucratio, picard, vep, sentieon, prokka, qc3C, nanostat, samblaster, samtools, sexdeterrmine, eigenstratdatabasetools, bamtools, jellyfish, vcftools, longranger, stacks, varscan2, snippy, bbmap, bismark, biscuit, hicexplorer, hicup, hicpro, salmon, kallisto, slamdunk, star, hisat2, tophat, bowtie2, bowtie1, snpsplit, odgi, pangolin, kat, leehom, adapterRemoval, clipandmerge, cutadapt, flexbar, kaiju, kraken, malt, trimmomatic, sickle, skewer, sortmerna, biobloomtools, fastq_screen, afterqc, fastp, fastqc, pychopper, pycoqc, minionqc, multivcfanalyzer, clusterflow, bcl2fastq, bclconvert, interop, ivar, flash, seqyclean, optitype
+[2021-12-20 11:33:43,977] multiqc                                            [DEBUG  ]  Using temporary directory for creating report: /data/tmp/tmpx421ws3z
+[2021-12-20 11:33:44,361] multiqc                                            [INFO   ]  Search path : /public/groups/kimlab/exRNA_disease_biomarkers/data/input_data/bioIvt_luad/luad.1.0.30/hg38_star_2.7.9a_2021-12-18-22.16.46-PST_star_out/second_pass_out/Aligned.sortedByCoord.out.bam
+[2021-12-20 11:33:44,361] multiqc                                            [INFO   ]  Search path : /public/groups/kimlab/exRNA_disease_biomarkers/data/input_data/bioIvt_luad/luad.1.0.30/hg38_star_2.7.9a_2021-12-18-22.16.46-PST_star_out/second_pass_out/Log.final.out
+[2021-12-20 11:33:44,361] multiqc                                            [INFO   ]  Search path : /public/groups/kimlab/exRNA_disease_biomarkers/data/input_data/bioIvt_luad/luad.1.0.30/hg38_star_2.7.9a_2021-12-18-22.16.46-PST_star_out/second_pass_out/Log.out
+[2021-12-20 11:33:44,362] multiqc                                            [INFO   ]  Search path : /public/groups/kimlab/exRNA_disease_biomarkers/data/input_data/bioIvt_luad/luad.1.0.30/hg38_star_2.7.9a_2021-12-18-22.16.46-PST_star_out/second_pass_out/Log.progress.out
+[2021-12-20 11:33:44,362] multiqc                                            [INFO   ]  Search path : /public/groups/kimlab/exRNA_disease_biomarkers/data/input_data/bioIvt_luad/luad.1.0.30/hg38_star_2.7.9a_2021-12-18-22.16.46-PST_star_out/second_pass_out/SJ.out.tab
+[2021-12-20 11:33:44,362] multiqc                                            [INFO   ]  Search path : /public/groups/kimlab/exRNA_disease_biomarkers/data/input_data/bioIvt_luad/luad.1.0.30/hg38_star_2.7.9a_2021-12-18-22.16.46-PST_star_out/second_pass_out/_STARgenome
+[2021-12-20 11:33:44,362] multiqc                                            [INFO   ]  Search path : /public/groups/kimlab/exRNA_disease_biomarkers/data/input_data/bioIvt_luad/luad.1.0.30/hg38_star_2.7.9a_2021-12-18-22.16.46-PST_star_out/second_pass_out/_STARtmp
+[2021-12-20 11:33:44,362] multiqc                                            [INFO   ]  Search path : /public/groups/kimlab/exRNA_disease_biomarkers/data/input_data/bioIvt_luad/luad.1.0.30/hg38_star_2.7.9a_2021-12-18-22.16.46-PST_star_out/second_pass_out/Unmapped.out.mate1
+[2021-12-20 11:33:44,362] multiqc                                            [INFO   ]  Search path : /public/groups/kimlab/exRNA_disease_biomarkers/data/input_data/bioIvt_luad/luad.1.0.30/hg38_star_2.7.9a_2021-12-18-22.16.46-PST_star_out/second_pass_out/Unmapped.out.mate2
+[2021-12-20 11:33:44,362] multiqc                                            [INFO   ]  Search path : /public/groups/kimlab/exRNA_disease_biomarkers/data/input_data/bioIvt_luad/luad.2.0.30/hg38_star_2.7.9a_2021-12-18-22.16.46-PST_star_out/second_pass_out/Aligned.sortedByCoord.out.bam
+[2021-12-20 11:33:44,362] multiqc                                            [INFO   ]  Search path : /public/groups/kimlab/exRNA_disease_biomarkers/data/input_data/bioIvt_luad/luad.2.0.30/hg38_star_2.7.9a_2021-12-18-22.16.46-PST_star_out/second_pass_out/Log.final.out
+[2021-12-20 11:33:44,363] multiqc                                            [INFO   ]  Search path : /public/groups/kimlab/exRNA_disease_biomarkers/data/input_data/bioIvt_luad/luad.2.0.30/hg38_star_2.7.9a_2021-12-18-22.16.46-PST_star_out/second_pass_out/Log.out
+[2021-12-20 11:33:44,363] multiqc                                            [INFO   ]  Search path : /public/groups/kimlab/exRNA_disease_biomarkers/data/input_data/bioIvt_luad/luad.2.0.30/hg38_star_2.7.9a_2021-12-18-22.16.46-PST_star_out/second_pass_out/Log.progress.out
+[2021-12-20 11:33:44,363] multiqc                                            [INFO   ]  Search path : /public/groups/kimlab/exRNA_disease_biomarkers/data/input_data/bioIvt_luad/luad.2.0.30/hg38_star_2.7.9a_2021-12-18-22.16.46-PST_star_out/second_pass_out/SJ.out.tab
+[2021-12-20 11:33:44,363] multiqc                                            [INFO   ]  Search path : /public/groups/kimlab/exRNA_disease_biomarkers/data/input_data/bioIvt_luad/luad.2.0.30/hg38_star_2.7.9a_2021-12-18-22.16.46-PST_star_out/second_pass_out/_STARgenome
+[2021-12-20 11:33:44,363] multiqc                                            [INFO   ]  Search path : /public/groups/kimlab/exRNA_disease_biomarkers/data/input_data/bioIvt_luad/luad.2.0.30/hg38_star_2.7.9a_2021-12-18-22.16.46-PST_star_out/second_pass_out/_STARtmp
+[2021-12-20 11:33:44,363] multiqc                                            [INFO   ]  Search path : /public/groups/kimlab/exRNA_disease_biomarkers/data/input_data/bioIvt_luad/luad.2.0.30/hg38_star_2.7.9a_2021-12-18-22.16.46-PST_star_out/second_pass_out/Unmapped.out.mate1
+[2021-12-20 11:33:44,363] multiqc                                            [INFO   ]  Search path : /public/groups/kimlab/exRNA_disease_biomarkers/data/input_data/bioIvt_luad/luad.2.0.30/hg38_star_2.7.9a_2021-12-18-22.16.46-PST_star_out/second_pass_out/Unmapped.out.mate2
+[2021-12-20 11:33:44,363] multiqc                                            [INFO   ]  Search path : /public/groups/kimlab/exRNA_disease_biomarkers/data/input_data/bioIvt_luad/luad.3.0.30/hg38_star_2.7.9a_2021-12-18-22.16.46-PST_star_out/second_pass_out/Aligned.sortedByCoord.out.bam
+[2021-12-20 11:33:44,364] multiqc                                            [INFO   ]  Search path : /public/groups/kimlab/exRNA_disease_biomarkers/data/input_data/bioIvt_luad/luad.3.0.30/hg38_star_2.7.9a_2021-12-18-22.16.46-PST_star_out/second_pass_out/Log.final.out
+[2021-12-20 11:33:44,364] multiqc                                            [INFO   ]  Search path : /public/groups/kimlab/exRNA_disease_biomarkers/data/input_data/bioIvt_luad/luad.3.0.30/hg38_star_2.7.9a_2021-12-18-22.16.46-PST_star_out/second_pass_out/Log.out
+[2021-12-20 11:33:44,364] multiqc                                            [INFO   ]  Search path : /public/groups/kimlab/exRNA_disease_biomarkers/data/input_data/bioIvt_luad/luad.3.0.30/hg38_star_2.7.9a_2021-12-18-22.16.46-PST_star_out/second_pass_out/Log.progress.out
+[2021-12-20 11:33:44,364] multiqc                                            [INFO   ]  Search path : /public/groups/kimlab/exRNA_disease_biomarkers/data/input_data/bioIvt_luad/luad.3.0.30/hg38_star_2.7.9a_2021-12-18-22.16.46-PST_star_out/second_pass_out/SJ.out.tab
+[2021-12-20 11:33:44,364] multiqc                                            [INFO   ]  Search path : /public/groups/kimlab/exRNA_disease_biomarkers/data/input_data/bioIvt_luad/luad.3.0.30/hg38_star_2.7.9a_2021-12-18-22.16.46-PST_star_out/second_pass_out/_STARgenome
+[2021-12-20 11:33:44,364] multiqc                                            [INFO   ]  Search path : /public/groups/kimlab/exRNA_disease_biomarkers/data/input_data/bioIvt_luad/luad.3.0.30/hg38_star_2.7.9a_2021-12-18-22.16.46-PST_star_out/second_pass_out/_STARtmp
+[2021-12-20 11:33:44,364] multiqc                                            [INFO   ]  Search path : /public/groups/kimlab/exRNA_disease_biomarkers/data/input_data/bioIvt_luad/luad.3.0.30/hg38_star_2.7.9a_2021-12-18-22.16.46-PST_star_out/second_pass_out/Unmapped.out.mate1
+[2021-12-20 11:33:44,364] multiqc                                            [INFO   ]  Search path : /public/groups/kimlab/exRNA_disease_biomarkers/data/input_data/bioIvt_luad/luad.3.0.30/hg38_star_2.7.9a_2021-12-18-22.16.46-PST_star_out/second_pass_out/Unmapped.out.mate2
+[2021-12-20 11:33:44,599] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: Aligned.sortedByCoord.out.bam
+[2021-12-20 11:33:44,678] multiqc                                            [DEBUG  ]  File ignored by ccs/v4 because it exceeded search pattern filesize limit: Log.out
+[2021-12-20 11:33:44,689] multiqc                                            [DEBUG  ]  File ignored by hicexplorer because it exceeded search pattern filesize limit: Log.out
+[2021-12-20 11:33:44,690] multiqc                                            [DEBUG  ]  File ignored by nanostat because it exceeded search pattern filesize limit: Log.out
+[2021-12-20 11:33:44,690] multiqc                                            [DEBUG  ]  File ignored by lima/summary because it exceeded search pattern filesize limit: Log.out
+[2021-12-20 11:33:44,710] multiqc                                            [DEBUG  ]  File ignored by longranger/invocation because it exceeded search pattern filesize limit: Log.out
+[2021-12-20 11:33:44,818] multiqc                                            [DEBUG  ]  File ignored by ccs/v4 because it exceeded search pattern filesize limit: Log.progress.out
+[2021-12-20 11:33:44,830] multiqc                                            [DEBUG  ]  File ignored by lima/summary because it exceeded search pattern filesize limit: Log.progress.out
+[2021-12-20 11:33:44,935] multiqc                                            [DEBUG  ]  File ignored by ccs/v4 because it exceeded search pattern filesize limit: SJ.out.tab
+[2021-12-20 11:33:44,958] multiqc                                            [DEBUG  ]  File ignored by hicexplorer because it exceeded search pattern filesize limit: SJ.out.tab
+[2021-12-20 11:33:44,966] multiqc                                            [DEBUG  ]  File ignored by nanostat because it exceeded search pattern filesize limit: SJ.out.tab
+[2021-12-20 11:33:44,966] multiqc                                            [DEBUG  ]  File ignored by lima/summary because it exceeded search pattern filesize limit: SJ.out.tab
+[2021-12-20 11:33:44,999] multiqc                                            [DEBUG  ]  File ignored by vep/vep_html because it exceeded search pattern filesize limit: SJ.out.tab
+[2021-12-20 11:33:44,999] multiqc                                            [DEBUG  ]  File ignored by vep/vep_txt because it exceeded search pattern filesize limit: SJ.out.tab
+[2021-12-20 11:33:44,999] multiqc                                            [DEBUG  ]  File ignored by longranger/invocation because it exceeded search pattern filesize limit: SJ.out.tab
+[2021-12-20 11:33:44,999] multiqc                                            [DEBUG  ]  File ignored by rockhopper because it exceeded search pattern filesize limit: SJ.out.tab
+[2021-12-20 11:33:44,999] multiqc                                            [DEBUG  ]  File ignored by rseqc/bam_stat because it exceeded search pattern filesize limit: SJ.out.tab
+[2021-12-20 11:33:44,999] multiqc                                            [DEBUG  ]  File ignored by rseqc/junction_annotation because it exceeded search pattern filesize limit: SJ.out.tab
+[2021-12-20 11:33:44,999] multiqc                                            [DEBUG  ]  File ignored by rseqc/read_distribution because it exceeded search pattern filesize limit: SJ.out.tab
+[2021-12-20 11:33:45,000] multiqc                                            [DEBUG  ]  File ignored by rseqc/infer_experiment because it exceeded search pattern filesize limit: SJ.out.tab
+[2021-12-20 11:33:45,038] multiqc                                            [DEBUG  ]  File ignored by stacks/sumstats because it exceeded search pattern filesize limit: SJ.out.tab
+[2021-12-20 11:33:47,058] multiqc                                            [DEBUG  ]  File ignored by ccs/v4 because it exceeded search pattern filesize limit: sjdbInfo.txt
+[2021-12-20 11:33:47,067] multiqc                                            [DEBUG  ]  File ignored by hicexplorer because it exceeded search pattern filesize limit: sjdbInfo.txt
+[2021-12-20 11:33:47,068] multiqc                                            [DEBUG  ]  File ignored by nanostat because it exceeded search pattern filesize limit: sjdbInfo.txt
+[2021-12-20 11:33:47,068] multiqc                                            [DEBUG  ]  File ignored by lima/summary because it exceeded search pattern filesize limit: sjdbInfo.txt
+[2021-12-20 11:33:47,118] multiqc                                            [DEBUG  ]  File ignored by vep/vep_html because it exceeded search pattern filesize limit: sjdbInfo.txt
+[2021-12-20 11:33:47,118] multiqc                                            [DEBUG  ]  File ignored by vep/vep_txt because it exceeded search pattern filesize limit: sjdbInfo.txt
+[2021-12-20 11:33:47,118] multiqc                                            [DEBUG  ]  File ignored by longranger/invocation because it exceeded search pattern filesize limit: sjdbInfo.txt
+[2021-12-20 11:33:47,118] multiqc                                            [DEBUG  ]  File ignored by rockhopper because it exceeded search pattern filesize limit: sjdbInfo.txt
+[2021-12-20 11:33:47,118] multiqc                                            [DEBUG  ]  File ignored by rseqc/bam_stat because it exceeded search pattern filesize limit: sjdbInfo.txt
+[2021-12-20 11:33:47,118] multiqc                                            [DEBUG  ]  File ignored by rseqc/junction_annotation because it exceeded search pattern filesize limit: sjdbInfo.txt
+[2021-12-20 11:33:47,118] multiqc                                            [DEBUG  ]  File ignored by rseqc/read_distribution because it exceeded search pattern filesize limit: sjdbInfo.txt
+[2021-12-20 11:33:47,119] multiqc                                            [DEBUG  ]  File ignored by rseqc/infer_experiment because it exceeded search pattern filesize limit: sjdbInfo.txt
+[2021-12-20 11:33:47,155] multiqc                                            [DEBUG  ]  File ignored by stacks/sumstats because it exceeded search pattern filesize limit: sjdbInfo.txt
+[2021-12-20 11:33:49,194] multiqc                                            [DEBUG  ]  File ignored by ccs/v4 because it exceeded search pattern filesize limit: sjdbList.out.tab
+[2021-12-20 11:33:49,214] multiqc                                            [DEBUG  ]  File ignored by hicexplorer because it exceeded search pattern filesize limit: sjdbList.out.tab
+[2021-12-20 11:33:49,215] multiqc                                            [DEBUG  ]  File ignored by nanostat because it exceeded search pattern filesize limit: sjdbList.out.tab
+[2021-12-20 11:33:49,215] multiqc                                            [DEBUG  ]  File ignored by lima/summary because it exceeded search pattern filesize limit: sjdbList.out.tab
+[2021-12-20 11:33:49,248] multiqc                                            [DEBUG  ]  File ignored by vep/vep_html because it exceeded search pattern filesize limit: sjdbList.out.tab
+[2021-12-20 11:33:49,248] multiqc                                            [DEBUG  ]  File ignored by vep/vep_txt because it exceeded search pattern filesize limit: sjdbList.out.tab
+[2021-12-20 11:33:49,248] multiqc                                            [DEBUG  ]  File ignored by longranger/invocation because it exceeded search pattern filesize limit: sjdbList.out.tab
+[2021-12-20 11:33:49,248] multiqc                                            [DEBUG  ]  File ignored by rockhopper because it exceeded search pattern filesize limit: sjdbList.out.tab
+[2021-12-20 11:33:49,248] multiqc                                            [DEBUG  ]  File ignored by rseqc/bam_stat because it exceeded search pattern filesize limit: sjdbList.out.tab
+[2021-12-20 11:33:49,249] multiqc                                            [DEBUG  ]  File ignored by rseqc/junction_annotation because it exceeded search pattern filesize limit: sjdbList.out.tab
+[2021-12-20 11:33:49,249] multiqc                                            [DEBUG  ]  File ignored by rseqc/read_distribution because it exceeded search pattern filesize limit: sjdbList.out.tab
+[2021-12-20 11:33:49,249] multiqc                                            [DEBUG  ]  File ignored by rseqc/infer_experiment because it exceeded search pattern filesize limit: sjdbList.out.tab
+[2021-12-20 11:33:49,285] multiqc                                            [DEBUG  ]  File ignored by stacks/sumstats because it exceeded search pattern filesize limit: sjdbList.out.tab
+[2021-12-20 11:33:51,245] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: Aligned.sortedByCoord.out.bam
+[2021-12-20 11:33:51,268] multiqc                                            [DEBUG  ]  File ignored by ccs/v4 because it exceeded search pattern filesize limit: Log.out
+[2021-12-20 11:33:51,283] multiqc                                            [DEBUG  ]  File ignored by hicexplorer because it exceeded search pattern filesize limit: Log.out
+[2021-12-20 11:33:51,284] multiqc                                            [DEBUG  ]  File ignored by nanostat because it exceeded search pattern filesize limit: Log.out
+[2021-12-20 11:33:51,284] multiqc                                            [DEBUG  ]  File ignored by lima/summary because it exceeded search pattern filesize limit: Log.out
+[2021-12-20 11:33:51,300] multiqc                                            [DEBUG  ]  File ignored by longranger/invocation because it exceeded search pattern filesize limit: Log.out
+[2021-12-20 11:33:51,397] multiqc                                            [DEBUG  ]  File ignored by ccs/v4 because it exceeded search pattern filesize limit: Log.progress.out
+[2021-12-20 11:33:51,407] multiqc                                            [DEBUG  ]  File ignored by lima/summary because it exceeded search pattern filesize limit: Log.progress.out
+[2021-12-20 11:33:51,494] multiqc                                            [DEBUG  ]  File ignored by ccs/v4 because it exceeded search pattern filesize limit: SJ.out.tab
+[2021-12-20 11:33:51,501] multiqc                                            [DEBUG  ]  File ignored by hicexplorer because it exceeded search pattern filesize limit: SJ.out.tab
+[2021-12-20 11:33:51,502] multiqc                                            [DEBUG  ]  File ignored by nanostat because it exceeded search pattern filesize limit: SJ.out.tab
+[2021-12-20 11:33:51,502] multiqc                                            [DEBUG  ]  File ignored by lima/summary because it exceeded search pattern filesize limit: SJ.out.tab
+[2021-12-20 11:33:51,517] multiqc                                            [DEBUG  ]  File ignored by vep/vep_html because it exceeded search pattern filesize limit: SJ.out.tab
+[2021-12-20 11:33:51,517] multiqc                                            [DEBUG  ]  File ignored by vep/vep_txt because it exceeded search pattern filesize limit: SJ.out.tab
+[2021-12-20 11:33:51,517] multiqc                                            [DEBUG  ]  File ignored by longranger/invocation because it exceeded search pattern filesize limit: SJ.out.tab
+[2021-12-20 11:33:51,517] multiqc                                            [DEBUG  ]  File ignored by rockhopper because it exceeded search pattern filesize limit: SJ.out.tab
+[2021-12-20 11:33:51,517] multiqc                                            [DEBUG  ]  File ignored by rseqc/bam_stat because it exceeded search pattern filesize limit: SJ.out.tab
+[2021-12-20 11:33:51,517] multiqc                                            [DEBUG  ]  File ignored by rseqc/junction_annotation because it exceeded search pattern filesize limit: SJ.out.tab
+[2021-12-20 11:33:51,517] multiqc                                            [DEBUG  ]  File ignored by rseqc/read_distribution because it exceeded search pattern filesize limit: SJ.out.tab
+[2021-12-20 11:33:51,517] multiqc                                            [DEBUG  ]  File ignored by rseqc/infer_experiment because it exceeded search pattern filesize limit: SJ.out.tab
+[2021-12-20 11:33:51,560] multiqc                                            [DEBUG  ]  File ignored by stacks/sumstats because it exceeded search pattern filesize limit: SJ.out.tab
+[2021-12-20 11:33:53,741] multiqc                                            [DEBUG  ]  File ignored by ccs/v4 because it exceeded search pattern filesize limit: sjdbInfo.txt
+[2021-12-20 11:33:53,750] multiqc                                            [DEBUG  ]  File ignored by hicexplorer because it exceeded search pattern filesize limit: sjdbInfo.txt
+[2021-12-20 11:33:53,751] multiqc                                            [DEBUG  ]  File ignored by nanostat because it exceeded search pattern filesize limit: sjdbInfo.txt
+[2021-12-20 11:33:53,751] multiqc                                            [DEBUG  ]  File ignored by lima/summary because it exceeded search pattern filesize limit: sjdbInfo.txt
+[2021-12-20 11:33:53,765] multiqc                                            [DEBUG  ]  File ignored by vep/vep_html because it exceeded search pattern filesize limit: sjdbInfo.txt
+[2021-12-20 11:33:53,766] multiqc                                            [DEBUG  ]  File ignored by vep/vep_txt because it exceeded search pattern filesize limit: sjdbInfo.txt
+[2021-12-20 11:33:53,766] multiqc                                            [DEBUG  ]  File ignored by longranger/invocation because it exceeded search pattern filesize limit: sjdbInfo.txt
+[2021-12-20 11:33:53,766] multiqc                                            [DEBUG  ]  File ignored by rockhopper because it exceeded search pattern filesize limit: sjdbInfo.txt
+[2021-12-20 11:33:53,766] multiqc                                            [DEBUG  ]  File ignored by rseqc/bam_stat because it exceeded search pattern filesize limit: sjdbInfo.txt
+[2021-12-20 11:33:53,766] multiqc                                            [DEBUG  ]  File ignored by rseqc/junction_annotation because it exceeded search pattern filesize limit: sjdbInfo.txt
+[2021-12-20 11:33:53,766] multiqc                                            [DEBUG  ]  File ignored by rseqc/read_distribution because it exceeded search pattern filesize limit: sjdbInfo.txt
+[2021-12-20 11:33:53,766] multiqc                                            [DEBUG  ]  File ignored by rseqc/infer_experiment because it exceeded search pattern filesize limit: sjdbInfo.txt
+[2021-12-20 11:33:53,820] multiqc                                            [DEBUG  ]  File ignored by stacks/sumstats because it exceeded search pattern filesize limit: sjdbInfo.txt
+[2021-12-20 11:33:56,621] multiqc                                            [DEBUG  ]  File ignored by ccs/v4 because it exceeded search pattern filesize limit: sjdbList.out.tab
+[2021-12-20 11:33:56,628] multiqc                                            [DEBUG  ]  File ignored by hicexplorer because it exceeded search pattern filesize limit: sjdbList.out.tab
+[2021-12-20 11:33:56,629] multiqc                                            [DEBUG  ]  File ignored by nanostat because it exceeded search pattern filesize limit: sjdbList.out.tab
+[2021-12-20 11:33:56,629] multiqc                                            [DEBUG  ]  File ignored by lima/summary because it exceeded search pattern filesize limit: sjdbList.out.tab
+[2021-12-20 11:33:56,643] multiqc                                            [DEBUG  ]  File ignored by vep/vep_html because it exceeded search pattern filesize limit: sjdbList.out.tab
+[2021-12-20 11:33:56,643] multiqc                                            [DEBUG  ]  File ignored by vep/vep_txt because it exceeded search pattern filesize limit: sjdbList.out.tab
+[2021-12-20 11:33:56,644] multiqc                                            [DEBUG  ]  File ignored by longranger/invocation because it exceeded search pattern filesize limit: sjdbList.out.tab
+[2021-12-20 11:33:56,644] multiqc                                            [DEBUG  ]  File ignored by rockhopper because it exceeded search pattern filesize limit: sjdbList.out.tab
+[2021-12-20 11:33:56,644] multiqc                                            [DEBUG  ]  File ignored by rseqc/bam_stat because it exceeded search pattern filesize limit: sjdbList.out.tab
+[2021-12-20 11:33:56,644] multiqc                                            [DEBUG  ]  File ignored by rseqc/junction_annotation because it exceeded search pattern filesize limit: sjdbList.out.tab
+[2021-12-20 11:33:56,644] multiqc                                            [DEBUG  ]  File ignored by rseqc/read_distribution because it exceeded search pattern filesize limit: sjdbList.out.tab
+[2021-12-20 11:33:56,644] multiqc                                            [DEBUG  ]  File ignored by rseqc/infer_experiment because it exceeded search pattern filesize limit: sjdbList.out.tab
+[2021-12-20 11:33:56,695] multiqc                                            [DEBUG  ]  File ignored by stacks/sumstats because it exceeded search pattern filesize limit: sjdbList.out.tab
+[2021-12-20 11:33:59,401] multiqc                                            [DEBUG  ]  Ignoring file as matched an ignore pattern: Aligned.sortedByCoord.out.bam
+[2021-12-20 11:33:59,445] multiqc                                            [DEBUG  ]  File ignored by ccs/v4 because it exceeded search pattern filesize limit: Log.out
+[2021-12-20 11:33:59,452] multiqc                                            [DEBUG  ]  File ignored by hicexplorer because it exceeded search pattern filesize limit: Log.out
+[2021-12-20 11:33:59,453] multiqc                                            [DEBUG  ]  File ignored by nanostat because it exceeded search pattern filesize limit: Log.out
+[2021-12-20 11:33:59,453] multiqc                                            [DEBUG  ]  File ignored by lima/summary because it exceeded search pattern filesize limit: Log.out
+[2021-12-20 11:33:59,468] multiqc                                            [DEBUG  ]  File ignored by longranger/invocation because it exceeded search pattern filesize limit: Log.out
+[2021-12-20 11:33:59,600] multiqc                                            [DEBUG  ]  File ignored by ccs/v4 because it exceeded search pattern filesize limit: SJ.out.tab
+[2021-12-20 11:33:59,608] multiqc                                            [DEBUG  ]  File ignored by hicexplorer because it exceeded search pattern filesize limit: SJ.out.tab
+[2021-12-20 11:33:59,609] multiqc                                            [DEBUG  ]  File ignored by nanostat because it exceeded search pattern filesize limit: SJ.out.tab
+[2021-12-20 11:33:59,609] multiqc                                            [DEBUG  ]  File ignored by lima/summary because it exceeded search pattern filesize limit: SJ.out.tab
+[2021-12-20 11:33:59,623] multiqc                                            [DEBUG  ]  File ignored by vep/vep_html because it exceeded search pattern filesize limit: SJ.out.tab
+[2021-12-20 11:33:59,623] multiqc                                            [DEBUG  ]  File ignored by vep/vep_txt because it exceeded search pattern filesize limit: SJ.out.tab
+[2021-12-20 11:33:59,624] multiqc                                            [DEBUG  ]  File ignored by longranger/invocation because it exceeded search pattern filesize limit: SJ.out.tab
+[2021-12-20 11:33:59,624] multiqc                                            [DEBUG  ]  File ignored by rockhopper because it exceeded search pattern filesize limit: SJ.out.tab
+[2021-12-20 11:33:59,624] multiqc                                            [DEBUG  ]  File ignored by rseqc/bam_stat because it exceeded search pattern filesize limit: SJ.out.tab
+[2021-12-20 11:33:59,624] multiqc                                            [DEBUG  ]  File ignored by rseqc/junction_annotation because it exceeded search pattern filesize limit: SJ.out.tab
+[2021-12-20 11:33:59,624] multiqc                                            [DEBUG  ]  File ignored by rseqc/read_distribution because it exceeded search pattern filesize limit: SJ.out.tab
+[2021-12-20 11:33:59,624] multiqc                                            [DEBUG  ]  File ignored by rseqc/infer_experiment because it exceeded search pattern filesize limit: SJ.out.tab
+[2021-12-20 11:33:59,660] multiqc                                            [DEBUG  ]  File ignored by stacks/sumstats because it exceeded search pattern filesize limit: SJ.out.tab
+[2021-12-20 11:34:01,624] multiqc                                            [DEBUG  ]  File ignored by ccs/v4 because it exceeded search pattern filesize limit: sjdbInfo.txt
+[2021-12-20 11:34:01,636] multiqc                                            [DEBUG  ]  File ignored by hicexplorer because it exceeded search pattern filesize limit: sjdbInfo.txt
+[2021-12-20 11:34:01,637] multiqc                                            [DEBUG  ]  File ignored by nanostat because it exceeded search pattern filesize limit: sjdbInfo.txt
+[2021-12-20 11:34:01,637] multiqc                                            [DEBUG  ]  File ignored by lima/summary because it exceeded search pattern filesize limit: sjdbInfo.txt
+[2021-12-20 11:34:01,652] multiqc                                            [DEBUG  ]  File ignored by vep/vep_html because it exceeded search pattern filesize limit: sjdbInfo.txt
+[2021-12-20 11:34:01,652] multiqc                                            [DEBUG  ]  File ignored by vep/vep_txt because it exceeded search pattern filesize limit: sjdbInfo.txt
+[2021-12-20 11:34:01,652] multiqc                                            [DEBUG  ]  File ignored by longranger/invocation because it exceeded search pattern filesize limit: sjdbInfo.txt
+[2021-12-20 11:34:01,652] multiqc                                            [DEBUG  ]  File ignored by rockhopper because it exceeded search pattern filesize limit: sjdbInfo.txt
+[2021-12-20 11:34:01,653] multiqc                                            [DEBUG  ]  File ignored by rseqc/bam_stat because it exceeded search pattern filesize limit: sjdbInfo.txt
+[2021-12-20 11:34:01,653] multiqc                                            [DEBUG  ]  File ignored by rseqc/junction_annotation because it exceeded search pattern filesize limit: sjdbInfo.txt
+[2021-12-20 11:34:01,653] multiqc                                            [DEBUG  ]  File ignored by rseqc/read_distribution because it exceeded search pattern filesize limit: sjdbInfo.txt
+[2021-12-20 11:34:01,653] multiqc                                            [DEBUG  ]  File ignored by rseqc/infer_experiment because it exceeded search pattern filesize limit: sjdbInfo.txt
+[2021-12-20 11:34:01,714] multiqc                                            [DEBUG  ]  File ignored by stacks/sumstats because it exceeded search pattern filesize limit: sjdbInfo.txt
+[2021-12-20 11:34:04,996] multiqc                                            [DEBUG  ]  File ignored by ccs/v4 because it exceeded search pattern filesize limit: sjdbList.out.tab
+[2021-12-20 11:34:05,004] multiqc                                            [DEBUG  ]  File ignored by hicexplorer because it exceeded search pattern filesize limit: sjdbList.out.tab
+[2021-12-20 11:34:05,005] multiqc                                            [DEBUG  ]  File ignored by nanostat because it exceeded search pattern filesize limit: sjdbList.out.tab
+[2021-12-20 11:34:05,005] multiqc                                            [DEBUG  ]  File ignored by lima/summary because it exceeded search pattern filesize limit: sjdbList.out.tab
+[2021-12-20 11:34:05,020] multiqc                                            [DEBUG  ]  File ignored by vep/vep_html because it exceeded search pattern filesize limit: sjdbList.out.tab
+[2021-12-20 11:34:05,020] multiqc                                            [DEBUG  ]  File ignored by vep/vep_txt because it exceeded search pattern filesize limit: sjdbList.out.tab
+[2021-12-20 11:34:05,020] multiqc                                            [DEBUG  ]  File ignored by longranger/invocation because it exceeded search pattern filesize limit: sjdbList.out.tab
+[2021-12-20 11:34:05,020] multiqc                                            [DEBUG  ]  File ignored by rockhopper because it exceeded search pattern filesize limit: sjdbList.out.tab
+[2021-12-20 11:34:05,020] multiqc                                            [DEBUG  ]  File ignored by rseqc/bam_stat because it exceeded search pattern filesize limit: sjdbList.out.tab
+[2021-12-20 11:34:05,020] multiqc                                            [DEBUG  ]  File ignored by rseqc/junction_annotation because it exceeded search pattern filesize limit: sjdbList.out.tab
+[2021-12-20 11:34:05,021] multiqc                                            [DEBUG  ]  File ignored by rseqc/read_distribution because it exceeded search pattern filesize limit: sjdbList.out.tab
+[2021-12-20 11:34:05,021] multiqc                                            [DEBUG  ]  File ignored by rseqc/infer_experiment because it exceeded search pattern filesize limit: sjdbList.out.tab
+[2021-12-20 11:34:05,080] multiqc                                            [DEBUG  ]  File ignored by stacks/sumstats because it exceeded search pattern filesize limit: sjdbList.out.tab
+[2021-12-20 11:34:17,096] multiqc.plots.bargraph                             [DEBUG  ]  Using matplotlib version 3.5.1
+[2021-12-20 11:34:17,098] multiqc.plots.linegraph                            [DEBUG  ]  Using matplotlib version 3.5.1
+[2021-12-20 11:34:17,101] multiqc                                            [DEBUG  ]  No samples found: custom_content
+[2021-12-20 11:34:17,135] multiqc                                            [DEBUG  ]  No samples found: ccs
+[2021-12-20 11:34:17,165] multiqc                                            [DEBUG  ]  No samples found: ngsderive
+[2021-12-20 11:34:17,203] multiqc                                            [DEBUG  ]  No samples found: purple
+[2021-12-20 11:34:17,228] multiqc                                            [DEBUG  ]  No samples found: conpair
+[2021-12-20 11:34:17,273] multiqc                                            [DEBUG  ]  No samples found: lima
+[2021-12-20 11:34:17,297] multiqc                                            [DEBUG  ]  No samples found: peddy
+[2021-12-20 11:34:17,343] multiqc                                            [DEBUG  ]  No samples found: somalier
+[2021-12-20 11:34:17,369] multiqc                                            [DEBUG  ]  No samples found: methylQA
+[2021-12-20 11:34:17,413] multiqc.modules.mosdepth.mosdepth                  [DEBUG  ]  include_contigs: []
+[2021-12-20 11:34:17,414] multiqc.modules.mosdepth.mosdepth                  [DEBUG  ]  exclude_contigs: []
+[2021-12-20 11:34:17,414] multiqc                                            [DEBUG  ]  No samples found: mosdepth
+[2021-12-20 11:34:17,463] multiqc                                            [DEBUG  ]  No samples found: phantompeakqualtools
+[2021-12-20 11:34:17,470] multiqc                                            [DEBUG  ]  No samples found: qualimap
+[2021-12-20 11:34:17,494] multiqc                                            [DEBUG  ]  No samples found: preseq
+[2021-12-20 11:34:17,535] multiqc                                            [DEBUG  ]  No samples found: quast
+[2021-12-20 11:34:17,560] multiqc                                            [DEBUG  ]  No samples found: qorts
+[2021-12-20 11:34:17,571] multiqc                                            [DEBUG  ]  No samples found: rna_seqc
+[2021-12-20 11:34:17,581] multiqc                                            [DEBUG  ]  No samples found: rockhopper
+[2021-12-20 11:34:17,619] multiqc                                            [DEBUG  ]  No samples found: rsem
+[2021-12-20 11:34:17,746] multiqc                                            [DEBUG  ]  No samples found: rseqc
+[2021-12-20 11:34:17,756] multiqc                                            [DEBUG  ]  No samples found: busco
+[2021-12-20 11:34:17,766] multiqc                                            [DEBUG  ]  No samples found: bustools
+[2021-12-20 11:34:17,792] multiqc                                            [DEBUG  ]  No samples found: goleft_indexcov
+[2021-12-20 11:34:17,827] multiqc                                            [DEBUG  ]  No samples found: gffcompare
+[2021-12-20 11:34:17,839] multiqc                                            [DEBUG  ]  No samples found: disambiguate
+[2021-12-20 11:34:17,933] multiqc                                            [DEBUG  ]  No samples found: supernova
+[2021-12-20 11:34:18,029] multiqc                                            [DEBUG  ]  No samples found: deeptools
+[2021-12-20 11:34:18,053] multiqc                                            [DEBUG  ]  No samples found: sargasso
+[2021-12-20 11:34:18,080] multiqc                                            [DEBUG  ]  No samples found: verifybamid
+[2021-12-20 11:34:18,120] multiqc                                            [DEBUG  ]  No samples found: mirtrace
+[2021-12-20 11:34:18,130] multiqc                                            [DEBUG  ]  No samples found: happy
+[2021-12-20 11:34:18,141] multiqc                                            [DEBUG  ]  No samples found: mirtop
+[2021-12-20 11:34:18,154] multiqc                                            [DEBUG  ]  No samples found: sambamba
+[2021-12-20 11:34:18,217] multiqc                                            [DEBUG  ]  No samples found: homer
+[2021-12-20 11:34:18,244] multiqc                                            [DEBUG  ]  No samples found: hops
+[2021-12-20 11:34:18,255] multiqc                                            [DEBUG  ]  No samples found: macs2
+[2021-12-20 11:34:18,319] multiqc                                            [DEBUG  ]  No samples found: theta2
+[2021-12-20 11:34:18,331] multiqc                                            [DEBUG  ]  No samples found: snpeff
+[2021-12-20 11:34:18,366] multiqc                                            [DEBUG  ]  No samples found: gatk
+[2021-12-20 11:34:18,412] multiqc                                            [DEBUG  ]  No samples found: htseq
+[2021-12-20 11:34:18,424] multiqc                                            [DEBUG  ]  No samples found: bcftools
+[2021-12-20 11:34:18,454] multiqc                                            [DEBUG  ]  No samples found: featureCounts
+[2021-12-20 11:34:18,544] multiqc                                            [DEBUG  ]  No samples found: fgbio
+[2021-12-20 11:34:18,620] multiqc                                            [DEBUG  ]  No samples found: dragen
+[2021-12-20 11:34:18,649] multiqc                                            [DEBUG  ]  No samples found: dedup
+[2021-12-20 11:34:18,716] multiqc                                            [DEBUG  ]  No samples found: damageprofiler
+[2021-12-20 11:34:18,844] multiqc                                            [DEBUG  ]  No samples found: biobambam2
+[2021-12-20 11:34:18,876] multiqc                                            [DEBUG  ]  No samples found: jcvi
+[2021-12-20 11:34:18,912] multiqc                                            [DEBUG  ]  No samples found: mtnucratio
+[2021-12-20 11:34:18,918] multiqc                                            [DEBUG  ]  No samples found: picard
+[2021-12-20 11:34:18,954] multiqc                                            [DEBUG  ]  No samples found: vep
+[2021-12-20 11:34:19,003] multiqc                                            [DEBUG  ]  No samples found: sentieon
+[2021-12-20 11:34:19,024] multiqc                                            [DEBUG  ]  No samples found: prokka
+[2021-12-20 11:34:19,073] multiqc                                            [DEBUG  ]  No samples found: qc3C
+[2021-12-20 11:34:19,208] multiqc                                            [DEBUG  ]  No samples found: nanostat
+[2021-12-20 11:34:19,255] multiqc                                            [DEBUG  ]  No samples found: samblaster
+[2021-12-20 11:34:19,280] multiqc                                            [DEBUG  ]  No samples found: samtools
+[2021-12-20 11:34:19,291] multiqc                                            [DEBUG  ]  No samples found: sexdeterrmine
+[2021-12-20 11:34:19,301] multiqc                                            [DEBUG  ]  No samples found: eigenstratdatabasetools
+[2021-12-20 11:34:19,330] multiqc                                            [DEBUG  ]  No samples found: bamtools
+[2021-12-20 11:34:19,361] multiqc                                            [DEBUG  ]  No samples found: jellyfish
+[2021-12-20 11:34:19,383] multiqc                                            [DEBUG  ]  No samples found: vcftools
+[2021-12-20 11:34:19,393] multiqc                                            [DEBUG  ]  No samples found: longranger
+[2021-12-20 11:34:19,404] multiqc                                            [DEBUG  ]  No samples found: stacks
+[2021-12-20 11:34:19,430] multiqc                                            [DEBUG  ]  No samples found: varscan2
+[2021-12-20 11:34:19,460] multiqc                                            [DEBUG  ]  No samples found: snippy
+[2021-12-20 11:34:19,607] multiqc                                            [DEBUG  ]  No samples found: bbmap
+[2021-12-20 11:34:19,620] multiqc                                            [DEBUG  ]  No samples found: bismark
+[2021-12-20 11:34:19,645] multiqc                                            [DEBUG  ]  No samples found: biscuit
+[2021-12-20 11:34:19,673] multiqc                                            [DEBUG  ]  No samples found: hicexplorer
+[2021-12-20 11:34:19,722] multiqc                                            [DEBUG  ]  No samples found: hicup
+[2021-12-20 11:34:19,750] multiqc                                            [DEBUG  ]  No samples found: hicpro
+[2021-12-20 11:34:19,806] multiqc                                            [DEBUG  ]  No samples found: salmon
+[2021-12-20 11:34:19,818] multiqc                                            [DEBUG  ]  No samples found: kallisto
+[2021-12-20 11:34:19,829] multiqc                                            [DEBUG  ]  No samples found: slamdunk
+[2021-12-20 11:34:19,861] multiqc.modules.star.star                          [DEBUG  ]  Duplicate sample name found! Overwriting: second_pass_out
+[2021-12-20 11:34:19,862] multiqc.modules.star.star                          [DEBUG  ]  Duplicate sample name found! Overwriting: second_pass_out
+[2021-12-20 11:34:19,862] multiqc.modules.star.star                          [INFO   ]  Found 1 reports
+[2021-12-20 11:34:19,905] multiqc                                            [DEBUG  ]  No samples found: hisat2
+[2021-12-20 11:34:19,920] multiqc                                            [DEBUG  ]  No samples found: tophat
+[2021-12-20 11:34:19,947] multiqc                                            [DEBUG  ]  No samples found: bowtie2
+[2021-12-20 11:34:19,989] multiqc                                            [DEBUG  ]  No samples found: bowtie1
+[2021-12-20 11:34:20,040] multiqc                                            [DEBUG  ]  No samples found: snpsplit
+[2021-12-20 11:34:20,057] multiqc                                            [DEBUG  ]  No samples found: odgi
+[2021-12-20 11:34:20,069] multiqc                                            [DEBUG  ]  No samples found: pangolin
+[2021-12-20 11:34:20,115] multiqc                                            [DEBUG  ]  No samples found: kat
+[2021-12-20 11:34:20,165] multiqc                                            [DEBUG  ]  No samples found: leehom
+[2021-12-20 11:34:20,237] multiqc                                            [DEBUG  ]  No samples found: adapterRemoval
+[2021-12-20 11:34:20,264] multiqc                                            [DEBUG  ]  No samples found: clipandmerge
+[2021-12-20 11:34:20,277] multiqc                                            [DEBUG  ]  No samples found: cutadapt
+[2021-12-20 11:34:20,309] multiqc                                            [DEBUG  ]  No samples found: flexbar
+[2021-12-20 11:34:20,338] multiqc                                            [DEBUG  ]  No samples found: kaiju
+[2021-12-20 11:34:20,350] multiqc                                            [DEBUG  ]  No samples found: kraken
+[2021-12-20 11:34:20,376] multiqc                                            [DEBUG  ]  No samples found: malt
+[2021-12-20 11:34:20,418] multiqc                                            [DEBUG  ]  No samples found: trimmomatic
+[2021-12-20 11:34:20,454] multiqc                                            [DEBUG  ]  No samples found: sickle
+[2021-12-20 11:34:20,476] multiqc                                            [DEBUG  ]  No samples found: skewer
+[2021-12-20 11:34:20,488] multiqc                                            [DEBUG  ]  No samples found: sortmerna
+[2021-12-20 11:34:20,542] multiqc                                            [DEBUG  ]  No samples found: biobloomtools
+[2021-12-20 11:34:20,567] multiqc                                            [DEBUG  ]  No samples found: fastq_screen
+[2021-12-20 11:34:20,607] multiqc                                            [DEBUG  ]  No samples found: afterqc
+[2021-12-20 11:34:20,626] multiqc                                            [DEBUG  ]  No samples found: fastp
+[2021-12-20 11:34:20,659] multiqc                                            [DEBUG  ]  No samples found: fastqc
+[2021-12-20 11:34:20,688] multiqc                                            [DEBUG  ]  No samples found: pychopper
+[2021-12-20 11:34:20,699] multiqc                                            [DEBUG  ]  No samples found: pycoqc
+[2021-12-20 11:34:20,711] multiqc                                            [DEBUG  ]  No samples found: minionqc
+[2021-12-20 11:34:20,729] multiqc                                            [DEBUG  ]  No samples found: multivcfanalyzer
+[2021-12-20 11:34:20,773] multiqc                                            [DEBUG  ]  No samples found: clusterflow
+[2021-12-20 11:34:20,785] multiqc                                            [DEBUG  ]  No samples found: bcl2fastq
+[2021-12-20 11:34:20,838] multiqc                                            [DEBUG  ]  No samples found: bclconvert
+[2021-12-20 11:34:20,876] multiqc                                            [DEBUG  ]  No samples found: interop
+[2021-12-20 11:34:20,898] multiqc                                            [DEBUG  ]  No samples found: ivar
+[2021-12-20 11:34:20,927] multiqc                                            [DEBUG  ]  No samples found: flash
+[2021-12-20 11:34:20,978] multiqc                                            [DEBUG  ]  No samples found: seqyclean
+[2021-12-20 11:34:20,990] multiqc                                            [DEBUG  ]  No samples found: optitype
+[2021-12-20 11:34:20,994] multiqc                                            [INFO   ]  Compressing plot data
+[2021-12-20 11:34:21,000] multiqc                                            [INFO   ]  Report      : ../data/output_data/rna_qc/star/multiqc.star.bioIvt_luad.2021-12-20-11.33.37-PST.html
+[2021-12-20 11:34:21,000] multiqc                                            [INFO   ]  Data        : ../data/output_data/rna_qc/star/multiqc.star.bioIvt_luad.2021-12-20-11.33.37-PST_data
+[2021-12-20 11:34:21,000] multiqc                                            [DEBUG  ]  Moving data file from '/data/tmp/tmpx421ws3z/multiqc_data' to '/public/groups/kimlab/exRNA_disease_biomarkers/data/output_data/rna_qc/star/multiqc.star.bioIvt_luad.2021-12-20-11.33.37-PST_data'
+[2021-12-20 11:34:21,809] multiqc                                            [INFO   ]  MultiQC complete

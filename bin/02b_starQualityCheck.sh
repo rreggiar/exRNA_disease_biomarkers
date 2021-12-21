@@ -21,4 +21,4 @@ cmdList="$@"
 
 echo "cmd: "$scriptName" "$cmdList""
 
-multiqc "$sampleDir"/*/hg38_star_2.7.9a_*_star_out/second_pass_out/* --filename multiqc.star."$(basename "$sampleDir")"."${dateStamp}" -o "$outputDir"
+multiqc "$sampleDir"/*/hg38_star_2.7.9a_*_star_out/*_second_pass_out/* --filename multiqc.star."$(basename "$sampleDir")"."${dateStamp}" -o "$outputDir"

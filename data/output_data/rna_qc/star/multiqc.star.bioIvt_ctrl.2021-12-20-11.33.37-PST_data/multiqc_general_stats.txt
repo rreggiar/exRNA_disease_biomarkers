@@ -1,2 +1,0 @@
-Sample	STAR_mqc-generalstats-star-uniquely_mapped_percent	STAR_mqc-generalstats-star-uniquely_mapped
-second_pass_out	79.31	2023862.0

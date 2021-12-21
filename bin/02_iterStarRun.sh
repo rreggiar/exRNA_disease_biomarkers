@@ -27,8 +27,8 @@ for inputDir in "$sampleDir"/*; do
 
 	./02a_starRun.sh "$inputDir" "$twoPass" "$edit" "$starGenome" "$dateStamp"
 
-	nohup ./02b_starQualityCheck.sh "${inputDir}" "/public/groups/kimlab/exRNA_disease_biomarkers/data/output_data/rna_qc/star/" \
-		2>&1 > $projectDir/tmp/logs/$(basename $inputDir)_star_qc_log.txt &
+	#nohup ./02b_starQualityCheck.sh "${inputDir}" "/public/groups/kimlab/exRNA_disease_biomarkers/data/output_data/rna_qc/star/" \
+	#	2>&1 > $projectDir/tmp/logs/$(basename $inputDir)_star_qc_log.txt &
 
 	exitStatus=$?
 	if [ $? -ne 0 ]; then

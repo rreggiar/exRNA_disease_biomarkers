@@ -16,14 +16,14 @@ for inputDataPath in $projectDir/data/input_data/*; do
 	#2pass="$3"
 	#edit="$4"
 
-	nohup ./02_iterStarRun.sh $inputDataPath \
-		$starGenome \
-		$twoPass \
-		$edit \
-		2>&1 > $projectDir/tmp/logs/$(basename $inputDataPath)_star_align_log.txt &
+	#nohup ./02_iterStarRun.sh $inputDataPath \
+	#	$starGenome \
+	#	$twoPass \
+	#	$edit \
+	#	2>&1 > $projectDir/tmp/logs/$(basename $inputDataPath)_star_align_log.txt &
 
-	#nohup ./02b_starQualityCheck.sh "${inputDataPath}" "/public/groups/kimlab/exRNA_disease_biomarkers/data/output_data/rna_qc/star/" \
-	#	2>&1 > $projectDir/tmp/logs/$(basename $inputDataPath)_star_qc_log.txt &
+	nohup ./02b_starQualityCheck.sh "${inputDataPath}" "/public/groups/kimlab/exRNA_disease_biomarkers/data/output_data/rna_qc/star/" \
+		2>&1 > $projectDir/tmp/logs/$(basename $inputDataPath)_star_qc_log.txt &
 
 done
 

@@ -31,6 +31,9 @@ twoPassArg="$2"
 editArg="$3"
 starGenome="$4"
 
+echo "twoPass: $twoPass"
+echo "edit: $editArg"
+
 if [[ `ls -d "$inputDir"/$(basename "$starGenome")_*_star_out` ]]; then
 	firstPassDir=`ls -d "$inputDir"/$(basename "$starGenome")_*_star_out`
 else

@@ -30,7 +30,10 @@ nohup STAR --runThreadN 24 --runMode genomeGenerate \
 	2>&1 > tmp/logs/STAR_genomeGenerate_2.7.9a_log.txt &
 ```  
 
-Running *STAR*: [code](bin/02_wrapper.sh) 
+Running *STAR*: [code](bin/02_wrapper.sh)  
 
-
+Now also have *STAR* qc : [code](bin/02_wrapper_qc.sh)  
+```
+./02_wrapper_qc.sh '/public/groups/kimlab/exRNA_disease_biomarkers/'
+```
 

@@ -15,7 +15,7 @@ sampleDir="$1"
 starGenome="$2"
 twoPass="$3"
 edit="$4"
-projectDir="/public/groups/kimlab/exRNA_disease_biomarkers"
+projectDir=$5 # "/public/groups/kimlab/exRNA_disease_biomarkers"
 
 dateStamp="$(bash helper_dateStamp.sh)"
 

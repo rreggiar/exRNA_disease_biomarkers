@@ -2,9 +2,9 @@
 
 # array of jobs to execute the entire project's rna quant and qc workload
 
-projectDir=$1 # /public/groups/kimlab/exRNA_disease_biomarkers/
-twoPass="2pass=T"
-edit="edit=T"
+projectDir=${1:-'${PWD/*}'} # /public/groups/kimlab/exRNA_disease_biomarkers/
+twoPass=${2:-'2pass=F'}
+edit=${3:-'edit=F'}
 
 for inputDataPath in $projectDir/data/input_data/*; do
 	
@@ -20,10 +20,11 @@ for inputDataPath in $projectDir/data/input_data/*; do
 		$starGenome \
 		$twoPass \
 		$edit \
+		$projectDir \
 		2>&1 > $projectDir/tmp/logs/$(basename $inputDataPath)_star_align_log.txt &
 
-	nohup ./02b_starQualityCheck.sh "${inputDataPath}" "/public/groups/kimlab/exRNA_disease_biomarkers/data/output_data/rna_qc/star/" \
-		2>&1 > $projectDir/tmp/logs/$(basename $inputDataPath)_star_qc_log.txt &
+	#nohup ./02b_starQualityCheck.sh "${inputDataPath}" "/public/groups/kimlab/exRNA_disease_biomarkers/data/output_data/rna_qc/star/" \
+	#	2>&1 > $projectDir/tmp/logs/$(basename $inputDataPath)_star_qc_log.txt &
 
 done
 

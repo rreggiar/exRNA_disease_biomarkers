@@ -1,2 +1,2 @@
 # exclude from linguist calculation
-data/output_data/rna_qc/* linguist-vendored
+data/output_data/rna_qc/*/* linguist-vendored

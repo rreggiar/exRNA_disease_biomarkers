@@ -43,3 +43,6 @@ data/input_data/
 
 # tmp data (too big)
 tmp/
+
+# nanopore uncompressed output
+data/output_data/nanopore/gencode38/

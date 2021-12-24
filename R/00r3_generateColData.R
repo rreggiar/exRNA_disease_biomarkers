@@ -44,7 +44,8 @@ parse.input <- function(data_path, output_name, gencode_ver) {
 
 				    if(quant_name_split[length(quant_name_split)] %in% c('intra', 'exo')) {
 					    
-					    name_list <- lst('names' = quant_name,
+					    name_list <- lst('files' = quant_path,
+							     'names' = quant_name,
 							     'condition' = quant_name_split[1], 
 							     'rep' = quant_name_split[2],
 							     'context' = quant_name_split[3],
@@ -53,14 +54,15 @@ parse.input <- function(data_path, output_name, gencode_ver) {
 
 				    } else {
 					    
-					    name_list <- lst('names' = quant_name,
+					    name_list <- lst('files' = quant_path, 
+							     'names' = quant_name,
 							     'condition' = quant_name_split[1], 
 							     'rep' = quant_name_split[2],
 							     'context' = 'exo',
 							     'input_vol' = quant_name_split[3])
 				    }
 
-		     }) %>% bind_rows(.id = 'files')
+		     }) %>% bind_rows()
 	}) %>% bind_rows(.id = 'project') %>% mutate(project = basename(project))  -> sample_df
 
 	sample_df
@@ -70,7 +72,7 @@ parse.input <- function(data_path, output_name, gencode_ver) {
 
 build.tximeta.obj <- function(output_name, sample_df, tx2gene, project, outpath) {
 
-	outpath <- paste0(outpath, '/', output_name, '_quant')
+	outpath <- paste0(outpath, output_name, '_quant')
 
 	print('sending output to: ')
 	print(outpath)
@@ -79,36 +81,42 @@ build.tximeta.obj <- function(output_name, sample_df, tx2gene, project, outpath)
 
 	sample_df <- sample_df %>% select(-project)
 
+	print('example out: ')
+
 	if (output_name == 'ucsc.rmsk.salmon') {
 		metaSkip = TRUE
+
 		print('import data with tximeta')
 		txi <- tximeta::tximeta(coldata = sample_df, type = 'salmon', skipMeta=metaSkip)
 
-
 		print('save tx h5')
-		saveHDF5SummarizedExperiment(txi, dir=paste0(outpath,paste0(project, '_', output_name, '_h5_se')) , replace=TRUE)
+		saveHDF5SummarizedExperiment(txi, dir=file.path(outpath,paste0(project, '_', output_name, '_h5_se')) , replace=TRUE)
 
 		gxi <- tximeta::tximeta(coldata = sample_df, 
-			type = 'salmon', 
-			skipMeta=metaSkip, 
-			txOut=FALSE, 
-			tx2gene=tx2gene)
+					type = 'salmon', 
+					skipMeta=metaSkip, 
+					txOut=FALSE, 
+					tx2gene=tx2gene)
 
 		print('save gene h5')
-		saveHDF5SummarizedExperiment(gxi, dir=paste0(outpath,paste0(project, '_', output_name, '_gene_h5_se')), replace=TRUE)
+		saveHDF5SummarizedExperiment(gxi, dir=file.path(outpath,paste0(project, '_', output_name, '_gene_h5_se')), replace=TRUE)
 
 
 	} else {
 		metaSkip = FALSE
+
+		print(file.path(outpath,paste0(project, '_',output_name, '_h5_se')))
+
 		print('import data with tximeta')
 		txi <- tximeta::tximeta(coldata = sample_df, type = 'salmon', skipMeta=metaSkip)
+
 		print('save tx h5')
-		saveHDF5SummarizedExperiment(txi, dir=paste0(outpath,paste0(project, '_',output_name, '_h5_se')) , replace=TRUE)
+		saveHDF5SummarizedExperiment(txi, dir=file.path(outpath,paste0(project, '_',output_name, '_h5_se')) , replace=TRUE)
 
 		gxi <- summarizeToGene(txi)
 
 		print('save gene h5')
-		saveHDF5SummarizedExperiment(gxi, dir=paste0(outpath,paste0(project, '_', output_name, '_gene_h5_se')), replace=TRUE)
+		saveHDF5SummarizedExperiment(gxi, dir=file.path(outpath,paste0(project, '_', output_name, '_gene_h5_se')), replace=TRUE)
 
 		if (!is.null(txome_tsv)){
 			cg <- read.delim(txome_tsv, header = TRUE, as.is = TRUE)
@@ -117,7 +125,7 @@ build.tximeta.obj <- function(output_name, sample_df, tx2gene, project, outpath)
 			split.gxi <- tximeta::splitSE(gxi, cg, assayName = 'counts')
 		
 			saveHDF5SummarizedExperiment(split.gxi, 
-				dir=paste0(project, '_', outpath,paste0(output_name, '_gene_split_h5_se')), 
+				dir=file.path(outpath,paste0(project, '_', output_name, '_gene_split_h5_se')), 
 				replace=TRUE)
 		}
 
@@ -151,9 +159,9 @@ main <- function() {
 	
 	print('build tximeta object')
 	
-	lapply(unique(sample_df$project), function(project) {
+	lapply(unique(sample_df$project), function(this_project) {
 
-		build.tximeta.obj(output_name, sample_df %>% filter(project == project), tx2gene, project, outpath)
+		build.tximeta.obj(output_name, sample_df %>% filter(project == this_project), tx2gene, this_project, outpath)
 	}) 
 	
 	#build.tximeta.obj(output_name, sample_df, tx2gene)

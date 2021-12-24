@@ -44,7 +44,8 @@ parse.input <- function(data_path, output_name, gencode_ver) {
 
 				    if(quant_name_split[length(quant_name_split)] %in% c('intra', 'exo')) {
 					    
-					    name_list <- lst('condition' = quant_name_split[1], 
+					    name_list <- lst('names' = quant_name,
+							     'condition' = quant_name_split[1], 
 							     'rep' = quant_name_split[2],
 							     'context' = quant_name_split[3],
 							     'input_vol' = NA)
@@ -52,13 +53,14 @@ parse.input <- function(data_path, output_name, gencode_ver) {
 
 				    } else {
 					    
-					    name_list <- lst('condition' = quant_name_split[1], 
+					    name_list <- lst('names' = quant_name,
+							     'condition' = quant_name_split[1], 
 							     'rep' = quant_name_split[2],
 							     'context' = 'exo',
 							     'input_vol' = quant_name_split[3])
 				    }
 
-		     }) %>% bind_rows(.id = 'path')
+		     }) %>% bind_rows(.id = 'files')
 	}) %>% bind_rows(.id = 'project') %>% mutate(project = basename(project))  -> sample_df
 
 	sample_df
@@ -70,7 +72,12 @@ build.tximeta.obj <- function(output_name, sample_df, tx2gene, project, outpath)
 
 	outpath <- paste0(outpath, '/', output_name, '_quant')
 
-	dir.create(output)
+	print('sending output to: ')
+	print(outpath)
+
+	if(!dir.exists(outpath)) {dir.create(outpath)}
+
+	sample_df <- sample_df %>% select(-project)
 
 	if (output_name == 'ucsc.rmsk.salmon') {
 		metaSkip = TRUE

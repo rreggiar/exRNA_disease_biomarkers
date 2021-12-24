@@ -30,8 +30,6 @@ parse.input <- function(data_path, output_name, gencode_ver) {
 
 	imap(output_files, function(path, path_name) {
 
-		     print(path)
-
 		     list.files(path, full.names = T) -> quant_paths
 
 		     names(quant_paths) <- quant_paths
@@ -130,6 +128,7 @@ main <- function() {
 
 	print('parse input dir')
 	sample_df <- parse.input(data_path, output_name, gencode_ver)
+	print(head(sample_df))
 
 	print('load tximeta')
 	tximeta::loadLinkedTxome(txome_path)
@@ -140,7 +139,7 @@ main <- function() {
 	print(head(tx2gene))
 	
 	print('build tximeta object')
-	#build.tximeta.obj()
+	build.tximeta.obj(output_name)
 
 }
 

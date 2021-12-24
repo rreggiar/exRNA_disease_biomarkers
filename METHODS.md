@@ -41,3 +41,15 @@ Building the R dependencies from bioconductor:
 ```
 R -e 'install.packages("BiocManager") & BiocManager::install("rtracklayer") & BiocManager::install("tximeta")'
 ```
+
+Building *salmon* quant outputs: [code](R/00r3_generateColData.R):  
+```
+echo /public/groups/kimlab/exRNA_disease_biomarkers/data/input_data \
+	/public/groups/kimlab/genomes.annotations/gencode.38/gencode.v38.salmon.json \
+	'salmon' \
+	NULL \
+	/public/groups/kimlab/exRNA_disease_biomarkers/data/output_data/ \
+	'38' \
+	| Rscript 00r3_generateColData.R
+```
+

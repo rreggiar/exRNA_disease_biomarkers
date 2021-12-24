@@ -42,7 +42,7 @@ parse.input <- function(data_path, output_name, gencode_ver) {
 
 				    quant_name_split <- str_split(quant_name, '[.]', n = 3)[[1]]
 
-				    if(quant_name_split[length(quant_name_split)] == 'intra') {
+				    if(quant_name_split[length(quant_name_split)] %in% c('intra', 'exo')) {
 					    
 					    name_list <- lst('condition' = quant_name_split[1], 
 							     'rep' = quant_name_split[2],
@@ -66,18 +66,18 @@ parse.input <- function(data_path, output_name, gencode_ver) {
 
 
 
-build.tximeta.obj <- function() {
+build.tximeta.obj <- function(output_name, sample_df, tx2gene) {
 
 	if (output_name == 'ucsc.rmsk.salmon') {
 		metaSkip = TRUE
 		print('import data with tximeta')
-		txi <- tximeta::tximeta(coldata = sample.info.df, type = 'salmon', skipMeta=metaSkip)
+		txi <- tximeta::tximeta(coldata = sample_df, type = 'salmon', skipMeta=metaSkip)
 
 
 		print('save tx h5')
 		saveHDF5SummarizedExperiment(txi, dir=paste0(outpath,paste0(output_name, '_h5_se')) , replace=TRUE)
 
-		gxi <- tximeta::tximeta(coldata = sample.info.df, 
+		gxi <- tximeta::tximeta(coldata = sample_df, 
 			type = 'salmon', 
 			skipMeta=metaSkip, 
 			txOut=FALSE, 
@@ -90,7 +90,7 @@ build.tximeta.obj <- function() {
 	} else {
 		metaSkip = FALSE
 		print('import data with tximeta')
-		txi <- tximeta::tximeta(coldata = sample.info.df, type = 'salmon', skipMeta=metaSkip)
+		txi <- tximeta::tximeta(coldata = sample_df, type = 'salmon', skipMeta=metaSkip)
 		print('save tx h5')
 		saveHDF5SummarizedExperiment(txi, dir=paste0(outpath,paste0(output_name, '_h5_se')) , replace=TRUE)
 
@@ -139,7 +139,7 @@ main <- function() {
 	print(head(tx2gene))
 	
 	print('build tximeta object')
-	build.tximeta.obj(output_name)
+	build.tximeta.obj(output_name, sample_df, tx2gene)
 
 }
 

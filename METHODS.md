@@ -37,3 +37,7 @@ Now also have *STAR* qc : [code](bin/02_wrapper_qc.sh)
 ./02_wrapper_qc.sh '/public/groups/kimlab/exRNA_disease_biomarkers/'
 ```
 
+Building the R dependencies from bioconductor:  
+```
+R -e 'install.packages("BiocManager") & BiocManager::install("rtracklayer") & BiocManager::install("tximeta")'
+```

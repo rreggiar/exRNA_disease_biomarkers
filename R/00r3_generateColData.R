@@ -134,12 +134,12 @@ main <- function() {
 	print('load tximeta')
 	tximeta::loadLinkedTxome(txome_path)
 
-	#print(paste0('load tx2gene for gencode v ', gencode_ver))
-	#tx2gene_path <- file.path('/public/groupls/kimlab/genomes.annotation/gencode.', gencode_ver, paste0('gencode.v', gencode_ver, '.ucsc.rmsk.tx2gene.csv'))
-
-	#tx2gene <- read_csv(tx2gene_path, col_names=F)
+	print(paste0('load tx2gene for gencode v ', gencode_ver))
+	tx2gene_path <- file.path(paste0('/public/groups/kimlab/genomes.annotations/gencode.', gencode_ver), paste0('gencode.v', gencode_ver, '.ucsc.rmsk.tx.to.gene.csv'))
+	tx2gene <- read_csv(tx2gene_path, col_names=c('tx', 'gene'))
+	print(head(tx2gene))
 	
-	#print('build tximeta object')
+	print('build tximeta object')
 	#build.tximeta.obj()
 
 }

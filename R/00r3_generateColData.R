@@ -63,45 +63,10 @@ parse.input <- function(data_path, output_name, gencode_ver) {
 		     }) %>% bind_rows(.id = 'path')
 	}) %>% bind_rows(.id = 'project_path') -> sample_df
 
-	print(sample_df %>% filter(context == 'intra'))
-
-	quit()
-    
-    # creates empty df to fill with sample info
-    sample.info <- data.frame('files' = file.path(),
-    			      'names' = character(),
-                              'condition' = character(),
-                              'rep' = numeric(),
-                              'input_vol' = numeric())
-
-    # iteratively add to the empyty df the parsed sample names
-    # here with format 'condition.rep'
-    lapply(output_files, function(x){
-		   x.path <- Sys.glob(file.path(x,paste0("*v", gencode_ver, ".",output_name,"*"), "quant.sf"))[1]
-		   x <- basename(x)
-		   sample.split <- str_split(x, '[.]', n=4)[[1]]
-		   condition <- sample.split[1]
-		   rep <- sample.split[2]
-		   input_vol <- as.numeric(paste0(sample.split[3], '.', sample.split[4]))
-
-            temp.df <- data.frame('files' = x.path,
-            			  'names' = x,
-                                  'condition' = condition,
-                                  'rep' = rep,
-                                  'input_vol' = input_vol)
-
-            sample.info <<- rbind(sample.info, temp.df)
-    })
-
-    head(sample.info)
-
-    sample.info.df <<- 
-        sample.info %>%
-        bind_rows() %>%
-        filter(! is.na(files))
-
-    print(sample.info.df)
+	sample_df
 }
+
+
 
 build.tximeta.obj <- function() {
 
@@ -164,10 +129,10 @@ main <- function() {
 	gencode_ver <- paths.in[6]
 
 	print('parse input dir')
-	parse.input(data_path, output_name, gencode_ver)
+	sample_df <- parse.input(data_path, output_name, gencode_ver)
 
-	#print('load tximeta')
-	#tximeta::loadLinkedTxome(txome_path)
+	print('load tximeta')
+	tximeta::loadLinkedTxome(txome_path)
 
 	#print(paste0('load tx2gene for gencode v ', gencode_ver))
 	#tx2gene_path <- file.path('/public/groupls/kimlab/genomes.annotation/gencode.', gencode_ver, paste0('gencode.v', gencode_ver, '.ucsc.rmsk.tx2gene.csv'))

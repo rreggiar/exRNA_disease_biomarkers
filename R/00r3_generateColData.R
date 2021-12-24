@@ -59,7 +59,7 @@ parse.input <- function(data_path, output_name, gencode_ver) {
 				    }
 
 		     }) %>% bind_rows(.id = 'path')
-	}) %>% bind_rows(.id = 'project_path') -> sample_df
+	}) %>% bind_rows(.id = 'project') %>% mutate(project = basename(project))  -> sample_df
 
 	sample_df
 }
@@ -134,12 +134,12 @@ main <- function() {
 	tximeta::loadLinkedTxome(txome_path)
 
 	print(paste0('load tx2gene for gencode v ', gencode_ver))
-	tx2gene_path <- file.path(paste0('/public/groups/kimlab/genomes.annotations/gencode.', gencode_ver), paste0('gencode.v', gencode_ver, '.ucsc.rmsk.tx.to.gene.csv'))
-	tx2gene <- read_csv(tx2gene_path, col_names=c('tx', 'gene'))
-	print(head(tx2gene))
+	#tx2gene_path <- file.path(paste0('/public/groups/kimlab/genomes.annotations/gencode.', gencode_ver), paste0('gencode.v', gencode_ver, '.ucsc.rmsk.tx.to.gene.csv'))
+	#tx2gene <- read_csv(tx2gene_path, col_names=c('tx', 'gene'))
+	#print(head(tx2gene))
 	
-	print('build tximeta object')
-	build.tximeta.obj(output_name, sample_df, tx2gene)
+	#print('build tximeta object')
+	#build.tximeta.obj(output_name, sample_df, tx2gene)
 
 }
 

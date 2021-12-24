@@ -66,7 +66,11 @@ parse.input <- function(data_path, output_name, gencode_ver) {
 
 
 
-build.tximeta.obj <- function(output_name, sample_df, tx2gene) {
+build.tximeta.obj <- function(output_name, sample_df, tx2gene, project, outpath) {
+
+	outpath <- paste0(outpath, '/', output_name, '_quant')
+
+	dir.create(output)
 
 	if (output_name == 'ucsc.rmsk.salmon') {
 		metaSkip = TRUE
@@ -75,7 +79,7 @@ build.tximeta.obj <- function(output_name, sample_df, tx2gene) {
 
 
 		print('save tx h5')
-		saveHDF5SummarizedExperiment(txi, dir=paste0(outpath,paste0(output_name, '_h5_se')) , replace=TRUE)
+		saveHDF5SummarizedExperiment(txi, dir=paste0(outpath,paste0(project, '_', output_name, '_h5_se')) , replace=TRUE)
 
 		gxi <- tximeta::tximeta(coldata = sample_df, 
 			type = 'salmon', 
@@ -84,7 +88,7 @@ build.tximeta.obj <- function(output_name, sample_df, tx2gene) {
 			tx2gene=tx2gene)
 
 		print('save gene h5')
-		saveHDF5SummarizedExperiment(gxi, dir=paste0(outpath,paste0(output_name, '_gene_h5_se')), replace=TRUE)
+		saveHDF5SummarizedExperiment(gxi, dir=paste0(outpath,paste0(project, '_', output_name, '_gene_h5_se')), replace=TRUE)
 
 
 	} else {
@@ -92,12 +96,12 @@ build.tximeta.obj <- function(output_name, sample_df, tx2gene) {
 		print('import data with tximeta')
 		txi <- tximeta::tximeta(coldata = sample_df, type = 'salmon', skipMeta=metaSkip)
 		print('save tx h5')
-		saveHDF5SummarizedExperiment(txi, dir=paste0(outpath,paste0(output_name, '_h5_se')) , replace=TRUE)
+		saveHDF5SummarizedExperiment(txi, dir=paste0(outpath,paste0(project, '_',output_name, '_h5_se')) , replace=TRUE)
 
 		gxi <- summarizeToGene(txi)
 
 		print('save gene h5')
-		saveHDF5SummarizedExperiment(gxi, dir=paste0(outpath,paste0(output_name, '_gene_h5_se')), replace=TRUE)
+		saveHDF5SummarizedExperiment(gxi, dir=paste0(outpath,paste0(project, '_', output_name, '_gene_h5_se')), replace=TRUE)
 
 		if (!is.null(txome_tsv)){
 			cg <- read.delim(txome_tsv, header = TRUE, as.is = TRUE)
@@ -106,7 +110,7 @@ build.tximeta.obj <- function(output_name, sample_df, tx2gene) {
 			split.gxi <- tximeta::splitSE(gxi, cg, assayName = 'counts')
 		
 			saveHDF5SummarizedExperiment(split.gxi, 
-				dir=paste0(outpath,paste0(output_name, '_gene_split_h5_se')), 
+				dir=paste0(project, '_', outpath,paste0(output_name, '_gene_split_h5_se')), 
 				replace=TRUE)
 		}
 
@@ -134,11 +138,17 @@ main <- function() {
 	tximeta::loadLinkedTxome(txome_path)
 
 	print(paste0('load tx2gene for gencode v ', gencode_ver))
-	#tx2gene_path <- file.path(paste0('/public/groups/kimlab/genomes.annotations/gencode.', gencode_ver), paste0('gencode.v', gencode_ver, '.ucsc.rmsk.tx.to.gene.csv'))
-	#tx2gene <- read_csv(tx2gene_path, col_names=c('tx', 'gene'))
-	#print(head(tx2gene))
+	tx2gene_path <- file.path(paste0('/public/groups/kimlab/genomes.annotations/gencode.', gencode_ver), paste0('gencode.v', gencode_ver, '.ucsc.rmsk.tx.to.gene.csv'))
+	tx2gene <- read_csv(tx2gene_path, col_names=c('tx', 'gene'))
+	print(head(tx2gene))
 	
-	#print('build tximeta object')
+	print('build tximeta object')
+	
+	lapply(unique(sample_df$project), function(project) {
+
+		build.tximeta.obj(output_name, sample_df %>% filter(project == project), tx2gene, project, outpath)
+	}) 
+	
 	#build.tximeta.obj(output_name, sample_df, tx2gene)
 
 }

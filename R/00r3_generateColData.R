@@ -22,14 +22,48 @@ library(HDF5Array)
 
 parse.input <- function(data_path, output_name, gencode_ver) {
 
-	files <- dir(file.path(data_path))
-	print('files')
-	print(files)
 	output_files <- list.files(data_path, full.names = TRUE)
-    	names(output_files) <- output.files
+    	names(output_files) <- output_files
 
-    	print('output.files:')
+    	print('taret dirs:')
     	print(output_files)
+
+	imap(output_files, function(path, path_name) {
+
+		     print(path)
+
+		     list.files(path, full.names = T) -> quant_paths
+
+		     names(quant_paths) <- quant_paths
+
+		     lapply(quant_paths, function(this_path) {
+
+				    quant_path <- Sys.glob(file.path(this_path,paste0("*v", gencode_ver, ".",output_name,"*"), "quant.sf"))[1]
+
+				    quant_name <- basename(this_path)
+
+				    quant_name_split <- str_split(quant_name, '[.]', n = 3)[[1]]
+
+				    if(quant_name_split[length(quant_name_split)] == 'intra') {
+					    
+					    name_list <- lst('condition' = quant_name_split[1], 
+							     'rep' = quant_name_split[2],
+							     'context' = quant_name_split[3],
+							     'input_vol' = NA)
+
+
+				    } else {
+					    
+					    name_list <- lst('condition' = quant_name_split[1], 
+							     'rep' = quant_name_split[2],
+							     'context' = 'exo',
+							     'input_vol' = quant_name_split[3])
+				    }
+
+		     }) %>% bind_rows(.id = 'path')
+	}) %>% bind_rows(.id = 'project_path') -> sample_df
+
+	print(sample_df %>% filter(context == 'intra'))
 
 	quit()
     

@@ -25,7 +25,7 @@ parse.input <- function(data_path, output_name, gencode_ver) {
 	output_files <- list.files(data_path, full.names = TRUE)
     	names(output_files) <- output_files
 
-    	print('taret dirs:')
+    	print('target dirs:')
     	print(output_files)
 
 	imap(output_files, function(path, path_name) {
@@ -147,22 +147,26 @@ main <- function() {
 
 	print('parse input dir')
 	sample_df <- parse.input(data_path, output_name, gencode_ver)
+	print('head')
 	print(head(sample_df))
+	print('tail')
+	print(tail(sample_df))
 
 	print('load tximeta')
 	tximeta::loadLinkedTxome(txome_path)
 
-	print(paste0('load tx2gene for gencode v ', gencode_ver))
-	tx2gene_path <- file.path(paste0('/public/groups/kimlab/genomes.annotations/gencode.', gencode_ver), paste0('gencode.v', gencode_ver, '.ucsc.rmsk.tx.to.gene.csv'))
-	tx2gene <- read_csv(tx2gene_path, col_names=c('tx', 'gene'))
-	print(head(tx2gene))
+	#print(paste0('load tx2gene for gencode v ', gencode_ver))
+	#tx2gene_path <- file.path(paste0('/public/groups/kimlab/genomes.annotations/gencode.', gencode_ver),
+				  #paste0('gencode.v', gencode_ver, '.ucsc.rmsk.tx.to.gene.csv'))
+	#tx2gene <- read_csv(tx2gene_path, col_names=c('tx', 'gene'))
+	#print(head(tx2gene))
 	
-	print('build tximeta object')
+	#print('build tximeta object')
 	
-	lapply(unique(sample_df$project), function(this_project) {
+	#lapply(unique(sample_df$project), function(this_project) {
 
-		build.tximeta.obj(output_name, sample_df %>% filter(project == this_project), tx2gene, this_project, outpath)
-	}) 
+		#build.tximeta.obj(output_name, sample_df %>% filter(project == this_project), tx2gene, this_project, outpath)
+	#}) 
 	
 	#build.tximeta.obj(output_name, sample_df, tx2gene)
 

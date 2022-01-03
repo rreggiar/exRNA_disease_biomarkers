@@ -87,15 +87,17 @@ function downloadDataSets(){
 		set +x
 
 	done
+	
+	zcat "$outputDir"/"$(basename "$gencodeAnnotationGTF")" > "$outputDir"/"gencode.v"$version".salmon.gtf"
+	zcat "$outputDir"/"$(basename "$gencodeTranscriptFA")" > "$outputDir"/"gencode.v"$version".salmon.fa"
 
-	# rmsk GTF using same naming convention
+	# rmsk GTF
 	if [ ! -f "$outputDir"/ucsc.rmsk.salmon.gtf ]; then
 		../my_sql/generate_ucsc_rmsk_gtf.mysql > "$outputDir"/ucsc.rmsk.salmon.gtf
 	fi
 
 	if [ ! -f "$outputDir"/"gencode.v"$version".ucsc.rmsk.salmon.gtf" ]; then
-		zcat "$outputDir"/"$(basename "$gencodeAnnotationGTF")" > "$outputDir"/"gencode.v"$version".ucsc.rmsk.salmon.gtf"
-		zcat "$outputDir"/"$(basename "$gencodeAnnotationGTF")" > "$outputDir"/"gencode.v"$version".salmon.gtf"
+		cat "$outputDir"/"gencode.v"$version".salmon.gtf"  > "$outputDir"/"gencode.v"$version".ucsc.rmsk.salmon.gtf"
 		cat "$outputDir"/ucsc.rmsk.salmon.gtf >> "$outputDir"/"gencode.v"$version".ucsc.rmsk.salmon.gtf"
 	fi
 

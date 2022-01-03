@@ -95,6 +95,7 @@ function downloadDataSets(){
 
 	if [ ! -f "$outputDir"/"gencode.v"$version".ucsc.rmsk.salmon.gtf" ]; then
 		zcat "$outputDir"/"$(basename "$gencodeAnnotationGTF")" > "$outputDir"/"gencode.v"$version".ucsc.rmsk.salmon.gtf"
+		zcat "$outputDir"/"$(basename "$gencodeAnnotationGTF")" > "$outputDir"/"gencode.v"$version".salmon.gtf"
 		cat "$outputDir"/ucsc.rmsk.salmon.gtf >> "$outputDir"/"gencode.v"$version".ucsc.rmsk.salmon.gtf"
 	fi
 

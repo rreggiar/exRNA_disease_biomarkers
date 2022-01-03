@@ -25,6 +25,8 @@
 ### NOTE: these used to be accessible via the UCSC GB FTP server but I cannot locate them anymore ... as always they can be 
 ### can be generated via the `table browser` utility but this does not support programmatic access
 ### rerwip
+## adding the UCSC RMSK GTF file generation via MySQL, in the future can probably generate fasta with this manner as well
+## hgdownload.soe.ucsc.edu:goldenPath/hg38/database
 
 scriptName=$(basename $0)
 if [ $# -lt 1 ]; then
@@ -85,6 +87,18 @@ function downloadDataSets(){
 		set +x
 
 	done
+
+	# rmsk GTF using same naming convention
+	if [ ! -f "$outputDir"/ucsc.rmsk.salmon.gtf ]; then
+		../my_sql/generate_ucsc_rmsk_gtf.mysql > "$outputDir"/ucsc.rmsk.salmon.gtf
+	fi
+
+	if [ ! -f "$outputDir"/"gencode.v"$version".ucsc.rmsk.salmon.gtf" ]; then
+		zcat "$outputDir"/"$(basename "$gencodeAnnotationGTF")" > "$outputDir"/"gencode.v"$version".ucsc.rmsk.salmon.gtf"
+		cat "$outputDir"/ucsc.rmsk.salmon.gtf >> "$outputDir"/"gencode.v"$version".ucsc.rmsk.salmon.gtf"
+	fi
+
+
 
 }
 

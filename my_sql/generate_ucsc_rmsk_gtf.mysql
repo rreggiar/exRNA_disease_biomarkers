@@ -15,6 +15,6 @@ mysql --batch --user=genome --host=genome-mysql.cse.ucsc.edu -N -A -D hg38 -e \
 		concat("gene_id", " ", "\"", repName, "\"", ";", " ", 
 			"transcript_id", " ", "\"", repName, 
 			"_range=", genoName, ":", genoStart, "-", genoEnd, 
-			"_strand=", strand),
+			"_strand=", strand, "\"", ";"),
 		swScore
 		from rmsk'

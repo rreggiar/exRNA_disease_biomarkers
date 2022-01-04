@@ -8,4 +8,4 @@ mysql --user=genome --host=genome-mysql.cse.ucsc.edu -N -A -D hg38 -e \
 		       "_range=", genoName, ":", genoStart, "-", genoEnd, 
 		       "_strand=", strand),
 		repName
-		from rmsk' | sed 's/|/,/g'
+		from rmsk' | sed 's/\t/,/g'

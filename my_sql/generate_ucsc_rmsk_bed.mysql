@@ -7,9 +7,9 @@ mysql --user=genome --host=genome-mysql.cse.ucsc.edu -N -A -D hg38 -e \
 	'select genoName,
 		genoStart,
 		genoEnd,
-		concat("hg38_rmsk_", repName, 
+		concat(repName, 
 		       "_range=", genoName, ":", genoStart, "-", genoEnd, 
-		       "_strand=", strand)
+		       "_strand=", strand),
 		swScore,
 		strand
 		from rmsk' 

@@ -70,7 +70,7 @@ parse.input <- function(data_path, output_name, gencode_ver) {
 
 
 
-build.tximeta.obj <- function(output_name, sample_df, tx2gene, project, outpath) {
+build.tximeta.obj <- function(output_name, sample_df, tx2gene, txome_tsv, project, outpath) {
 
 	outpath <- paste0(outpath, output_name, '_quant')
 
@@ -165,7 +165,7 @@ main <- function() {
 	
 	lapply(unique(sample_df$project), function(this_project) {
 
-		build.tximeta.obj(output_name, sample_df %>% filter(project == this_project), tx2gene, this_project, outpath)
+		build.tximeta.obj(output_name, sample_df %>% filter(project == this_project), tx2gene, txome_tsv, this_project, outpath)
 	}) 
 	
 	#build.tximeta.obj(output_name, sample_df, tx2gene)

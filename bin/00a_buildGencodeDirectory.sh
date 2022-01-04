@@ -49,8 +49,8 @@ gencodeAnnotationGTF="ftp://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/re
 gencodeTranscriptFA="ftp://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_"$version"/gencode.v"$version".transcripts.fa.gz"
 gencodePrimaryAssemblyFA="ftp://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_"$version"/GRCh38.primary_assembly.genome.fa.gz"
 gencodeLncRNATranscriptFA="ftp://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_"$version"/gencode.v"$version".lncRNA_transcripts.fa.gz"
-ucscRmskInsertFA="/public/groups/kimlab/genomes.annotations/formatted.UCSC.gb.rmsk.insert.fa"
-ucscRmskInsertTx2GeneCSV="/public/groups/kimlab/genomes.annotations/formatted.UCSC.gb.rmsk.insert.tx.to.gene.csv"
+#ucscRmskInsertFA="/public/groups/kimlab/genomes.annotations/formatted.UCSC.gb.rmsk.insert.fa"
+#ucscRmskInsertTx2GeneCSV="/public/groups/kimlab/genomes.annotations/formatted.UCSC.gb.rmsk.insert.tx.to.gene.csv"
 
 # generate destination directory
 if [ ! -d "$outputDir" ]; then
@@ -91,9 +91,22 @@ function downloadDataSets(){
 	zcat "$outputDir"/"$(basename "$gencodeAnnotationGTF")" > "$outputDir"/"gencode.v"$version".salmon.gtf"
 	zcat "$outputDir"/"$(basename "$gencodeTranscriptFA")" > "$outputDir"/"gencode.v"$version".salmon.fa"
 
-	# rmsk GTF
+	# rmsk data files
 	if [ ! -f "$outputDir"/ucsc.rmsk.salmon.gtf ]; then
 		../my_sql/generate_ucsc_rmsk_gtf.mysql > "$outputDir"/ucsc.rmsk.salmon.gtf
+	fi
+
+	if [ ! -f "$outputDir"/ucsc.rmsk.salmon.bed ]; then
+		../my_sql/generate_ucsc_rmsk_bed.mysql > "$outputDir"/ucsc.rmsk.salmon.bed
+	fi
+
+	if [ ! -f "$outputDir"/ucsc.rmsk.insert.tx.to.gene.csv ]; then
+		../my_sql/generate_ucsc_rmsk_tx2gene.mysql > "$outputDir"/ucsc.rmsk.insert.tx.to.gene.csv
+	fi
+
+	if [ ! -f "$outputDir"/ucsc.rmsk.salmon.fa ]; then
+		bedtools getfasta -fi "$kimlabGenomesDir"/GRCh38.p13.genome.fa -bed "$outputDir"/ucsc.rmsk.salmon.bed -s -nameOnly \
+			| sed 's/[)(]//g' | sed 's/++/+/g' | sed 's/--/-/g' > ucsc.rmsk.salmon.fa
 	fi
 
 	if [ ! -f "$outputDir"/"gencode.v"$version".ucsc.rmsk.salmon.gtf" ]; then
@@ -130,7 +143,7 @@ function makeTx2Gene(){
 	fi
 	# gencode + rmsk tx.2.gene
 	if [ ! -f "$outputDir"/"gencode.v"$version".ucsc.rmsk.tx.to.gene.csv" ]; then
-		cat "$outputDir"/"gencode.v"$version".tx.to.gene.csv" "$ucscRmskInsertTx2GeneCSV" > "$outputDir"/"gencode.v"$version".ucsc.rmsk.tx.to.gene.csv"
+		cat "$outputDir"/"gencode.v"$version".tx.to.gene.csv" "$outputDir"/"ucsc.rmsk.insert.tx.to.gene.csv" > "$outputDir"/"gencode.v"$version".ucsc.rmsk.tx.to.gene.csv"
 	fi
 
 	set +x

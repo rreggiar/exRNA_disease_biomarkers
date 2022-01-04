@@ -17,4 +17,5 @@ mysql --batch --user=genome --host=genome-mysql.cse.ucsc.edu -N -A -D hg38 -e \
 			"_range=", genoName, ":", genoStart, "-", genoEnd, 
 			"_strand=", strand, "\"", ";"),
 		swScore
-		from rmsk'
+		from rmsk' \
+		| awk -F '\t' -v OFS='\t' '{split($1, a, /_/); print (a[2] == "") ? a[1] : a[2], $2, $3, $4, $5, $6, $7, $8, $9, $10}' | sed 's/v1/.1/; s/v2/.2/1'

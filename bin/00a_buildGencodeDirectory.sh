@@ -62,9 +62,9 @@ if [ ! -d "$outputDir" ]; then
 fi
 
 # symlink in the rmsk reference -- ln won't overwrite by default
-ln -s "$ucscRmskInsertFA" "$outputDir"
+#ln -s "$ucscRmskInsertFA" "$outputDir"
 # and the rmsk tx2gene
-ln -s "$ucscRmskInsertTx2GeneCSV" "$outputDir"
+#ln -s "$ucscRmskInsertTx2GeneCSV" "$outputDir"
 
 # for succint iteration
 dataGenerationList=("$gencodeAnnotationGTF" "$gencodeTranscriptFA" "$gencodePrimaryAssemblyFA" "$gencodeLncRNATranscriptFA")
@@ -105,8 +105,8 @@ function downloadDataSets(){
 	fi
 
 	if [ ! -f "$outputDir"/ucsc.rmsk.salmon.fa ]; then
-		bedtools getfasta -fi "$kimlabGenomesDir"/GRCh38.p13.genome.fa -bed "$outputDir"/ucsc.rmsk.salmon.bed -s -nameOnly \
-			| sed 's/[)(]//g' | sed 's/++/+/g' | sed 's/--/-/g' > ucsc.rmsk.salmon.fa
+		bedtools getfasta -fi "$outputDir"/"$(basename "$gencodePrimaryAssemblyFA")" -bed "$outputDir"/ucsc.rmsk.salmon.bed -s -nameOnly \
+			| sed 's/[)(]//g' | sed 's/++/+/g' | sed 's/--/-/g' > "$outputDir"/ucsc.rmsk.salmon.fa
 	fi
 
 	if [ ! -f "$outputDir"/"gencode.v"$version".ucsc.rmsk.salmon.gtf" ]; then
@@ -143,7 +143,7 @@ function makeTx2Gene(){
 	fi
 	# gencode + rmsk tx.2.gene
 	if [ ! -f "$outputDir"/"gencode.v"$version".ucsc.rmsk.tx.to.gene.csv" ]; then
-		cat "$outputDir"/"gencode.v"$version".tx.to.gene.csv" "$outputDir"/"ucsc.rmsk.insert.tx.to.gene.csv" > "$outputDir"/"gencode.v"$version".ucsc.rmsk.tx.to.gene.csv"
+		cat "$outputDir"/"gencode.v"$version".tx.to.gene.csv" "$outputDir"/ucsc.rmsk.insert.tx.to.gene.csv > "$outputDir"/"gencode.v"$version".ucsc.rmsk.tx.to.gene.csv"
 	fi
 
 	set +x

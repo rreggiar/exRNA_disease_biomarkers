@@ -3,7 +3,7 @@
 # tx ID naming matches reference fasta naming convention
 # sed completes an annoying bit of string parsing
 
-mysql --user=genome --host=genome-mysql.cse.ucsc.edu -N -A -D hg38 -e \
+mysql --batch --user=genome --host=genome-mysql.cse.ucsc.edu -N -A -D hg38 -e \
 	'select genoName,
 		"hg38_rmsk",
 		"exon",
@@ -16,5 +16,5 @@ mysql --user=genome --host=genome-mysql.cse.ucsc.edu -N -A -D hg38 -e \
 			"transcript_id", " ", "\"", repName, 
 			"_range=", genoName, ":", genoStart, "-", genoEnd, 
 			"_strand=", strand),
-		swScore,
+		swScore
 		from rmsk'

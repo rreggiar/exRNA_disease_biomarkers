@@ -83,57 +83,33 @@ build.tximeta.obj <- function(output_name, sample_df, tx2gene, txome_tsv, projec
 
 	print('example out: ')
 
-	if (output_name == 'ucsc.rmsk.salmon') {
-		metaSkip = TRUE
+	print(file.path(outpath,paste0(project, '_',output_name, '_h5_se')))
 
-		print('import data with tximeta')
-		txi <- tximeta::tximeta(coldata = sample_df, type = 'salmon', skipMeta=metaSkip)
+	print('import data with tximeta')
+	txi <- tximeta::tximeta(coldata = sample_df, type = 'salmon', skipMeta=FALSE)
 
-		print('save tx h5')
-		saveHDF5SummarizedExperiment(txi, dir=file.path(outpath,paste0(project, '_', output_name, '_h5_se')) , replace=TRUE)
+	print('save tx h5')
+	saveHDF5SummarizedExperiment(txi, dir=file.path(outpath,paste0(project, '_',output_name, '_h5_se')) , replace=TRUE)
 
-		gxi <- tximeta::tximeta(coldata = sample_df, 
-					type = 'salmon', 
-					skipMeta=metaSkip, 
-					txOut=FALSE, 
-					tx2gene=tx2gene)
+	gxi <- tximeta::summarizeToGene(txi)
 
-		print('save gene h5')
-		saveHDF5SummarizedExperiment(gxi, dir=file.path(outpath,paste0(project, '_', output_name, '_gene_h5_se')), replace=TRUE)
+	print('save gene h5: ')
+	print(file.path(outpath,paste0(project, '_', output_name, '_gene_h5_se')))
+
+	saveHDF5SummarizedExperiment(gxi, dir=file.path(outpath,paste0(project, '_', output_name, '_gene_h5_se')), replace=TRUE)
 
 
-	} else {
-		metaSkip = FALSE
+	if (txome_tsv != 'NULL'){
 
-		print(file.path(outpath,paste0(project, '_',output_name, '_h5_se')))
-
-		print('import data with tximeta')
-		txi <- tximeta::tximeta(coldata = sample_df, type = 'salmon', skipMeta=metaSkip)
-
-		print('save tx h5')
-		saveHDF5SummarizedExperiment(txi, dir=file.path(outpath,paste0(project, '_',output_name, '_h5_se')) , replace=TRUE)
-
-		gxi <- tximeta::summarizeToGene(txi)
-
-		print('save gene h5: ')
-		print(file.path(outpath,paste0(project, '_', output_name, '_gene_h5_se')))
-
-		saveHDF5SummarizedExperiment(gxi, dir=file.path(outpath,paste0(project, '_', output_name, '_gene_h5_se')), replace=TRUE)
-
-
-		if (txome_tsv != 'NULL'){
-
-			print('intron aware')
-			cg <- read.delim(txome_tsv, header = TRUE, as.is = TRUE)
-		
-			colnames(cg)[colnames(cg) == 'intron'] <- 'unspliced'
-			split.gxi <- tximeta::splitSE(gxi, cg, assayName = 'counts')
-		
-			saveHDF5SummarizedExperiment(split.gxi, 
-				dir=file.path(outpath,paste0(project, '_', output_name, '_gene_split_h5_se')), 
-				replace=TRUE)
-		}
-
+		print('intron aware')
+		cg <- read.delim(txome_tsv, header = TRUE, as.is = TRUE)
+	
+		colnames(cg)[colnames(cg) == 'intron'] <- 'unspliced'
+		split.gxi <- tximeta::splitSE(gxi, cg, assayName = 'counts')
+	
+		saveHDF5SummarizedExperiment(split.gxi, 
+			dir=file.path(outpath,paste0(project, '_', output_name, '_gene_split_h5_se')), 
+			replace=TRUE)
 	}
 
 	print('all done')

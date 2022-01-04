@@ -78,8 +78,8 @@ build.tximeta.obj <- function(output_name, sample_df, tx2gene, txome_tsv, projec
 	print(outpath)
 
 	if(!dir.exists(outpath)) {dir.create(outpath)}
-
-	sample_df <- sample_df %>% select(-project)
+		
+	print(paste0('tsv:', txome_tsv))
 
 	print('example out: ')
 
@@ -113,12 +113,16 @@ build.tximeta.obj <- function(output_name, sample_df, tx2gene, txome_tsv, projec
 		print('save tx h5')
 		saveHDF5SummarizedExperiment(txi, dir=file.path(outpath,paste0(project, '_',output_name, '_h5_se')) , replace=TRUE)
 
-		gxi <- summarizeToGene(txi)
+		gxi <- tximeta::summarizeToGene(txi)
 
-		print('save gene h5')
+		print('save gene h5: ')
+		print(file.path(outpath,paste0(project, '_', output_name, '_gene_h5_se')))
+
 		saveHDF5SummarizedExperiment(gxi, dir=file.path(outpath,paste0(project, '_', output_name, '_gene_h5_se')), replace=TRUE)
 
-		if (!is.null(txome_tsv)){
+
+		if (txome_tsv != 'NULL'){
+			print('trying intron aware')
 			cg <- read.delim(txome_tsv, header = TRUE, as.is = TRUE)
 		
 			colnames(cg)[colnames(cg) == 'intron'] <- 'unspliced'
@@ -130,6 +134,8 @@ build.tximeta.obj <- function(output_name, sample_df, tx2gene, txome_tsv, projec
 		}
 
 	}
+
+	print('all done')
 }
 
 
@@ -163,9 +169,15 @@ main <- function() {
 	
 	print('build tximeta object')
 	
-	lapply(unique(sample_df$project), function(this_project) {
+	map(unique(sample_df$project), function(this_project) {
 
-		build.tximeta.obj(output_name, sample_df %>% filter(project == this_project), tx2gene, txome_tsv, this_project, outpath)
+		this_df <- sample_df %>% filter(project == this_project) %>% dplyr::select(-project)
+
+		print(this_project)
+		print(this_df)
+		
+		build.tximeta.obj(output_name, this_df, tx2gene, txome_tsv, this_project, outpath)
+
 	}) 
 	
 	#build.tximeta.obj(output_name, sample_df, tx2gene)

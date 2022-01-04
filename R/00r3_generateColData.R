@@ -122,7 +122,8 @@ build.tximeta.obj <- function(output_name, sample_df, tx2gene, txome_tsv, projec
 
 
 		if (txome_tsv != 'NULL'){
-			print('trying intron aware')
+
+			print('intron aware')
 			cg <- read.delim(txome_tsv, header = TRUE, as.is = TRUE)
 		
 			colnames(cg)[colnames(cg) == 'intron'] <- 'unspliced'

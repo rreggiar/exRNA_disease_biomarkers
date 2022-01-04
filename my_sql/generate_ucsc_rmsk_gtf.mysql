@@ -13,6 +13,6 @@ mysql --user=genome --host=genome-mysql.cse.ucsc.edu -N -A -D hg38 -e \
 		strand,
 		".",
 		concat("gene_id", " ", "\"", repName, "\"", ";", " ", "transcript_id", " ", "\"", "hg38_rmsk", "_", repName, "_", "range=", 
-			genoStart, "-", genoEnd, "_5", "pad=0_3", "pad=0_strand=", strand, "_", "repeatMasking=none", "\"", ";")
+			genoName, ":", genoStart, "-", genoEnd, "_5", "pad=0_3", "pad=0_strand=", strand, "_", "repeatMasking=none", "\"", ";")
 		from rmsk' |
 		sed -e "s/5pad/5\'pad/; s/3pad/3\'pad/g"

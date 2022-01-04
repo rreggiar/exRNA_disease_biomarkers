@@ -51,5 +51,15 @@ echo /public/groups/kimlab/exRNA_disease_biomarkers/data/input_data \
 	/public/groups/kimlab/exRNA_disease_biomarkers/data/output_data/ \
 	'38' \
 	| Rscript 00r3_generateColData.R
+
+# for nohup exec
+# nohup doesn't work across '|' so need to wrap the command in '"'
+nohup sh -c "echo '/public/groups/kimlab/exRNA_disease_biomarkers/data/input_data/' \
+	'/public/groups/kimlab/genomes.annotations/gencode.38/gencode.v38.ucsc.rmsk.salmon.json' \
+	'ucsc.rmsk' \
+	'NULL' \
+	'/public/groups/kimlab/exRNA_disease_biomarkers/data/output_data/' \
+	'38' \
+	| Rscript R/00r3_generateColData.R" 2>&1 > tmp/logs/00r3_ucsc.rmsk_salmon_quant_log.txt &
 ```
 

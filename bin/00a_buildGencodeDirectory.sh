@@ -105,8 +105,13 @@ function downloadDataSets(){
 	fi
 
 	if [ ! -f "$outputDir"/ucsc.rmsk.salmon.fa ]; then
-		bedtools getfasta -fi "$outputDir"/"$(basename "$gencodePrimaryAssemblyFA")" -bed "$outputDir"/ucsc.rmsk.salmon.bed -s -nameOnly \
+
+		gunzip "$outputDir"/"$(basename "$gencodePrimaryAssemblyFA")"
+
+		bedtools getfasta -fi "$outpurDir"/GRCh38.primary_assembly.genome.fa -bed "$outputDir"/ucsc.rmsk.salmon.bed -s -nameOnly \
 			| sed 's/[)(]//g' | sed 's/++/+/g' | sed 's/--/-/g' > "$outputDir"/ucsc.rmsk.salmon.fa
+
+		gzip "$outpurDir"/GRCh38.primary_assembly.genome.fa
 	fi
 
 	if [ ! -f "$outputDir"/"gencode.v"$version".ucsc.rmsk.salmon.gtf" ]; then

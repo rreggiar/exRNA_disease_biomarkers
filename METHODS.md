@@ -39,7 +39,7 @@ Now also have *STAR* qc : [code](bin/02_wrapper_qc.sh)
 
 Building the R dependencies from bioconductor:  
 ```
-R -e 'install.packages("BiocManager") & BiocManager::install("rtracklayer") & BiocManager::install("tximeta") & BiocManager::install("eisaR")'
+R -e 'install.packages("BiocManager") & BiocManager::install("rtracklayer") & BiocManager::install("tximeta") & BiocManager::install("eisaR") & BiocManager::install("BSgenome")'
 ```
 
 Building *salmon* quant outputs: [code](R/00r3_generateColData.R):  

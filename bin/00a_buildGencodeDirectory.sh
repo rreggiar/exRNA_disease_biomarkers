@@ -113,7 +113,7 @@ function downloadDataSets(){
 		fi
 
 		bedtools getfasta -fi "$outputDir"/GRCh38.primary_assembly.genome.fa -bed "$outputDir"/ucsc.rmsk.salmon.bed -s -nameOnly \
-			| sed 's/[)(]//g' | sed 's/++/+/g' | sed 's/--/-/g' > "$outputDir"/ucsc.rmsk.salmon.fa
+			| sed 's/(+)*$//; s/(-)*$//g' >  "$outputDir"/ucsc.rmsk.salmon.fa
 
 	fi
 

@@ -4,10 +4,7 @@
 # sed completes an annoying bit of string parsing
 
 mysql --user=genome --host=genome-mysql.cse.ucsc.edu -N -A -D hg38 -e \
-	'select concat(repName, 
-		       "_range=", genoName, ":", genoStart, "-", genoEnd, 
-		       "_strand=", strand),
-		repName,
+	'select distinct repName,
 		repClass,
 		repFamily
 		from rmsk'

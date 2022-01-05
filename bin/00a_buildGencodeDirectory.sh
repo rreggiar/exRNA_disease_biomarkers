@@ -104,6 +104,10 @@ function downloadDataSets(){
 		../my_sql/generate_ucsc_rmsk_tx2gene.mysql > "$outputDir"/ucsc.rmsk.insert.tx.to.gene.csv
 	fi
 
+	if [ ! -f "$outputDir"/ucsc.rmsk.insert.info.txt ]; then
+		../my_sql/generate_ucsc_rmsk_info.mysql > "$outputDir"/ucsc.rmsk.insert.info.txt
+	fi
+
 	if [ ! -f "$outputDir"/ucsc.rmsk.salmon.fa ]; then
 	
 		if [ ! -f "$outputDir"/GRCh38.primary_assembly.genome.fa ]; then

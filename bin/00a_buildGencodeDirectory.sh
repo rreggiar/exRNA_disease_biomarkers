@@ -19,14 +19,13 @@
 ## [gencode lncRNA transcript sequences](ftp://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_"$version"/gencode.v"$version".lncRNA_transcripts.fa.gz)
 
 # ucsc genome browser
-## [ucsc rmsk insertion fasta](/public/groups/kimlab/genomes.annotations/formatted.UCSC.gb.rmsk.insert.fa)
-### replace all the ' ' with '_' so that it plays nicely with downstream processes
-## [ucsc repeat browser consensus fasta](/public/groups/kimlab/genomes.annotations/repeat.browser.hg38reps.fa)
-### NOTE: these used to be accessible via the UCSC GB FTP server but I cannot locate them anymore ... as always they can be 
-### can be generated via the `table browser` utility but this does not support programmatic access
-### rerwip
-## adding the UCSC RMSK GTF file generation via MySQL, in the future can probably generate fasta with this manner as well
 ## hgdownload.soe.ucsc.edu:goldenPath/hg38/database
+## all the reference tables are stored here, details on access are in the `my_sql` directory scripts
+## using MySQL queries to generate:
+### 1. rmsk GTF
+### 2. rmsk BED --> used to generate FASTA with `bedtools getfasta`
+### 3. rmsk tx2gene
+### 4. rmsk 'info'; contains the class and family details for each TE 'gene'
 
 scriptName=$(basename $0)
 if [ $# -lt 1 ]; then
@@ -49,8 +48,6 @@ gencodeAnnotationGTF="ftp://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/re
 gencodeTranscriptFA="ftp://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_"$version"/gencode.v"$version".transcripts.fa.gz"
 gencodePrimaryAssemblyFA="ftp://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_"$version"/GRCh38.primary_assembly.genome.fa.gz"
 gencodeLncRNATranscriptFA="ftp://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_"$version"/gencode.v"$version".lncRNA_transcripts.fa.gz"
-#ucscRmskInsertFA="/public/groups/kimlab/genomes.annotations/formatted.UCSC.gb.rmsk.insert.fa"
-#ucscRmskInsertTx2GeneCSV="/public/groups/kimlab/genomes.annotations/formatted.UCSC.gb.rmsk.insert.tx.to.gene.csv"
 
 # generate destination directory
 if [ ! -d "$outputDir" ]; then
@@ -61,10 +58,6 @@ if [ ! -d "$outputDir" ]; then
 
 fi
 
-# symlink in the rmsk reference -- ln won't overwrite by default
-#ln -s "$ucscRmskInsertFA" "$outputDir"
-# and the rmsk tx2gene
-#ln -s "$ucscRmskInsertTx2GeneCSV" "$outputDir"
 
 # for succint iteration
 dataGenerationList=("$gencodeAnnotationGTF" "$gencodeTranscriptFA" "$gencodePrimaryAssemblyFA" "$gencodeLncRNATranscriptFA")

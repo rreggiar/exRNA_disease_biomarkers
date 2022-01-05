@@ -121,6 +121,8 @@ function downloadDataSets(){
 
 	fi
 
+	cat "$outputDir"/"gencode.v"$version".salmon.fa" "$outputDir"/ucsc.rmsk.salmon.fa > "$outputDir""/tmpUcscRmskFA.fa"
+
 	if [ ! -f "$outputDir"/"gencode.v"$version".ucsc.rmsk.salmon.gtf" ]; then
 		cat "$outputDir"/"gencode.v"$version".salmon.gtf"  > "$outputDir"/"gencode.v"$version".ucsc.rmsk.salmon.gtf"
 		cat "$outputDir"/ucsc.rmsk.salmon.gtf >> "$outputDir"/"gencode.v"$version".ucsc.rmsk.salmon.gtf"
@@ -253,8 +255,6 @@ function makeSalmonIndexes(){
 		fi
 
 		if [ ! -d "$kimlabIndexDir"/"sel.align.gencode.v""$version"".ucsc.rmsk.salmon.v""$salmonVersion"".sidx" ]; then
-
-			cat <(zcat "$genTxFA") "$ucscRmskInsertFA" > "$outputDir""/tmpUcscRmskFA.fa"
 
 			salmon index \
 				-t <(cat "$outputDir""/tmpUcscRmskFA.fa" <(gunzip -c "$genomeFA")) \

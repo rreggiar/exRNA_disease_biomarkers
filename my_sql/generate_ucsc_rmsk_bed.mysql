@@ -1,7 +1,17 @@
 #!/bin/bash
 # wraps a MySQL query to generate the UCSC RMSK bed required for bedtools getfasta and further analyses
-# tx ID naming matches reference fasta naming convention
-# sed completes an annoying bit of string parsing
+
+## host: genome-mysql.cse.ucsc.edu
+## -N = --skip-column-names
+## -A = --no-auto-rehash
+## -D = --database
+## --batch = print as TSV, escape special characters
+
+# awk:
+## split the genoName column by '_' and store in object `a`
+## print genoName column = if [ a[2] is empty ]; then print a[1]; else print a[2] .. print rest of columns as is
+### this finds lines with chrX_IDv1_type naming and extracts the middle string
+# needed to name the alt/patch/fix chromosomes according to gencode style
 
 mysql --batch --user=genome --host=genome-mysql.cse.ucsc.edu -N -A -D hg38 -e \
 	'select genoName,

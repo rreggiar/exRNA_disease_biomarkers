@@ -1,7 +1,13 @@
 #!/bin/bash
-# wraps a MySQL query to generate the UCSC RMSK bed required for bedtools getfasta and further analyses
-# tx ID naming matches reference fasta naming convention
-# sed completes an annoying bit of string parsing
+# wraps a MySQL query to generate the UCSC RMSK 'info' table that describes TE name, class, and family
+
+## host: genome-mysql.cse.ucsc.edu
+## -N = --skip-column-names
+## -A = --no-auto-rehash
+
+## -D = --database
+# `distinct` reduces the selection to distinct row entries
+# this table should be used in a left join where x is the data table and y is this info table
 
 mysql --user=genome --host=genome-mysql.cse.ucsc.edu -N -A -D hg38 -e \
 	'select distinct repName,

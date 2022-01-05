@@ -1,7 +1,12 @@
 #!/bin/bash
-# wraps a MySQL query to generate the UCSC RMSK bed required for bedtools getfasta and further analyses
-# tx ID naming matches reference fasta naming convention
-# sed completes an annoying bit of string parsing
+# wraps a MySQL query to generate the UCSC RMSK trancript (insertion) to gene (repName) CSV for `Salmon` gene level summarization
+
+## host: genome-mysql.cse.ucsc.edu
+## -N = --skip-column-names
+## -A = --no-auto-rehash
+## -D = --database
+
+# sed converts to CSV; I think this approach allows for more flexible execution and control over STDOUT
 
 mysql --user=genome --host=genome-mysql.cse.ucsc.edu -N -A -D hg38 -e \
 	'select concat(repName, 

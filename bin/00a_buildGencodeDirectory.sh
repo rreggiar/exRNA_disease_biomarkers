@@ -48,6 +48,7 @@ gencodeAnnotationGTF="ftp://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/re
 gencodeTranscriptFA="ftp://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_"$version"/gencode.v"$version".transcripts.fa.gz"
 gencodePrimaryAssemblyFA="ftp://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_"$version"/GRCh38.primary_assembly.genome.fa.gz"
 gencodeLncRNATranscriptFA="ftp://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_"$version"/gencode.v"$version".lncRNA_transcripts.fa.gz"
+ucscRmskInsertFA="$outputDir"/gencode.v"$version".ucsc.rmsk.salmon.fa
 
 # generate destination directory
 if [ ! -d "$outputDir" ]; then
@@ -114,7 +115,8 @@ function downloadDataSets(){
 
 	fi
 
-	cat "$outputDir"/"gencode.v"$version".salmon.fa" "$outputDir"/ucsc.rmsk.salmon.fa > "$outputDir""/tmpUcscRmskFA.fa"
+	cat "$outputDir"/"gencode.v"$version".salmon.fa" "$outputDir"/ucsc.rmsk.salmon.fa > \
+		"$outputDir"/gencode.v"$version".ucsc.rmsk.salmon.fa
 
 	if [ ! -f "$outputDir"/"gencode.v"$version".ucsc.rmsk.salmon.gtf" ]; then
 		cat "$outputDir"/"gencode.v"$version".salmon.gtf"  > "$outputDir"/"gencode.v"$version".ucsc.rmsk.salmon.gtf"
@@ -250,12 +252,11 @@ function makeSalmonIndexes(){
 		if [ ! -d "$kimlabIndexDir"/"sel.align.gencode.v""$version"".ucsc.rmsk.salmon.v""$salmonVersion"".sidx" ]; then
 
 			salmon index \
-				-t <(cat "$outputDir""/tmpUcscRmskFA.fa" <(gunzip -c "$genomeFA")) \
+				-t <(cat "$outputDir""/gencode.v"$version".ucsc.rmsk.salmon.fa" <(gunzip -c "$genomeFA")) \
 				-i "$kimlabIndexDir"/"sel.align.gencode.v""$version"".ucsc.rmsk.salmon.v""$salmonVersion"".sidx" \
 				-p 16 \
 				-d "$outputDir"/"gencode.v""$version"".decoys.txt"
 
-			rm "$outputDir""/tmpUcscRmskFA.fa"
 		fi
 
 		if [ ! -d "$kimlabIndexDir"/"sel.align.gencode.v""$version"".process.aware.salmon.v""$salmonVersion"".sidx" ]; then

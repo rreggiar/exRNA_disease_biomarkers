@@ -91,7 +91,11 @@ build.tximeta.obj <- function(output_name, sample_df, tx2gene, txome_tsv, projec
 	print('save tx h5')
 	saveHDF5SummarizedExperiment(txi, dir=file.path(outpath,paste0(project, '_',output_name, '_h5_se')) , replace=TRUE)
 
-	gxi <- tximeta::summarizeToGene(txi)
+	# TE genes will appear on multiple strands, tximeta has an argument to allow this
+	singleStrand = T
+	if(output_name == 'ucsc.rmsk.salmon') {singleStrand = F}
+
+	gxi <- tximeta::summarizeToGene(txi, single.strand.genes.only = singleStrand)
 
 	print('save gene h5: ')
 	print(file.path(outpath,paste0(project, '_', output_name, '_gene_h5_se')))

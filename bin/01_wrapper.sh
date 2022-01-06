@@ -4,7 +4,9 @@
 
 projectDir=$1 # /public/groups/kimlab/exRNA_disease_biomarkers/
 indexType=$2 # ucsc.rmsk.salmon
-index=`ls -d /public/groups/kimlab/indexes/*.v38.$indexType.v1.6.0.sidx`
+indexVer=$3 # 39
+salmonVersion=`salmon -v | cut -d' ' -f2`
+index=`ls -d /public/groups/kimlab/indexes/*.v$indexVer.$indexType.v$salmonVersion.sidx`
 
 echo $index
 

@@ -1,7 +1,7 @@
 summarizeToGene_RER <- function(object, varReduce=FALSE, ...) {
 
   import::from(.from = tximeta.R,
-	       .directory = 'tximeta/R/tximeta.R',
+	       .directory = 'tximeta/R/',
   	       .all = T)
 
   missingMetadata(object, summarize=TRUE)

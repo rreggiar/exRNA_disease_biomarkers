@@ -1,9 +1,13 @@
 summarizeToGene_RER <- function(object, varReduce=FALSE, ...) {
 
-  tximeta::missingMetadata(object, summarize=TRUE)
+  import::from(.from = tximeta.R,
+	       .directory = 'tximeta/R/tximeta.R',
+  	       .all = T)
+
+  missingMetadata(object, summarize=TRUE)
 
   txomeInfo <- metadata(object)$txomeInfo
-  txdb <- tximeta::getTxDb(txomeInfo)
+  txdb <- getTxDb(txomeInfo)
   message("obtaining transcript-to-gene mapping from database")
 
   suppressMessages({

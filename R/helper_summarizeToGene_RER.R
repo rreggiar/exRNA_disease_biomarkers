@@ -1,7 +1,7 @@
 summarizeToGene_RER <- function(object, varReduce=FALSE, ...) {
 
   import::from(.from = tximeta.R,
-	       .directory = 'tximeta/R/',
+	       .directory = '/public/groups/kimlab/exRNA_disease_biomarkers/R/tximeta/R/',
   	       .all = T)
 
   missingMetadata(object, summarize=TRUE)

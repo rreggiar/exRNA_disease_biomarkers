@@ -1,6 +1,6 @@
 summarizeToGene_RER <- function(object, varReduce=FALSE, ...) {
 
-  missingMetadata(object, summarize=TRUE)
+  #missingMetadata(object, summarize=TRUE)
 
   txomeInfo <- metadata(object)$txomeInfo
   txdb <- getTxDb(txomeInfo)
@@ -26,17 +26,6 @@ summarizeToGene_RER <- function(object, varReduce=FALSE, ...) {
     length=assays(object)[["length"]],
     countsFromAbundance="no"
   )
-  if ("infRep1" %in% assayNames(object)) {
-    infReps <- list(assays(object)[grep("infRep", assayNames(object))])
-    if (varReduce) {
-      # split from per replicate list into per sample list
-      # (this is what tximport expects for varReduce=TRUE)
-      infReps <- list(splitInfReps(infReps[[1]]))
-    }
-    txi <- c(txi, infReps=infReps)
-  } else {
-    if (varReduce) stop("cannot calculate inferential variance without inferential replicates")
-  }
 
   txi.gene <- summarizeToGene(object=txi, tx2gene=tx2gene, varReduce=varReduce, ...)
   

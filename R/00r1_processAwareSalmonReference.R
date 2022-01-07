@@ -48,20 +48,20 @@ grl <- eisaR::getFeatureRanges(
 
  cat('fasta')
  Biostrings::writeXStringSet(
-     seqs, filepath = file.path(input.dir, paste0('gencode.v', gencode.version, '.annotation.expanded.fa'))
+     seqs, filepath = file.path(input.dir, paste0('gencode.v', gencode.version, '.process.aware.salmon.fa'))
  )
  cat('gtf out')
  eisaR::exportToGtf(
      grl, 
-     filepath = file.path(input.dir, paste0('gencode.v', gencode.version, '.annotation.expanded.gtf'))
+     filepath = file.path(input.dir, paste0('gencode.v', gencode.version, '.process.aware.salmon.gtf'))
  )
 
 write.table(
     metadata(grl)$corrgene, 
-    file = file.path(input.dir, paste0('gencode.v', gencode.version, '.annotation.expanded.tsv')),
+    file = file.path(input.dir, paste0('gencode.v', gencode.version, '.process.aware.salmon.tsv')),
     row.names = FALSE, col.names = TRUE, quote = FALSE, sep = "\t"
 )
 
 df <- eisaR::getTx2Gene(
-    grl, filepath = file.path(input.dir, paste0('gencode.v', gencode.version, '.annotation.expanded.tx.to.gene.tsv'))
+    grl, filepath = file.path(input.dir, paste0('gencode.v', gencode.version, '.process.aware.salmon.tx.to.gene.tsv'))
 )

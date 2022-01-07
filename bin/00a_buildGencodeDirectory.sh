@@ -199,7 +199,7 @@ function makeProcessAwareReferences(){
 
 	set -x
 
-	if [ ! -f "$outputDir"/"gencode.v""$version"".annotation.expanded.fa" ]; then
+	if [ ! -f "$outputDir"/"gencode.v""$version"".process.aware.salmon.fa" ]; then
 		echo "$outputDir" | Rscript ../R/00r1_processAwareSalmonReference.R
 	fi
 

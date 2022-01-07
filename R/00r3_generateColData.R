@@ -95,7 +95,7 @@ build.tximeta.obj <- function(output_name, sample_df, tx2gene, txome_tsv, projec
 	singleStrand = T
 	if(output_name == 'ucsc.rmsk.salmon') {singleStrand = F}
 
-	import:from(.from = helper_summarizeToGene_RER.R, 
+	import::from(.from = helper_summarizeToGene_RER.R, 
 		    .directory = '/public/groups/kimlab/exRNA_disease_biomarkers/R/',
 		    summarizeToGene_RER)
 

@@ -99,7 +99,7 @@ build.tximeta.obj <- function(output_name, sample_df, tx2gene, txome_tsv, projec
 		    .directory = '/public/groups/kimlab/exRNA_disease_biomarkers/R/',
 		    summarizeToGene_RER)
 
-	gxi <- tximeta::summarizeToGene_RER(txi, single.strand.genes.only = singleStrand)
+	gxi <- summarizeToGene_RER(txi, single.strand.genes.only = singleStrand)
 
 	print('save gene h5: ')
 	print(file.path(outpath,paste0(project, '_', output_name, '_gene_h5_se')))

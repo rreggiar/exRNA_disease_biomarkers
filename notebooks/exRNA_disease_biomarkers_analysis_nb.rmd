@@ -5,6 +5,14 @@ author:
 - name: "Roman E. Reggiardo"
   affiliation: "UC Santa Cruz Dept. of Biomolecular Engineering"
   email: "rreggiar@ucsc.edu"
+editor_options: 
+  chunk_output_type: console
 ---
 
+```{r, setup, include=FALSE}
+knitr::opts_chunk$set(fig.width = 8, collapse = T)
+knitr::opts_chunk$set(message = F)
+here::set_here('/home/rreggiar/')
+here::here()
+```
 

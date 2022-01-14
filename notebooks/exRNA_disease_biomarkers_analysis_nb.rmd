@@ -14,9 +14,11 @@ knitr::opts_chunk$set(fig.width = 8, collapse = T)
 knitr::opts_chunk$set(message = F)
 here::set_here('/home/rreggiar/')
 here::here()
+suppressPackageStartupMessages(library(tidyverse))
 ```
 
-# ggplot_theme
+# global_init
+## ggplot_theme
 ```{r}
 library(ggplot2)
 library(ggthemes)
@@ -70,7 +72,7 @@ ggplot2::theme_set(ggthemes::theme_foundation(base_size = base_size,
                    )
 ```
 
-# data_path_obj
+## data_path_obj
 ```{r}
 figure.dir <- here::here('manuscript/figures')
 input_data.dir <- here::here('data/input_data')
@@ -79,20 +81,20 @@ reference.dir <- here::here('reference')
 r_code.dr <- here::here('R')
 ```
 
-# figure_saving
+## figure_export
 ```{r}
 figure_single_column_width = unit(89, 'mm')
 figure_double_column_with = unit(183, 'mm')
 figure_depth = unit(247, 'mm')
 
-install.packages("import")
+# install.packages("import")
 
 import::from(.directory = r_code.dr, .from = 'helper_analysisFunctions.R', save.manuscript.panel)
 ```
 
-
+## analysis_const
 ```{r}
-chr.order <- c('chr1', 'chr2', 'chr3', 
+chr_order <- c('chr1', 'chr2', 'chr3', 
                'chr4', 'chr5', 'chr6', 
                'chr7', 'chr8', 'chr9',
                'chr10', 'chr11', 'chr12', 
@@ -100,5 +102,58 @@ chr.order <- c('chr1', 'chr2', 'chr3',
                'chr16', 'chr17',
                'chr18', 'chr19', 'chr20', 
                'chr21', 'chr22', 'chrX', 'chrY')
+
+
+gencode_ver <- 39
+
 ```
+
+## meta_data_construction
+```{r}
+if (! file.exists(file.path(output.data.dir, 'meta_data_df.rds'))) {
+  
+  reference_meta_data <- tibble::lst()
+  
+  reference_meta_data$ucsc_rmsk_insert_info.df <- 
+    readr::read_tsv(file.path(reference.dir, 'ucsc.rmsk.insert.info.txt'),
+             col_names = c('gene', 'clade', 'family'))
+  
+  reference_meta_data$gencode_tx_to_gene.df <- 
+    readr::read_csv(file.path(reference.dir, 
+                              paste0('gencode.v', gencode_ver, '.tx.to.gene.csv')),
+                    col_names = c('tx', 'gene')) %>% 
+    tidyr::separate(tx, sep = '\\|', 
+                    into = c('enst','ensg',NA,NA,'tx','gene','len','biotype'))
+  
+  reference_meta_data$gencode_tx_to_gene.df %>% 
+    dplyr::select(-enst) %>% 
+    dplyr::group_by(biotype) %>% 
+    dplyr::tally() -> reference_meta_data$gencode_biotype_count.df
+  
+  reference_meta_data$gencode_tx_to_gene.df %>% 
+    dplyr::select(gene,biotype) %>% 
+    dplyr::group_by(gene) %>% 
+    dplyr::filter(all(biotype == 'lncRNA')) %>% 
+    dplyr::distinct() -> reference_meta_data$gencode_lncRNA_gene_names.df
+  
+  reference_meta_data$ucsc_rmsk_tx_to_gene.df <-  
+    readr::read_csv(file.path(reference.dir, 
+                              'ucsc.rmsk.insert.analysis.tx.to.gene.csv'),
+                    col_names = c('insert', 'info', 'gene', 'len', 'biotype')) %>% 
+    mutate(enst = insert, ensg = info, tx = insert) %>% 
+    select(enst, ensg, tx, gene, len, biotype, -insert, -info)
+  
+  reference_meta_data$total_tx_to_gene.df <- 
+    rbind(reference_meta_data$gencode_tx_to_gene.df,
+          reference_meta_data$ucsc_rmsk_tx_to_gene.df)
+  
+  saveRDS(reference_meta_data, file.path(output.data.dir, 'meta_data_df.rds'))
+  
+} else {
+  reference_meta_data <- readRDS(file.path(output.data.dir, 'meta_data_df.rds'))
+}
+
+```
+
+
 

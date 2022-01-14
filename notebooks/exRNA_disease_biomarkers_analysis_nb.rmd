@@ -35,9 +35,11 @@ ggplot2::theme_set(ggthemes::theme_foundation(base_size = base_size,
                            axis.text.x = element_text(margin = 
                                                         margin(t = 0.8 * base_size/4)), 
                            axis.text.x.top = element_text(margin = 
-                                                            margin(b = 0.8 * base_size/4), vjust = 0), 
+                                                            margin(b = 0.8 * base_size/4), 
+                                                          vjust = 0), 
                            axis.text.y = element_text(margin = 
-                                                        margin(r = 0.5 * base_size/4), hjust = 1),
+                                                        margin(r = 0.5 * base_size/4), 
+                                                      hjust = 1),
                            axis.text.y.right = element_text(margin = 
                                                               margin(l = 0.5 * base_size/4), 
                                                             hjust = 0), 
@@ -70,11 +72,22 @@ ggplot2::theme_set(ggthemes::theme_foundation(base_size = base_size,
 
 # data_path_obj
 ```{r}
-figure.dir <-  here::here('manuscript/figures')
-input_data.dir <-  here::here('data/input_data')
+figure.dir <- here::here('manuscript/figures')
+input_data.dir <- here::here('data/input_data')
 output_data.dir <- here::here('data/output_data')
 reference.dir <- here::here('reference')
 r_code.dr <- here::here('R')
+```
+
+# figure_saving
+```{r}
+figure_single_column_width = unit(89, 'mm')
+figure_double_column_with = unit(183, 'mm')
+figure_depth = unit(247, 'mm')
+
+install.packages("import")
+
+import::from(.directory = r_code.dr, .from = 'helper_analysisFunctions.R', save.manuscript.panel)
 ```
 
 

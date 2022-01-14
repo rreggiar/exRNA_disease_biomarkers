@@ -49,3 +49,6 @@ data/output_data/nanopore/gencode38/
 
 # salmon quant output
 data/output_data/*_quant
+
+# meta_data dep
+data/meta_data/deprecated/

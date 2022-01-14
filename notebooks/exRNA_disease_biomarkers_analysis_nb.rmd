@@ -177,17 +177,67 @@ if (! file.exists(file.path(meta_data.dir, 'sample_meta_data_df.rds'))) {
 ```
 
 # import_data
-## 
+## load_tximeta_obj
 ```{r}
 import::from(.directory = r_code.dr, .from = 'helper_analysisFunctions.R', load.tximeta.object.list)
 
 salmon_quant <- load.tximeta.object.list('salmon', 
                                          output_data.dir = output_data.dir)
+
 ucsc.rmsk.salmon_quant <- load.tximeta.object.list('ucsc.rmsk.salmon', 
                                                    output_data.dir = output_data.dir)
+
 process.aware.salmon_quant <- load.tximeta.object.list('process.aware.salmon', 
                                                        output_data.dir = output_data.dir)
+```
+
+# analysis
+## filter QC fails
+```{r}
+library(SummarizedExperiment)
+
+qc_fails <- c('panc.6.2.5', 'panc.7.2.5', 'panc.9.2.5', 'panc.10.2.5')
+
+
+subset.tximeta.se <- function(se) { 
+  
+  sub_se <- 
+    SummarizedExperiment::subset(se, select = !colData(se)$names %in% qc_fails)
+  
+  sub_se
+  
+}
+
+salmon_quant$bioIvt_panc_salmon$gxi <- 
+  subset.tximeta.se(salmon_quant$bioIvt_panc_salmon$gxi)
+
+ucsc.rmsk.salmon_quant$bioIvt_panc_ucsc.rmsk.salmon$gxi <- 
+  subset.tximeta.se(ucsc.rmsk.salmon_quant$bioIvt_panc_ucsc.rmsk.salmon$gxi)
+
+process.aware.salmon_quant$bioIvt_panc_process.aware.salmon$gxi <- 
+  subset.tximeta.se(ucsc.rmsk.salmon_quant$bioIvt_panc_ucsc.rmsk.salmon$gxi)
 
 
 ```
+
+## construct_analysis_sets
+```{r}
+# devtools::install_github("PeteHaitch/SparseSummarizedExperiment")
+
+salmon_quant$analysis_set$panc_ctrl_gene <-
+  SparseSummarizedExperiment::cbind(salmon_quant$bioIvt_panc_salmon$gxi,
+                                    salmon_quant$pittsburgh_ctrl_salmon$gxi)
+
+salmon_quant$analysis_set$covid_ctrl_gene <-
+  SparseSummarizedExperiment::cbind(salmon_quant$bioIvt_covid_salmon$gxi,
+                                    salmon_quant$pittsburgh_ctrl_salmon$gxi)
+
+salmon_quant$analysis_set$panc_ctrl_covid_gene <- 
+  SparseSummarizedExperiment::cbind(salmon_quant$analysis$panc_ctrl_gene,
+                                    salmon_quant$bioIvt_covid_salmon$gxi)
+
+
+
+```
+
 

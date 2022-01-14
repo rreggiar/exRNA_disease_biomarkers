@@ -111,6 +111,8 @@ gencode_ver <- 39
 
 ## meta_data_construction
 ```{r}
+
+## reference meta data
 if (! file.exists(file.path(meta_data.dir, 'reference_meta_data_df.rds'))) {
   
   reference_meta_data <- tibble::lst()
@@ -153,6 +155,24 @@ if (! file.exists(file.path(meta_data.dir, 'reference_meta_data_df.rds'))) {
 } else {
   reference_meta_data <- readRDS(file.path(meta_data.dir, 'reference_meta_data_df.rds'))
 }
+
+## sample_meta_data
+if (! file.exists(file.path(meta_data.dir, 'sample_meta_data_df.rds'))) {
+  
+  list.files(meta_data.dir, pattern = '*_meta_data.csv') -> meta_file.list
+  names(meta_file.list) <- meta_file.list
+  
+  meta_file.list %>% 
+    purrr::imap(function(name, file) {
+      readr::read_csv(file.path(meta_data.dir, file))
+    }) -> sample_meta_data
+  
+  saveRDS(sample_meta_data, file.path(meta_data.dir, 'sample_meta_data_df.rds'))
+  
+} else {
+  sample_meta_data <- readRDS(file.path(meta_data.dir, 'sample_meta_data_df.rds'))
+}
+
 
 ```
 

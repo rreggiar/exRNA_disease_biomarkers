@@ -8,11 +8,84 @@ author:
 editor_options: 
   chunk_output_type: console
 ---
-
+# nb_setup
 ```{r, setup, include=FALSE}
 knitr::opts_chunk$set(fig.width = 8, collapse = T)
 knitr::opts_chunk$set(message = F)
 here::set_here('/home/rreggiar/')
 here::here()
+```
+
+# ggplot_theme
+```{r}
+library(ggplot2)
+library(ggthemes)
+base_size = 10
+
+ggplot2::theme_set(ggthemes::theme_foundation(base_size = base_size,
+                                              base_family = 'Helvetica') + 
+                     theme(plot.title = element_blank(),
+                           panel.background = element_rect(colour = NA),
+                           plot.background = element_rect(colour = NA),
+                           panel.border = element_rect(colour = NA), 
+                           axis.line = element_line(), 
+                           axis.line.x = NULL, 
+                           axis.line.y = NULL, 
+                           axis.text = element_text(size = rel(0.95)), 
+                           axis.text.x = element_text(margin = 
+                                                        margin(t = 0.8 * base_size/4)), 
+                           axis.text.x.top = element_text(margin = 
+                                                            margin(b = 0.8 * base_size/4), vjust = 0), 
+                           axis.text.y = element_text(margin = 
+                                                        margin(r = 0.5 * base_size/4), hjust = 1),
+                           axis.text.y.right = element_text(margin = 
+                                                              margin(l = 0.5 * base_size/4), 
+                                                            hjust = 0), 
+                           axis.ticks = element_line(), 
+                           axis.ticks.length = unit(base_size/2.5, "pt"), axis.ticks.length.x = NULL, 
+                           axis.ticks.length.x.top = NULL, axis.ticks.length.x.bottom = NULL, 
+                           axis.ticks.length.y = NULL, axis.ticks.length.y.left = NULL, 
+                           axis.ticks.length.y.right = NULL,
+                           strip.text = element_text(size = rel(0.95), face = 'bold'),
+                           strip.background = element_blank(),
+                           legend.key.size= unit(0.08, "in"),
+                           legend.spacing = unit(0, "in"),
+                           legend.key = element_rect(colour = NA),
+                           legend.title = element_text(face="italic"),
+                           legend.text = element_text(face = 'bold'),
+                           legend.justification = c("right", "top"),
+                           legend.box.just = "right",
+                           legend.margin = margin(6, 6, 6, 6),
+                           plot.margin=margin(0.04,
+                                              0.04,
+                                              0.04,
+                                              0.04,
+                                              unit = "in"),
+                           legend.box.spacing = unit(-0.02, 'in'),
+                           panel.grid.major = element_blank(),
+                           panel.grid.minor = element_blank()
+                           )
+                   )
+```
+
+# data_path_obj
+```{r}
+figure.dir <-  here::here('manuscript/figures')
+input_data.dir <-  here::here('data/input_data')
+output_data.dir <- here::here('data/output_data')
+reference.dir <- here::here('reference')
+r_code.dr <- here::here('R')
+```
+
+
+```{r}
+chr.order <- c('chr1', 'chr2', 'chr3', 
+               'chr4', 'chr5', 'chr6', 
+               'chr7', 'chr8', 'chr9',
+               'chr10', 'chr11', 'chr12', 
+               'chr13', 'chr14', 'chr15', 
+               'chr16', 'chr17',
+               'chr18', 'chr19', 'chr20', 
+               'chr21', 'chr22', 'chrX', 'chrY')
 ```
 

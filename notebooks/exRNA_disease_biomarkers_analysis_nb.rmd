@@ -176,5 +176,18 @@ if (! file.exists(file.path(meta_data.dir, 'sample_meta_data_df.rds'))) {
 
 ```
 
+# import_data
+## 
+```{r}
+import::from(.directory = r_code.dr, .from = 'helper_analysisFunctions.R', load.tximeta.object.list)
 
+salmon_quant <- load.tximeta.object.list('salmon', 
+                                         output_data.dir = output_data.dir)
+ucsc.rmsk.salmon_quant <- load.tximeta.object.list('ucsc.rmsk.salmon', 
+                                                   output_data.dir = output_data.dir)
+process.aware.salmon_quant <- load.tximeta.object.list('process.aware.salmon', 
+                                                       output_data.dir = output_data.dir)
+
+
+```
 

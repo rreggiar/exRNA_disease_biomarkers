@@ -1,0 +1,23 @@
+#!/bin/bash
+# wraps a MySQL query to generate the UCSC RMSK trancript (insertion) to gene (repName) CSV for `Salmon` gene level summarization
+
+# generates analysis style tx to gene for good parsing of RNAseq results
+# following column format (from GENCODE) of:
+# enst, ensg, tx, gene, len, biotype
+
+## host: genome-mysql.cse.ucsc.edu
+## -N = --skip-column-names
+## -A = --no-auto-rehash
+## -D = --database
+
+# sed converts to CSV; I think this approach allows for more flexible execution and control over STDOUT
+
+mysql --user=genome --host=genome-mysql.cse.ucsc.edu -N -A -D hg38 -e \
+	'select concat(repName, 
+		       "_range=", genoName, ":", genoStart, "-", genoEnd, 
+		       "_strand=", strand),
+		concat(repName, "_", repClass, "_", repFamily),
+		repName,
+		ABS(genoEnd - genoStart) AS len,
+		repClass
+		from rmsk' | sed 's/\t/,/g'

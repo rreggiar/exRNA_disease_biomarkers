@@ -77,6 +77,7 @@ ggplot2::theme_set(ggthemes::theme_foundation(base_size = base_size,
 figure.dir <- here::here('manuscript/figures')
 input_data.dir <- here::here('data/input_data')
 output_data.dir <- here::here('data/output_data')
+meta_data.dir <- here::here('data/meta_data')
 reference.dir <- here::here('reference')
 r_code.dr <- here::here('R')
 ```
@@ -110,7 +111,7 @@ gencode_ver <- 39
 
 ## meta_data_construction
 ```{r}
-if (! file.exists(file.path(output.data.dir, 'meta_data_df.rds'))) {
+if (! file.exists(file.path(meta_data.dir, 'reference_meta_data_df.rds'))) {
   
   reference_meta_data <- tibble::lst()
   
@@ -147,10 +148,10 @@ if (! file.exists(file.path(output.data.dir, 'meta_data_df.rds'))) {
     rbind(reference_meta_data$gencode_tx_to_gene.df,
           reference_meta_data$ucsc_rmsk_tx_to_gene.df)
   
-  saveRDS(reference_meta_data, file.path(output.data.dir, 'meta_data_df.rds'))
+  saveRDS(reference_meta_data, file.path(meta_data.dir, 'reference_meta_data_df.rds'))
   
 } else {
-  reference_meta_data <- readRDS(file.path(output.data.dir, 'meta_data_df.rds'))
+  reference_meta_data <- readRDS(file.path(meta_data.dir, 'reference_meta_data_df.rds'))
 }
 
 ```

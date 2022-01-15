@@ -27,8 +27,8 @@ save.manuscript.panel <- function(figure,
 }
 
 load.tximeta.object.list <- function(reference, output_data.dir = here::here('data/output_data')) {
-	import::from(.from = "HDF5Array", loadHDF5SummarizedExperiment)
-	import::from(.from = "purrr", imap)
+	import::here(.from = "HDF5Array", loadHDF5SummarizedExperiment)
+	import::here(.from = "purrr", imap)
 
 	output_data_path <- file.path(output_data.dir, paste0(reference, '_quant'))
 	message(output_data_path)

@@ -88,7 +88,7 @@ figure_single_column_width = unit(89, 'mm')
 figure_double_column_with = unit(183, 'mm')
 figure_depth = unit(247, 'mm')
 
-# install.packages("import")
+install.packages("import")
 
 import::from(.directory = r_code.dr, .from = 'helper_analysisFunctions.R', save.manuscript.panel)
 ```
@@ -173,13 +173,12 @@ if (! file.exists(file.path(meta_data.dir, 'sample_meta_data_df.rds'))) {
   sample_meta_data <- readRDS(file.path(meta_data.dir, 'sample_meta_data_df.rds'))
 }
 
-
 ```
 
 # import_data
 ## load_tximeta_obj
 ```{r}
-import::from(.directory = r_code.dr, .from = 'helper_analysisFunctions.R', load.tximeta.object.list)
+import::from(.directory = r_code.dir, .from = 'helper_analysisFunctions.R', load.tximeta.object.list)
 
 salmon_quant <- load.tximeta.object.list('salmon', 
                                          output_data.dir = output_data.dir)
@@ -191,10 +190,10 @@ process.aware.salmon_quant <- load.tximeta.object.list('process.aware.salmon',
                                                        output_data.dir = output_data.dir)
 ```
 
-# analysis
-## filter QC fails
+# analysis_INTERACTIVE
+## QC_filter
 ```{r}
-library(SummarizedExperiment)
+import::from(.from = 'SummarizedExperiment', colData)
 
 qc_fails <- c('panc.6.2.5', 'panc.7.2.5', 'panc.9.2.5', 'panc.10.2.5')
 
@@ -215,7 +214,7 @@ ucsc.rmsk.salmon_quant$bioIvt_panc_ucsc.rmsk.salmon$gxi <-
   subset.tximeta.se(ucsc.rmsk.salmon_quant$bioIvt_panc_ucsc.rmsk.salmon$gxi)
 
 process.aware.salmon_quant$bioIvt_panc_process.aware.salmon$gxi <- 
-  subset.tximeta.se(ucsc.rmsk.salmon_quant$bioIvt_panc_ucsc.rmsk.salmon$gxi)
+  subset.tximeta.se(process.aware.salmon_quant$bioIvt_panc_process.aware.salmon$gxi)
 
 
 ```
@@ -223,6 +222,7 @@ process.aware.salmon_quant$bioIvt_panc_process.aware.salmon$gxi <-
 ## construct_analysis_sets
 ```{r}
 # devtools::install_github("PeteHaitch/SparseSummarizedExperiment")
+
 
 salmon_quant$analysis_set$panc_ctrl_gene <-
   SparseSummarizedExperiment::cbind(salmon_quant$bioIvt_panc_salmon$gxi,
@@ -235,8 +235,6 @@ salmon_quant$analysis_set$covid_ctrl_gene <-
 salmon_quant$analysis_set$panc_ctrl_covid_gene <- 
   SparseSummarizedExperiment::cbind(salmon_quant$analysis$panc_ctrl_gene,
                                     salmon_quant$bioIvt_covid_salmon$gxi)
-
-
 
 ```
 

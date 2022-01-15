@@ -80,7 +80,7 @@ output_data.dir <- here::here('data/output_data')
 qc_data.dir <- here::here('data/output_data/rna_qc')
 meta_data.dir <- here::here('data/meta_data')
 reference.dir <- here::here('reference')
-r_code.dr <- here::here('R')
+r_code.dir <- here::here('R')
 ```
 
 ## figure_export
@@ -179,10 +179,15 @@ if (! file.exists(file.path(meta_data.dir, 'sample_meta_data_df.rds'))) {
 # import_data
 ## load_tximeta_obj
 ```{r}
-import::from(.directory = r_code.dir, .from = 'helper_analysisFunctions.R', load.tximeta.object.list)
+import::from(.directory = r_code.dir, 
+             .from = 'helper_analysisFunctions.R', 
+             load.tximeta.object.list,
+             parse.tximeta.quant.metadata)
 
 salmon_quant <- load.tximeta.object.list('salmon', 
                                          output_data.dir = output_data.dir)
+
+parse.tximeta.quant.metadata(salmon_quant)
 
 ucsc.rmsk.salmon_quant <- load.tximeta.object.list('ucsc.rmsk.salmon', 
                                                    output_data.dir = output_data.dir)
@@ -192,7 +197,7 @@ process.aware.salmon_quant <- load.tximeta.object.list('process.aware.salmon',
 ```
 ## build_quant_meta_data
 ```{r}
-tximeta_quant_cols_of_interest <- 
+salmon_quant_cols_of_interest <- 
   c("frag_length_mean", "frag_length_mean", "frag_length_sd",
     "num_processed", "num_mapped", "num_decoy_fragments",
     "num_dovetail_fragments", "num_fragments_filtered_vm", "num_alignments_below_threshold_for_mapped_fragments_vm",
@@ -228,14 +233,6 @@ imap(salmon_quant, function(data, project) {
   meta_out
   
 }) -> tmp_df
-
-tximeta_quant_row_names <- salmon_quant$bioIvt_covid_salmon$gxi$names
-
-salmon_quant$bioIvt_covid_salmon$gxi@metadata$quantInfo[names(salmon_quant$bioIvt_covid_salmon$gxi@metadata$quantInfo) %in% tximeta_quant_cols_of_interest] %>% as.data.frame() %>% mutate(names = tximeta_quant_row_names) -> tmp
-  
-
-
-
 
 ```
 

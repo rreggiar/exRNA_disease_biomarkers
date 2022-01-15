@@ -77,6 +77,7 @@ ggplot2::theme_set(ggthemes::theme_foundation(base_size = base_size,
 figure.dir <- here::here('manuscript/figures')
 input_data.dir <- here::here('data/input_data')
 output_data.dir <- here::here('data/output_data')
+qc_data.dir <- here::here('data/output_data/rna_qc')
 meta_data.dir <- here::here('data/meta_data')
 reference.dir <- here::here('reference')
 r_code.dr <- here::here('R')
@@ -189,6 +190,54 @@ ucsc.rmsk.salmon_quant <- load.tximeta.object.list('ucsc.rmsk.salmon',
 process.aware.salmon_quant <- load.tximeta.object.list('process.aware.salmon', 
                                                        output_data.dir = output_data.dir)
 ```
+## build_quant_meta_data
+```{r}
+tximeta_quant_cols_of_interest <- 
+  c("frag_length_mean", "frag_length_mean", "frag_length_sd",
+    "num_processed", "num_mapped", "num_decoy_fragments",
+    "num_dovetail_fragments", "num_fragments_filtered_vm", "num_alignments_below_threshold_for_mapped_fragments_vm",
+    "percent_mapped")
+
+imap(salmon_quant, function(data, project) {
+  
+  meta_obj <- data$gxi@metadata$quantInfo
+  names <- data$gxi$names
+  
+  meta_obj[names(meta_obj) %in% tximeta_quant_cols_of_interest] %>% 
+    as.data.frame() -> salmon_meta_tmp
+  
+  colnames(salmon_meta_tmp) <- paste0('salmon_', colnames(salmon_meta_tmp))
+  
+  salmon_meta_tmp %>% mutate(sample = names) -> salmon_meta_tmp
+  
+  project <- sub('_salmon', '', project)
+  
+  star_meta_tmp <- read_tsv(file.path(qc_data.dir,
+                            'star',
+                            paste0('multiqc.star.', project, '.2021-12-20-22.28.04-PST_data'),
+                            'multiqc_star.txt'))
+  
+  colnames(star_meta_tmp) <- paste0('star_', colnames(star_meta_tmp))
+  
+  star_meta_tmp %>% 
+    dplyr::rename('sample' = star_Sample) %>%
+    mutate(sample = sub('_second_pass_out', '', sample)) -> star_meta_tmp
+  
+  meta_out <- merge(star_meta_tmp, salmon_meta_tmp, by = 'sample')
+  
+  meta_out
+  
+}) -> tmp_df
+
+tximeta_quant_row_names <- salmon_quant$bioIvt_covid_salmon$gxi$names
+
+salmon_quant$bioIvt_covid_salmon$gxi@metadata$quantInfo[names(salmon_quant$bioIvt_covid_salmon$gxi@metadata$quantInfo) %in% tximeta_quant_cols_of_interest] %>% as.data.frame() %>% mutate(names = tximeta_quant_row_names) -> tmp
+  
+
+
+
+
+```
 
 # analysis_INTERACTIVE
 ## QC_filter
@@ -219,6 +268,9 @@ process.aware.salmon_quant$bioIvt_panc_process.aware.salmon$gxi <-
 
 ```
 
+
+
+
 ## construct_analysis_sets
 ```{r}
 # devtools::install_github("PeteHaitch/SparseSummarizedExperiment")
@@ -236,6 +288,11 @@ salmon_quant$analysis_set$panc_ctrl_covid_gene <-
   SparseSummarizedExperiment::cbind(salmon_quant$analysis$panc_ctrl_gene,
                                     salmon_quant$bioIvt_covid_salmon$gxi)
 
+salmon_quant$bioIvt_panc_salmon$gxi@metadata$quantInfo
 ```
 
+## run_DESeq
+```{r}
+
+```
 

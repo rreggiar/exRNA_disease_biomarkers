@@ -89,9 +89,9 @@ figure_single_column_width = unit(89, 'mm')
 figure_double_column_with = unit(183, 'mm')
 figure_depth = unit(247, 'mm')
 
-install.packages("import")
+# install.packages("import")
 
-import::from(.directory = r_code.dr, .from = 'helper_analysisFunctions.R', save.manuscript.panel)
+import::from(.directory = r_code.dir, .from = 'helper_analysisFunctions.R', save.manuscript.panel)
 ```
 
 ## analysis_const
@@ -187,13 +187,17 @@ import::from(.directory = r_code.dir,
 salmon_quant <- load.tximeta.object.list('salmon', 
                                          output_data.dir = output_data.dir)
 
-parse.tximeta.quant.metadata(salmon_quant)
+salmon_quant$quant_meta <- parse.tximeta.quant.metadata(salmon_quant)
 
 ucsc.rmsk.salmon_quant <- load.tximeta.object.list('ucsc.rmsk.salmon', 
                                                    output_data.dir = output_data.dir)
 
+ucsc.rmsk.salmon_quant$quant_meta <- parse.tximeta.quant.metadata(ucsc.rmsk.salmon_quant)
+
 process.aware.salmon_quant <- load.tximeta.object.list('process.aware.salmon', 
                                                        output_data.dir = output_data.dir)
+
+process.aware.salmon_quant$quant_meta <- parse.tximeta.quant.metadata(process.aware.salmon_quant)
 ```
 ## build_quant_meta_data
 ```{r}

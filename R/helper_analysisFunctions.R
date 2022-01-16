@@ -72,10 +72,12 @@ parse.tximeta.quant.metadata <- function(se_list, qc_data.dir = here::here('data
 
 			     imap(se_list, function(data, project) {
 
+					  message(project)
+
 					  meta_obj <- data$gxi@metadata$quantInfo
 					  names <- data$gxi$names
 
-					  meta_obj[names(meta_obj) %in% tximeta_quant_cols_of_interest] %>%
+					  meta_obj[names(meta_obj) %in% salmon_quant_cols_of_interest] %>%
 					    as.data.frame() -> salmon_meta_tmp
 
 					  colnames(salmon_meta_tmp) <- paste0('salmon_', colnames(salmon_meta_tmp))
@@ -83,6 +85,8 @@ parse.tximeta.quant.metadata <- function(se_list, qc_data.dir = here::here('data
 					  salmon_meta_tmp %>% mutate(sample = names) -> salmon_meta_tmp
 
 					  project <- sub('_salmon', '', project)
+					  project <- sub('_ucsc.rmsk.salmon', '', project)
+					  project <- sub('_process.aware.salmon', '', project)
 
 					  star_meta_tmp <- read_tsv(file.path(qc_data.dir,
 								    'star',

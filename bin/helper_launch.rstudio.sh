@@ -31,6 +31,7 @@ docker run --rm -p 127.0.0.1:"${PORT}":8787 -e DISABLE_AUTH=true \
 	-e USERID="${USER_ID}" \
 	-e ROOT=TRUE \
 	--detach \
+	--name "${PROJ}" \
 	-v "${DATA}" \
 	-v "${NOTEBOOKS}" \
 	-v "${MANUSCRIPT}" \

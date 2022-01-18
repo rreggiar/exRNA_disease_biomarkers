@@ -87,11 +87,13 @@ parse.tximeta.quant.metadata <- function(se_list, qc_data.dir = here::here('data
 					  project <- sub('_salmon', '', project)
 					  project <- sub('_ucsc.rmsk.salmon', '', project)
 					  project <- sub('_process.aware.salmon', '', project)
+					  
+					  star_meta_tmp_path <- Sys.glob(file.path(qc_data.dir,
+            					                     'star',
+            					                     paste0('multiqc.star.', project, '.*_data'),
+            					                     'multiqc_star.txt'))
 
-					  star_meta_tmp <- read_tsv(file.path(qc_data.dir,
-								    'star',
-								    paste0('multiqc.star.', project, '.2021-12-20-22.28.04-PST_data'),
-								    'multiqc_star.txt'))
+					  star_meta_tmp <- read_tsv(star_meta_tmp_path)
 
 					  colnames(star_meta_tmp) <- paste0('star_', colnames(star_meta_tmp))
 

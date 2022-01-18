@@ -203,25 +203,37 @@ process.aware.salmon_quant$quant_meta <- parse.tximeta.quant.metadata(process.aw
 # analysis_INTERACTIVE
 ## QC_filter
 ```{r}
-import::from(.from = 'SummarizedExperiment', colData)
 
 qc_fails <- c('panc.6.2.5', 'panc.7.2.5', 'panc.9.2.5', 'panc.10.2.5')
 
 
-subset.tximeta.se <- function(se,se_quant_meta) { 
+subset.tximeta.se <- function(se, filter_list = qc_fails) { 
   
-  sub_se <- 
-    SummarizedExperiment::subset(se, select = !colData(se)$names %in% qc_fails)
+  import::here(.from = 'SummarizedExperiment', colData)
+  import::here(.from = 'tibble', lst)
   
-  sub_se
+  txi_return <- 
+    SummarizedExperiment::subset(se[['txi']], select = !colData(se[['txi']])$names %in% qc_fails)
+
+  gxi_return <- 
+    SummarizedExperiment::subset(se[['gxi']], select = !colData(se[['gxi']])$names %in% qc_fails)
+  
+  lst('gxi' = gxi_return,
+      'txi' = txi_return)
   
 }
 
-salmon_quant$bioIvt_panc_salmon$txi <- 
-  subset.tximeta.se(salmon_quant$bioIvt_panc_salmon$txi)
+salmon_quant$bioIvt_panc_salmon <- 
+  subset.tximeta.se(salmon_quant$bioIvt_panc_salmon, 
+                    filter_list = qc_fails)
 
-salmon_quant$bioIvt_panc_salmon$gxi <- 
-  subset.tximeta.se(salmon_quant$bioIvt_panc_salmon$gxi)
+ucsc.rmsk.salmon_quant$bioIvt_panc_ucsc.rmsk.salmon <- 
+  subset.tximeta.se(ucsc.rmsk.salmon_quant$bioIvt_panc_ucsc.rmsk.salmon, 
+                    filter_list = qc_fails)
+
+process.aware.salmon_quant$bioIvt_panc_process.aware.salmon <- 
+  subset.tximeta.se(process.aware.salmon_quant$bioIvt_panc_process.aware.salmon, 
+                    filter_list = qc_fails)
 
 salmon_quant$quant_meta$bioIvt_panc_salmon <- 
   salmon_quant$quant_meta$bioIvt_panc_salmon[! salmon_quant$quant_meta$bioIvt_panc_salmon$sample %in% qc_fails, ]

@@ -85,7 +85,7 @@ function runStarSecondPass() {
 	inputDir="$1"
 	secondPassDir="$2"
 	starGenome="$3"
-	starMasterDir=${inputDir%/*}
+	starMasterDir=${inputDir%/*/*}
 
 	echo $starMasterDir
 

@@ -1,0 +1,11 @@
+Sample	STAR_mqc-generalstats-star-uniquely_mapped_percent	STAR_mqc-generalstats-star-uniquely_mapped
+ctrl.10.0.4_second_pass_out	88.84	5579650.0
+ctrl.11.1.1_second_pass_out	90.05	5245619.0
+ctrl.12.1.1_second_pass_out	89.19	6146634.0
+ctrl.13.0.7_second_pass_out	89.83	5239139.0
+ctrl.4.1.3_second_pass_out	90.46	3986369.0
+ctrl.5.1.3_second_pass_out	89.66	6000158.0
+ctrl.6.1.5_second_pass_out	89.7	4419601.0
+ctrl.7.1.2_second_pass_out	90.76	4897318.0
+ctrl.8.1.2_second_pass_out	90.22	3889328.0
+ctrl.9.1.2_second_pass_out	90.66	4847329.0

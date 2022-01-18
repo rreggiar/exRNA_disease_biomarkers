@@ -1,7 +1,0 @@
-Sample	STAR_mqc-generalstats-star-uniquely_mapped_percent	STAR_mqc-generalstats-star-uniquely_mapped
-ctrl.1.intra_second_pass_out	85.42	25266308.0
-ctrl.2.intra_second_pass_out	85.88	7298194.0
-ctrl.3.intra_second_pass_out	85.01	28027167.0
-kras.1.intra_second_pass_out	85.66	23667348.0
-kras.2.intra_second_pass_out	85.49	26659796.0
-kras.3.intra_second_pass_out	85.05	36992445.0

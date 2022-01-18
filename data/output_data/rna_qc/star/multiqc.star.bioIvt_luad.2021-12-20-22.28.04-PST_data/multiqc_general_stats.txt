@@ -1,4 +1,0 @@
-Sample	STAR_mqc-generalstats-star-uniquely_mapped_percent	STAR_mqc-generalstats-star-uniquely_mapped
-luad.1.0.30_second_pass_out	82.47	4212523.0
-luad.2.0.30_second_pass_out	70.08	3282416.0
-luad.3.0.30_second_pass_out	70.97	2440262.0

@@ -226,6 +226,8 @@ salmon_quant$bioIvt_panc_salmon$gxi <-
 salmon_quant$quant_meta$bioIvt_panc_salmon <- 
   salmon_quant$quant_meta$bioIvt_panc_salmon[! salmon_quant$quant_meta$bioIvt_panc_salmon$sample %in% qc_fails, ]
 
+##
+
 ucsc.rmsk.salmon_quant$bioIvt_panc_ucsc.rmsk.salmon$txi <- 
   subset.tximeta.se(ucsc.rmsk.salmon_quant$bioIvt_panc_ucsc.rmsk.salmon$txi)
 
@@ -234,6 +236,8 @@ ucsc.rmsk.salmon_quant$bioIvt_panc_ucsc.rmsk.salmon$gxi <-
 
 ucsc.rmsk.salmon_quant$quant_meta$bioIvt_panc_ucsc.rmsk.salmon <- 
   ucsc.rmsk.salmon_quant$quant_meta$bioIvt_panc_ucsc.rmsk.salmon[! ucsc.rmsk.salmon_quant$quant_meta$bioIvt_panc_ucsc.rmsk.salmon$sample %in% qc_fails, ]
+
+##
 
 process.aware.salmon_quant$bioIvt_panc_process.aware.salmon$txi <- 
   subset.tximeta.se(process.aware.salmon_quant$bioIvt_panc_process.aware.salmon$txi)
@@ -249,21 +253,64 @@ process.aware.salmon_quant$quant_meta$bioIvt_panc_process.aware.salmon <-
 
 ## construct_analysis_sets
 ```{r}
-# devtools::install_github("PeteHaitch/SparseSummarizedExperiment")
+tmp_fxn <- function(se_list,
+                    se_1,
+                    se_2 = NULL,
+                    analysis_set_2 = NULL) { 
+  
+  if(! "SparseSummarizedExperiment" %in% rownames(installed.packages())) { 
+    devtools::install_github("PeteHaitch/SparseSummarizedExperiment")
+  }
+  
+  if(is.null(analysis_set_2) & !is.null(se_2)) { 
+    
+    quant_meta_return <- 
+      bind_rows(se_list[['quant_meta']][names(se_list[['quant_meta']]) %in% c(se_1, se_2)])
+  
+    gxi_return <-
+        SparseSummarizedExperiment::cbind(se_list[[se_1]]$gxi,
+                                          se_list[[se_2]]$gxi)
+  
+    txi_return <- 
+        SparseSummarizedExperiment::cbind(se_list[[se_1]]$txi,
+                                        se_list[[se_2]]$txi)
+  
+    lst('gxi' = gxi_return,
+        'txi' = txi_return,
+        'quant_meta' = quant_meta_return)
+    
+  } else {
+      
+    quant_meta_return <- 
+      rbind(se_list[['quant_meta']][names(se_list[['quant_meta']]) %in% c(se_1)][[1]],
+            analysis_set_2[['quant_meta']]) %>% 
+      distinct()
+    
+    gxi_return <-
+        SparseSummarizedExperiment::cbind(se_list[[se_1]]$gxi,
+                                          analysis_set_2[['gxi']])
+    txi_return <-
+        SparseSummarizedExperiment::cbind(se_list[[se_1]]$txi,
+                                          analysis_set_2[['txi']])
+
+    lst('gxi' = gxi_return,
+        'txi' = txi_return,
+        'quant_meta' = quant_meta_return)
+
+    }
+
+}
 
 
-salmon_quant$analysis_set$panc_ctrl_gene <-
-  SparseSummarizedExperiment::cbind(salmon_quant$bioIvt_panc_salmon$gxi,
-                                    salmon_quant$pittsburgh_ctrl_salmon$gxi)
+salmon_quant$analysis_set$panc_ctrl <- 
+  tmp_fxn(se_list = salmon_quant, se_1 = 'bioIvt_panc_salmon', se_2 = 'pittsburgh_ctrl_salmon')
 
-salmon_quant$analysis_set$covid_ctrl_gene <-
-  SparseSummarizedExperiment::cbind(salmon_quant$bioIvt_covid_salmon$gxi,
-                                    salmon_quant$pittsburgh_ctrl_salmon$gxi)
+salmon_quant$analysis_set$covid_ctrl <- 
+  tmp_fxn(se_list = salmon_quant, se_1 = 'bioIvt_covid_salmon', se_2 = 'pittsburgh_ctrl_salmon')
 
-salmon_quant$analysis_set$panc_ctrl_covid_gene <- 
-  SparseSummarizedExperiment::cbind(salmon_quant$analysis$panc_ctrl_gene,
-                                    salmon_quant$bioIvt_covid_salmon$gxi)
-
+salmon_quant$analysis_set$ctrl_panc_covid <- 
+  tmp_fxn(se_list = salmon_quant, se_1 = 'bioIvt_covid_salmon', 
+          analysis_set_2 = salmon_quant$analysis_set$panc_ctrl)
 ```
 
 ## run_DESeq

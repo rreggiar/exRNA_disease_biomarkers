@@ -199,46 +199,6 @@ process.aware.salmon_quant <- load.tximeta.object.list('process.aware.salmon',
 
 process.aware.salmon_quant$quant_meta <- parse.tximeta.quant.metadata(process.aware.salmon_quant)
 ```
-## build_quant_meta_data
-```{r}
-salmon_quant_cols_of_interest <- 
-  c("frag_length_mean", "frag_length_mean", "frag_length_sd",
-    "num_processed", "num_mapped", "num_decoy_fragments",
-    "num_dovetail_fragments", "num_fragments_filtered_vm", "num_alignments_below_threshold_for_mapped_fragments_vm",
-    "percent_mapped")
-
-imap(salmon_quant, function(data, project) {
-  
-  meta_obj <- data$gxi@metadata$quantInfo
-  names <- data$gxi$names
-  
-  meta_obj[names(meta_obj) %in% tximeta_quant_cols_of_interest] %>% 
-    as.data.frame() -> salmon_meta_tmp
-  
-  colnames(salmon_meta_tmp) <- paste0('salmon_', colnames(salmon_meta_tmp))
-  
-  salmon_meta_tmp %>% mutate(sample = names) -> salmon_meta_tmp
-  
-  project <- sub('_salmon', '', project)
-  
-  star_meta_tmp <- read_tsv(file.path(qc_data.dir,
-                            'star',
-                            paste0('multiqc.star.', project, '.2021-12-20-22.28.04-PST_data'),
-                            'multiqc_star.txt'))
-  
-  colnames(star_meta_tmp) <- paste0('star_', colnames(star_meta_tmp))
-  
-  star_meta_tmp %>% 
-    dplyr::rename('sample' = star_Sample) %>%
-    mutate(sample = sub('_second_pass_out', '', sample)) -> star_meta_tmp
-  
-  meta_out <- merge(star_meta_tmp, salmon_meta_tmp, by = 'sample')
-  
-  meta_out
-  
-}) -> tmp_df
-
-```
 
 # analysis_INTERACTIVE
 ## QC_filter
@@ -248,7 +208,7 @@ import::from(.from = 'SummarizedExperiment', colData)
 qc_fails <- c('panc.6.2.5', 'panc.7.2.5', 'panc.9.2.5', 'panc.10.2.5')
 
 
-subset.tximeta.se <- function(se) { 
+subset.tximeta.se <- function(se,se_quant_meta) { 
   
   sub_se <- 
     SummarizedExperiment::subset(se, select = !colData(se)$names %in% qc_fails)
@@ -257,20 +217,35 @@ subset.tximeta.se <- function(se) {
   
 }
 
+salmon_quant$bioIvt_panc_salmon$txi <- 
+  subset.tximeta.se(salmon_quant$bioIvt_panc_salmon$txi)
+
 salmon_quant$bioIvt_panc_salmon$gxi <- 
   subset.tximeta.se(salmon_quant$bioIvt_panc_salmon$gxi)
+
+salmon_quant$quant_meta$bioIvt_panc_salmon <- 
+  salmon_quant$quant_meta$bioIvt_panc_salmon[! salmon_quant$quant_meta$bioIvt_panc_salmon$sample %in% qc_fails, ]
+
+ucsc.rmsk.salmon_quant$bioIvt_panc_ucsc.rmsk.salmon$txi <- 
+  subset.tximeta.se(ucsc.rmsk.salmon_quant$bioIvt_panc_ucsc.rmsk.salmon$txi)
 
 ucsc.rmsk.salmon_quant$bioIvt_panc_ucsc.rmsk.salmon$gxi <- 
   subset.tximeta.se(ucsc.rmsk.salmon_quant$bioIvt_panc_ucsc.rmsk.salmon$gxi)
 
+ucsc.rmsk.salmon_quant$quant_meta$bioIvt_panc_ucsc.rmsk.salmon <- 
+  ucsc.rmsk.salmon_quant$quant_meta$bioIvt_panc_ucsc.rmsk.salmon[! ucsc.rmsk.salmon_quant$quant_meta$bioIvt_panc_ucsc.rmsk.salmon$sample %in% qc_fails, ]
+
+process.aware.salmon_quant$bioIvt_panc_process.aware.salmon$txi <- 
+  subset.tximeta.se(process.aware.salmon_quant$bioIvt_panc_process.aware.salmon$txi)
+
 process.aware.salmon_quant$bioIvt_panc_process.aware.salmon$gxi <- 
   subset.tximeta.se(process.aware.salmon_quant$bioIvt_panc_process.aware.salmon$gxi)
 
+process.aware.salmon_quant$quant_meta$bioIvt_panc_process.aware.salmon <- 
+  process.aware.salmon_quant$quant_meta$bioIvt_panc_process.aware.salmon[! process.aware.salmon_quant$quant_meta$bioIvt_panc_process.aware.salmon$sample %in% qc_fails, ]
+
 
 ```
-
-
-
 
 ## construct_analysis_sets
 ```{r}
@@ -289,7 +264,6 @@ salmon_quant$analysis_set$panc_ctrl_covid_gene <-
   SparseSummarizedExperiment::cbind(salmon_quant$analysis$panc_ctrl_gene,
                                     salmon_quant$bioIvt_covid_salmon$gxi)
 
-salmon_quant$bioIvt_panc_salmon$gxi@metadata$quantInfo
 ```
 
 ## run_DESeq

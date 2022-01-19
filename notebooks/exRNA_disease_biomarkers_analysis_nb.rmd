@@ -187,17 +187,17 @@ import::from(.directory = r_code.dir,
 salmon_quant <- load.tximeta.object.list('salmon', 
                                          output_data.dir = output_data.dir)
 
-salmon_quant$quant_meta <- parse.tximeta.quant.metadata(salmon_quant)
+salmon_quant <- parse.tximeta.quant.metadata(salmon_quant)
 
 ucsc.rmsk.salmon_quant <- load.tximeta.object.list('ucsc.rmsk.salmon', 
                                                    output_data.dir = output_data.dir)
 
-ucsc.rmsk.salmon_quant$quant_meta <- parse.tximeta.quant.metadata(ucsc.rmsk.salmon_quant)
+ucsc.rmsk.salmon_quant <- parse.tximeta.quant.metadata(ucsc.rmsk.salmon_quant)
 
 process.aware.salmon_quant <- load.tximeta.object.list('process.aware.salmon', 
                                                        output_data.dir = output_data.dir)
 
-process.aware.salmon_quant$quant_meta <- parse.tximeta.quant.metadata(process.aware.salmon_quant)
+process.aware.salmon_quant <- parse.tximeta.quant.metadata(process.aware.salmon_quant)
 ```
 
 # analysis_INTERACTIVE
@@ -213,13 +213,19 @@ subset.tximeta.se <- function(se, filter_list = qc_fails) {
   import::here(.from = 'tibble', lst)
   
   txi_return <- 
-    SummarizedExperiment::subset(se[['txi']], select = !colData(se[['txi']])$names %in% qc_fails)
+    SummarizedExperiment::subset(se[['txi']], 
+                                 select = !colData(se[['txi']])$names %in% filter_list)
 
   gxi_return <- 
-    SummarizedExperiment::subset(se[['gxi']], select = !colData(se[['gxi']])$names %in% qc_fails)
+    SummarizedExperiment::subset(se[['gxi']], 
+                                 select = !colData(se[['gxi']])$names %in% filter_list)
   
-  lst('gxi' = gxi_return,
-      'txi' = txi_return)
+  quant_meta_return <- 
+    se[['quant_meta']][! se[['quant_meta']]$sample %in% filter_list, ]
+  
+  lst('txi' = gxi_return,
+      'gxi' = txi_return,
+      'quant_meta' = quant_meta_return)
   
 }
 
@@ -234,31 +240,6 @@ ucsc.rmsk.salmon_quant$bioIvt_panc_ucsc.rmsk.salmon <-
 process.aware.salmon_quant$bioIvt_panc_process.aware.salmon <- 
   subset.tximeta.se(process.aware.salmon_quant$bioIvt_panc_process.aware.salmon, 
                     filter_list = qc_fails)
-
-salmon_quant$quant_meta$bioIvt_panc_salmon <- 
-  salmon_quant$quant_meta$bioIvt_panc_salmon[! salmon_quant$quant_meta$bioIvt_panc_salmon$sample %in% qc_fails, ]
-
-##
-
-ucsc.rmsk.salmon_quant$bioIvt_panc_ucsc.rmsk.salmon$txi <- 
-  subset.tximeta.se(ucsc.rmsk.salmon_quant$bioIvt_panc_ucsc.rmsk.salmon$txi)
-
-ucsc.rmsk.salmon_quant$bioIvt_panc_ucsc.rmsk.salmon$gxi <- 
-  subset.tximeta.se(ucsc.rmsk.salmon_quant$bioIvt_panc_ucsc.rmsk.salmon$gxi)
-
-ucsc.rmsk.salmon_quant$quant_meta$bioIvt_panc_ucsc.rmsk.salmon <- 
-  ucsc.rmsk.salmon_quant$quant_meta$bioIvt_panc_ucsc.rmsk.salmon[! ucsc.rmsk.salmon_quant$quant_meta$bioIvt_panc_ucsc.rmsk.salmon$sample %in% qc_fails, ]
-
-##
-
-process.aware.salmon_quant$bioIvt_panc_process.aware.salmon$txi <- 
-  subset.tximeta.se(process.aware.salmon_quant$bioIvt_panc_process.aware.salmon$txi)
-
-process.aware.salmon_quant$bioIvt_panc_process.aware.salmon$gxi <- 
-  subset.tximeta.se(process.aware.salmon_quant$bioIvt_panc_process.aware.salmon$gxi)
-
-process.aware.salmon_quant$quant_meta$bioIvt_panc_process.aware.salmon <- 
-  process.aware.salmon_quant$quant_meta$bioIvt_panc_process.aware.salmon[! process.aware.salmon_quant$quant_meta$bioIvt_panc_process.aware.salmon$sample %in% qc_fails, ]
 
 
 ```

@@ -203,31 +203,11 @@ process.aware.salmon_quant <- parse.tximeta.quant.metadata(process.aware.salmon_
 # analysis_INTERACTIVE
 ## QC_filter
 ```{r}
+import::from(.directory = r_code.dir, 
+             .from = 'helper_analysisFunctions.R', 
+             subset.tximeta.se)
 
 qc_fails <- c('panc.6.2.5', 'panc.7.2.5', 'panc.9.2.5', 'panc.10.2.5')
-
-
-subset.tximeta.se <- function(se, filter_list = qc_fails) { 
-  
-  import::here(.from = 'SummarizedExperiment', colData)
-  import::here(.from = 'tibble', lst)
-  
-  txi_return <- 
-    SummarizedExperiment::subset(se[['txi']], 
-                                 select = !colData(se[['txi']])$names %in% filter_list)
-
-  gxi_return <- 
-    SummarizedExperiment::subset(se[['gxi']], 
-                                 select = !colData(se[['gxi']])$names %in% filter_list)
-  
-  quant_meta_return <- 
-    se[['quant_meta']][! se[['quant_meta']]$sample %in% filter_list, ]
-  
-  lst('txi' = gxi_return,
-      'gxi' = txi_return,
-      'quant_meta' = quant_meta_return)
-  
-}
 
 salmon_quant$bioIvt_panc_salmon <- 
   subset.tximeta.se(salmon_quant$bioIvt_panc_salmon, 

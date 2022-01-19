@@ -116,24 +116,25 @@ parse.tximeta.quant.metadata <- function(se_list, qc_data.dir = here::here('data
   return_lst
 }
 
-subset.tximeta.object <- function(tximeta.list, grep.string){
-
-  if (grepl('\\|', grep.string)){
-
-    subset.txi <- SummarizedExperiment::subset(tximeta.list$txi,
-                                         select = !grepl(grep.string, colData(tximeta.list$txi)$names))
-
-    subset.gxi <- SummarizedExperiment::subset(tximeta.list$gxi,
-                                         select = !grepl(grep.string, colData(tximeta.list$gxi)$names))
-  } else{
-
-    subset.txi <- SummarizedExperiment::subset(tximeta.list$txi,
-                                         select = grepl(grep.string, colData(tximeta.list$txi)$names))
-
-    subset.gxi <- SummarizedExperiment::subset(tximeta.list$gxi,
-                                         select = grepl(grep.string, colData(tximeta.list$gxi)$names))
-  }
-
-  return(list('txi' = subset.txi,
-              'gxi' = subset.gxi))
+subset.tximeta.se <- function(se, filter_list = qc_fails) { 
+  
+  import::here(.from = 'SummarizedExperiment', colData)
+  import::here(.from = 'tibble', lst)
+  
+  txi_return <- 
+    SummarizedExperiment::subset(se[['txi']], 
+                                 select = !colData(se[['txi']])$names %in% filter_list)
+  
+  gxi_return <- 
+    SummarizedExperiment::subset(se[['gxi']], 
+                                 select = !colData(se[['gxi']])$names %in% filter_list)
+  
+  quant_meta_return <- 
+    se[['quant_meta']][! se[['quant_meta']]$sample %in% filter_list, ]
+  
+  lst('txi' = gxi_return,
+      'gxi' = txi_return,
+      'quant_meta' = quant_meta_return)
+  
 }
+

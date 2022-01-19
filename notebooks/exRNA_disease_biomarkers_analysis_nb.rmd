@@ -229,19 +229,51 @@ process.aware.salmon_quant$bioIvt_panc_process.aware.salmon <-
 import::from(.directory = r_code.dir, 
              .from = 'helper_analysisFunctions.R', 
              build.analysis.set)
-
+##
 salmon_quant$analysis_set$panc_ctrl <- 
   build.analysis.set(se_list = salmon_quant, 
-                     se_1 = 'bioIvt_panc_salmon', se_2 = 'pittsburgh_ctrl_salmon')
+                     se_1 = 'bioIvt_panc_salmon', 
+                     se_2 = 'pittsburgh_ctrl_salmon')
 
 salmon_quant$analysis_set$covid_ctrl <- 
   build.analysis.set(se_list = salmon_quant, 
-                     se_1 = 'bioIvt_covid_salmon', se_2 = 'pittsburgh_ctrl_salmon')
+                     se_1 = 'bioIvt_covid_salmon', 
+                     se_2 = 'pittsburgh_ctrl_salmon')
 
 salmon_quant$analysis_set$ctrl_panc_covid <- 
   build.analysis.set(se_list = salmon_quant, 
                      se_1 = 'bioIvt_covid_salmon', 
                      analysis_set_2 = salmon_quant$analysis_set$panc_ctrl)
+##
+ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl <- 
+    build.analysis.set(se_list = ucsc.rmsk.salmon_quant, 
+                       se_1 = 'bioIvt_panc_ucsc.rmsk.salmon', 
+                       se_2 = 'pittsburgh_ctrl_ucsc.rmsk.salmon')
+
+ucsc.rmsk.salmon_quant$analysis_set$covid_ctrl <- 
+    build.analysis.set(se_list = ucsc.rmsk.salmon_quant, 
+                       se_1 = 'bioIvt_covid_ucsc.rmsk.salmon', 
+                       se_2 = 'pittsburgh_ctrl_ucsc.rmsk.salmon')
+
+ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid <- 
+    build.analysis.set(se_list = ucsc.rmsk.salmon_quant, 
+                       se_1 = 'bioIvt_covid_ucsc.rmsk.salmon', 
+                       analysis_set_2 = ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl)
+##
+process.aware.salmon_quant$analysis_set$panc_ctrl <- 
+    build.analysis.set(se_list = process.aware.salmon_quant, 
+                       se_1 = 'bioIvt_panc_process.aware.salmon', 
+                       se_2 = 'pittsburgh_ctrl_process.aware.salmon')
+
+process.aware.salmon_quant$analysis_set$covid_ctrl <- 
+    build.analysis.set(se_list = process.aware.salmon_quant, 
+                       se_1 = 'bioIvt_covid_process.aware.salmon', 
+                       se_2 = 'pittsburgh_ctrl_process.aware.salmon')
+
+process.aware.salmon_quant$analysis_set$ctrl_panc_covid <- 
+    build.analysis.set(se_list = process.aware.salmon_quant, 
+                       se_1 = 'bioIvt_covid_process.aware.salmon', 
+                       analysis_set_2 = process.aware.salmon_quant$analysis_set$panc_ctrl)
 ```
 
 ## run_DESeq

@@ -150,7 +150,7 @@ build.analysis.set <- function(se_list,
   if(is.null(analysis_set_2) & !is.null(se_2)) { 
     
     quant_meta_return <- 
-      lapply(salmon_quant[names(salmon_quant) %in% c(se_1, se_2)], 
+      lapply(salmon_quant[names(se_list) %in% c(se_1, se_2)], 
              function(se) { se$quant_meta }) %>% bind_rows()
     
     gxi_return <-

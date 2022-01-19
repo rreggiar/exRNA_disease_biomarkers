@@ -144,6 +144,8 @@ build.analysis.set <- function(se_list,
                                analysis_set_2 = NULL,
                                sample_meta_in) { 
   
+  import::here(.from = 'SummarizedExperiment', colData)
+  
   if(! "SparseSummarizedExperiment" %in% rownames(installed.packages())) { 
     devtools::install_github("PeteHaitch/SparseSummarizedExperiment")
   }
@@ -154,7 +156,14 @@ build.analysis.set <- function(se_list,
       lapply(salmon_quant[names(se_list) %in% c(se_1, se_2)], 
              function(se) { se$quant_meta }) %>% bind_rows()
     
-    quant_meta_return %>% 
+    sample_meta_return <- 
+      lapply(salmon_quant[names(se_list) %in% c(se_1, se_2)], 
+             function(se) { colData(se$gxi) %>% 
+                             as.data.frame() %>% 
+                             remove_rownames() }) %>% bind_rows()
+    
+    merge(quant_meta_return, 
+          sample_meta_return, by.x = 'sample',by.y = 'names') %>% 
       merge(sample_meta_in %>% select(-condition),
             by.x = 'sample', by.y = 'patient') -> quant_meta_return
     
@@ -173,13 +182,24 @@ build.analysis.set <- function(se_list,
   } else {
     
     quant_meta_return <- 
-      rbind(se_list[['quant_meta']][names(se_list[['quant_meta']]) %in% c(se_1)][[1]],
-            analysis_set_2[['quant_meta']]) %>% 
-      distinct()
+      lapply(salmon_quant[names(se_list) %in% c(se_1)], 
+             function(se) { se$quant_meta }) %>% bind_rows()
     
-    quant_meta_return %>% 
+    sample_meta_return <- 
+      lapply(salmon_quant[names(se_list) %in% c(se_1, se_2)], 
+             function(se) { colData(se$gxi) %>% 
+                 as.data.frame() %>% 
+                 remove_rownames() }) %>% bind_rows()
+    
+    merge(quant_meta_return, 
+          sample_meta_return, by.x = 'sample',by.y = 'names') %>% 
       merge(sample_meta_in %>% select(-condition),
             by.x = 'sample', by.y = 'patient') -> quant_meta_return
+    
+    quant_meta_return <- 
+      rbind(quant_meta_return,
+            analysis_set_2[['quant_meta']]) %>% 
+      distinct()
     
     gxi_return <-
       SparseSummarizedExperiment::cbind(se_list[[se_1]]$gxi,

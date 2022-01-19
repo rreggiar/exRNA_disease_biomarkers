@@ -244,8 +244,8 @@ salmon_quant$analysis_set$covid_ctrl <-
 
 salmon_quant$analysis_set$ctrl_panc_covid <- 
   build.analysis.set(se_list = salmon_quant, 
-                     se_1 = 'bioIvt_covid_salmon', 
-                     analysis_set_2 = salmon_quant$analysis_set$panc_ctrl,
+                     se_1 = 'bioIvt_panc_salmon', 
+                     analysis_set_2 = salmon_quant$analysis_set$covid_ctrl,
                      sample_meta_in = sample_meta_data$`2022.01.14_combined_meta_data.csv`)
 ##
 ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl <- 
@@ -284,6 +284,10 @@ process.aware.salmon_quant$analysis_set$ctrl_panc_covid <-
 
 import::from(.from = 'SummarizedExperiment', colData)
 
+
+lapply(salmon_quant[names(salmon_quant) %in% c('bioIvt_panc_salmon', 'pittsburgh_ctrl_salmon')], 
+             function(se) { colData(se$gxi) %>% as.data.frame() %>% remove_rownames()}) %>% bind_rows()
+
 type <- 'gxi'
 base_level <- 'ctrl'
 sample_meta_in <- sample_meta_data$`2022.01.14_bioIVTAndPitts_meta_data.csv`
@@ -291,9 +295,7 @@ input_se <- salmon_quant$analysis_set$panc_ctrl
 
 colData(input_se[[type]]) %>% 
   as.data.frame() %>% 
-  remove_rownames() %>% 
-  merge(sample_meta_in %>% select(-condition),
-        by.x = 'names', by.y = 'patient') %>% 
+  remove_rownames() 
   mutate(condition = relevel(as.factor(condition), base_level))
 
 print(levels(colData.gxi$condition))

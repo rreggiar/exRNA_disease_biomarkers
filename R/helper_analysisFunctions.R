@@ -132,8 +132,8 @@ subset.tximeta.se <- function(se, filter_list = qc_fails) {
   quant_meta_return <- 
     se[['quant_meta']][! se[['quant_meta']]$sample %in% filter_list, ]
   
-  lst('txi' = gxi_return,
-      'gxi' = txi_return,
+  lst('txi' = txi_return,
+      'gxi' = gxi_return,
       'quant_meta' = quant_meta_return)
   
 }

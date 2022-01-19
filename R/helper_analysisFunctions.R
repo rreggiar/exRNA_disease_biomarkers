@@ -141,7 +141,8 @@ subset.tximeta.se <- function(se, filter_list = qc_fails) {
 build.analysis.set <- function(se_list, 
                                se_1,
                                se_2 = NULL,
-                               analysis_set_2 = NULL) { 
+                               analysis_set_2 = NULL,
+                               sample_meta_in) { 
   
   if(! "SparseSummarizedExperiment" %in% rownames(installed.packages())) { 
     devtools::install_github("PeteHaitch/SparseSummarizedExperiment")
@@ -152,6 +153,10 @@ build.analysis.set <- function(se_list,
     quant_meta_return <- 
       lapply(salmon_quant[names(se_list) %in% c(se_1, se_2)], 
              function(se) { se$quant_meta }) %>% bind_rows()
+    
+    quant_meta_return %>% 
+      merge(sample_meta_in %>% select(-condition),
+            by.x = 'sample', by.y = 'patient') -> quant_meta_return
     
     gxi_return <-
       SparseSummarizedExperiment::cbind(se_list[[se_1]]$gxi,
@@ -171,6 +176,10 @@ build.analysis.set <- function(se_list,
       rbind(se_list[['quant_meta']][names(se_list[['quant_meta']]) %in% c(se_1)][[1]],
             analysis_set_2[['quant_meta']]) %>% 
       distinct()
+    
+    quant_meta_return %>% 
+      merge(sample_meta_in %>% select(-condition),
+            by.x = 'sample', by.y = 'patient') -> quant_meta_return
     
     gxi_return <-
       SparseSummarizedExperiment::cbind(se_list[[se_1]]$gxi,

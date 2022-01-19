@@ -12,7 +12,7 @@ editor_options:
 ```{r, setup, include=FALSE}
 knitr::opts_chunk$set(fig.width = 8, collapse = T)
 knitr::opts_chunk$set(message = F)
-here::set_here('/home/rreggiar/')
+# here::set_here('/home/rreggiar/')
 here::here()
 suppressPackageStartupMessages(library(tidyverse))
 ```
@@ -233,17 +233,20 @@ import::from(.directory = r_code.dir,
 salmon_quant$analysis_set$panc_ctrl <- 
   build.analysis.set(se_list = salmon_quant, 
                      se_1 = 'bioIvt_panc_salmon', 
-                     se_2 = 'pittsburgh_ctrl_salmon')
+                     se_2 = 'pittsburgh_ctrl_salmon',
+                     sample_meta_in = sample_meta_data$`2022.01.14_bioIVTAndPitts_meta_data.csv`)
 
 salmon_quant$analysis_set$covid_ctrl <- 
   build.analysis.set(se_list = salmon_quant, 
                      se_1 = 'bioIvt_covid_salmon', 
-                     se_2 = 'pittsburgh_ctrl_salmon')
+                     se_2 = 'pittsburgh_ctrl_salmon',
+                     sample_meta_in = sample_meta_data$`2022.01.14_combined_meta_data.csv`)
 
 salmon_quant$analysis_set$ctrl_panc_covid <- 
   build.analysis.set(se_list = salmon_quant, 
                      se_1 = 'bioIvt_covid_salmon', 
-                     analysis_set_2 = salmon_quant$analysis_set$panc_ctrl)
+                     analysis_set_2 = salmon_quant$analysis_set$panc_ctrl,
+                     sample_meta_in = sample_meta_data$`2022.01.14_combined_meta_data.csv`)
 ##
 ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl <- 
     build.analysis.set(se_list = ucsc.rmsk.salmon_quant, 
@@ -279,5 +282,36 @@ process.aware.salmon_quant$analysis_set$ctrl_panc_covid <-
 ## run_DESeq
 ```{r}
 
+import::from(.from = 'SummarizedExperiment', colData)
+
+type <- 'gxi'
+base_level <- 'ctrl'
+sample_meta_in <- sample_meta_data$`2022.01.14_bioIVTAndPitts_meta_data.csv`
+input_se <- salmon_quant$analysis_set$panc_ctrl 
+
+colData(input_se[[type]]) %>% 
+  as.data.frame() %>% 
+  remove_rownames() %>% 
+  merge(sample_meta_in %>% select(-condition),
+        by.x = 'names', by.y = 'patient') %>% 
+  mutate(condition = relevel(as.factor(condition), base_level))
+
+print(levels(colData.gxi$condition))
+
+print(colData.gxi)
+count.matrix.gxi <- assay(tximeta.object$gxi, 'counts') %>% 
+  as.data.frame() %>% 
+  rownames_to_column('gene') %>% 
+  mutate_if(is.numeric, round) %>% 
+  column_to_rownames('gene')
+  
+colData(tximeta.object$txi) %>% 
+  as.data.frame() %>% 
+  remove_rownames() -> colData.txi
+count.matrix.txi <- assay(tximeta.object$txi, 'counts') %>% 
+  as.data.frame() %>% 
+  rownames_to_column('tmp') %>% 
+  mutate_if(is.numeric, round) %>% 
+  column_to_rownames('tmp')
 ```
 

@@ -16,7 +16,9 @@ mysql --user=genome --host=genome-mysql.cse.ucsc.edu -N -A -D hg38 -e \
 	'select concat(repName, 
 		       "_range=", genoName, ":", genoStart, "-", genoEnd, 
 		       "_strand=", strand),
-		concat(repName, "_", repClass, "_", repFamily),
+		concat(repName, 
+		       "_range=", genoName, ":", genoStart, "-", genoEnd, 
+		       "_strand=", strand),
 		repName,
 		ABS(genoEnd - genoStart) AS len,
 		repClass

@@ -62,53 +62,58 @@ load.tximeta.object.list <- function(reference, output_data.dir = here::here('da
 	)
 }
 
-parse.tximeta.quant.metadata <- function(se_list, qc_data.dir = here::here('data/output_data/rna_qc')) {
+parse.tximeta.quant.metadata <- function(se_list, qc_data.dir = here::here('data/output_data/rna_qc')) { 
+  
+  import::here(.from = "purrr", imap) 
+  import::here(.from = "tibble", lst)
+  import::here(.from = 'readr', read_tsv)
+  
+  salmon_quant_cols_of_interest <-
+    c("frag_length_mean", "frag_length_mean", "frag_length_sd",
+    "num_processed", "num_mapped", "num_decoy_fragments",
+    "num_dovetail_fragments", "num_fragments_filtered_vm", "num_alignments_below_threshold_for_mapped_fragments_vm",
+    "percent_mapped") 
+  
+  imap(se_list, function(data, project) { 
+    
+    message(project)
 
-			     salmon_quant_cols_of_interest <-
-					  c("frag_length_mean", "frag_length_mean", "frag_length_sd",
-					    "num_processed", "num_mapped", "num_decoy_fragments",
-					    "num_dovetail_fragments", "num_fragments_filtered_vm", "num_alignments_below_threshold_for_mapped_fragments_vm",
-					    "percent_mapped")
+	  meta_obj <- data$gxi@metadata$quantInfo
+	  names <- data$gxi$names
 
-			     imap(se_list, function(data, project) {
+	  meta_obj[names(meta_obj) %in% salmon_quant_cols_of_interest] %>%
+	    as.data.frame() -> salmon_meta_tmp
 
-					  message(project)
+	  colnames(salmon_meta_tmp) <- paste0('salmon_', colnames(salmon_meta_tmp))
 
-					  meta_obj <- data$gxi@metadata$quantInfo
-					  names <- data$gxi$names
+	  salmon_meta_tmp %>% mutate(sample = names) -> salmon_meta_tmp
 
-					  meta_obj[names(meta_obj) %in% salmon_quant_cols_of_interest] %>%
-					    as.data.frame() -> salmon_meta_tmp
+	  project <- sub('_salmon', '', project)
+	  project <- sub('_ucsc.rmsk.salmon', '', project)
+	  project <- sub('_process.aware.salmon', '', project)
+	  
+	  star_meta_tmp_path <- Sys.glob(file.path(qc_data.dir,
+    					                     'star',
+    					                     paste0('multiqc.star.', project, '.*_data'),
+    					                     'multiqc_star.txt'))
 
-					  colnames(salmon_meta_tmp) <- paste0('salmon_', colnames(salmon_meta_tmp))
+	  star_meta_tmp <- read_tsv(star_meta_tmp_path)
 
-					  salmon_meta_tmp %>% mutate(sample = names) -> salmon_meta_tmp
+	  colnames(star_meta_tmp) <- paste0('star_', colnames(star_meta_tmp))
 
-					  project <- sub('_salmon', '', project)
-					  project <- sub('_ucsc.rmsk.salmon', '', project)
-					  project <- sub('_process.aware.salmon', '', project)
-					  
-					  star_meta_tmp_path <- Sys.glob(file.path(qc_data.dir,
-            					                     'star',
-            					                     paste0('multiqc.star.', project, '.*_data'),
-            					                     'multiqc_star.txt'))
+	  star_meta_tmp %>%
+	    dplyr::rename('sample' = star_Sample) %>%
+	    mutate(sample = sub('_second_pass_out', '', sample)) -> star_meta_tmp
 
-					  star_meta_tmp <- read_tsv(star_meta_tmp_path)
+	  meta_out <- merge(star_meta_tmp, salmon_meta_tmp, by = 'sample')
 
-					  colnames(star_meta_tmp) <- paste0('star_', colnames(star_meta_tmp))
-
-					  star_meta_tmp %>%
-					    dplyr::rename('sample' = star_Sample) %>%
-					    mutate(sample = sub('_second_pass_out', '', sample)) -> star_meta_tmp
-
-					  meta_out <- merge(star_meta_tmp, salmon_meta_tmp, by = 'sample')
-
-					  meta_out
-
-					}
-			) -> meta_df
-
-	meta_df
+	  lst('txi' = data$txi,
+	      'gxi' = data$gxi,
+	      'quant_meta' = meta_out) 
+	  
+	  }) -> return_lst 
+  
+  return_lst
 }
 
 subset.tximeta.object <- function(tximeta.list, grep.string){

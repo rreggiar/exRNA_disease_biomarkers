@@ -122,12 +122,12 @@ subset.tximeta.se <- function(se, filter_list = qc_fails) {
   import::here(.from = 'tibble', lst)
   
   txi_return <- 
-    SummarizedExperiment::subset(se[['txi']], 
-                                 select = !colData(se[['txi']])$names %in% filter_list)
+    SummarizedExperiment::subset(se$txi, 
+                                 select = !colData(se$txi)$names %in% filter_list)
   
   gxi_return <- 
-    SummarizedExperiment::subset(se[['gxi']], 
-                                 select = !colData(se[['gxi']])$names %in% filter_list)
+    SummarizedExperiment::subset(se$gxi, 
+                                 select = !colData(se$gxi)$names %in% filter_list)
   
   quant_meta_return <- 
     se[['quant_meta']][! se[['quant_meta']]$sample %in% filter_list, ]
@@ -135,6 +135,55 @@ subset.tximeta.se <- function(se, filter_list = qc_fails) {
   lst('txi' = txi_return,
       'gxi' = gxi_return,
       'quant_meta' = quant_meta_return)
+  
+}
+
+build.analysis.set <- function(se_list, 
+                               se_1,
+                               se_2 = NULL,
+                               analysis_set_2 = NULL) { 
+  
+  if(! "SparseSummarizedExperiment" %in% rownames(installed.packages())) { 
+    devtools::install_github("PeteHaitch/SparseSummarizedExperiment")
+  }
+  
+  if(is.null(analysis_set_2) & !is.null(se_2)) { 
+    
+    quant_meta_return <- 
+      lapply(salmon_quant[names(salmon_quant) %in% c(se_1, se_2)], 
+             function(se) { se$quant_meta }) %>% bind_rows()
+    
+    gxi_return <-
+      SparseSummarizedExperiment::cbind(se_list[[se_1]]$gxi,
+                                        se_list[[se_2]]$gxi)
+    
+    txi_return <-
+      SparseSummarizedExperiment::cbind(se_list[[se_1]]$txi,
+                                        se_list[[se_2]]$txi)
+    
+    lst('gxi' = gxi_return,
+        'txi' = txi_return,
+        'quant_meta' = quant_meta_return)
+    
+  } else {
+    
+    quant_meta_return <- 
+      rbind(se_list[['quant_meta']][names(se_list[['quant_meta']]) %in% c(se_1)][[1]],
+            analysis_set_2[['quant_meta']]) %>% 
+      distinct()
+    
+    gxi_return <-
+      SparseSummarizedExperiment::cbind(se_list[[se_1]]$gxi,
+                                        analysis_set_2[['gxi']])
+    txi_return <-
+      SparseSummarizedExperiment::cbind(se_list[[se_1]]$txi,
+                                        analysis_set_2[['txi']])
+    
+    lst('gxi' = gxi_return,
+        'txi' = txi_return,
+        'quant_meta' = quant_meta_return)
+    
+  }
   
 }
 

@@ -95,11 +95,11 @@ build.tximeta.obj <- function(output_name, sample_df, tx2gene, txome_tsv, projec
 	singleStrand = T
 	if(output_name == 'ucsc.rmsk.salmon') {singleStrand = F}
 
-	#import::from(.from = helper_summarizeToGene_RER.R, 
-	#	    .directory = '/public/groups/kimlab/exRNA_disease_biomarkers/R/',
-	#	    summarizeToGene_RER)
+	import::from(.from = helper_s2gene_RER.R, 
+		    .directory = '/public/groups/kimlab/exRNA_disease_biomarkers/R/',
+		    .all = T)
 
-	gxi <- summarizeToGene(txi) #, single.strand.genes.only = singleStrand)
+	gxi <- summarizeToGene_RER(txi) #, single.strand.genes.only = singleStrand)
 
 	print('save gene h5: ')
 	print(file.path(outpath,paste0(project, '_', output_name, '_gene_h5_se')))

@@ -108,6 +108,13 @@ chr_order <- c('chr1', 'chr2', 'chr3',
 
 gencode_ver <- 39
 
+three_color_pal <- RColorBrewer::brewer.pal(n = 3, 'Dark2')
+eight_color_pal <- RColorBrewer::brewer.pal(n = 8, 'Dark2')
+
+identity_color_pal <- c('ctrl' = eight_color_pal[[8]],
+                        'panc' = eight_color_pal[[2]],
+                        'covid' = eight_color_pal[[3]])
+
 ```
 
 ## meta_data_construction
@@ -284,17 +291,20 @@ ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid <-
 process.aware.salmon_quant$analysis_set$panc_ctrl <- 
     build.analysis.set(se_list = process.aware.salmon_quant, 
                        se_1 = 'bioIvt_panc_process.aware.salmon', 
-                       se_2 = 'pittsburgh_ctrl_process.aware.salmon')
+                       se_2 = 'pittsburgh_ctrl_process.aware.salmon',
+                       sample_meta_in = sample_meta_data$`2022.01.14_bioIVTAndPitts_meta_data.csv`)
 
 process.aware.salmon_quant$analysis_set$covid_ctrl <- 
     build.analysis.set(se_list = process.aware.salmon_quant, 
                        se_1 = 'bioIvt_covid_process.aware.salmon', 
-                       se_2 = 'pittsburgh_ctrl_process.aware.salmon')
+                       se_2 = 'pittsburgh_ctrl_process.aware.salmon',
+                       sample_meta_in = sample_meta_data$`2022.01.14_combined_meta_data.csv`)
 
 process.aware.salmon_quant$analysis_set$ctrl_panc_covid <- 
     build.analysis.set(se_list = process.aware.salmon_quant, 
-                       se_1 = 'bioIvt_covid_process.aware.salmon', 
-                       analysis_set_2 = process.aware.salmon_quant$analysis_set$panc_ctrl)
+                       se_1 = 'bioIvt_panc_process.aware.salmon', 
+                       analysis_set_2 = process.aware.salmon_quant$analysis_set$covid_ctrl,
+                       sample_meta_in = sample_meta_data$`2022.01.14_combined_meta_data.csv`)
 ```
 
 ## generate_filters_and_normalized_counts
@@ -310,45 +320,58 @@ if(! "apeglm" %in% rownames(installed.packages())) {
 type <- 'gxi'
 base_level <- 'ctrl'
 input_se <- ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid 
+dds_formula <- as.formula(~age+input_vol+condition)
 
-input_se$quant_meta$condition <- relevel(as.factor(input_se$quant_meta$condition), ref = base_level)
+scaled_quant_meta_for_de.df <- 
+  input_se$quant_meta %>% 
+    mutate(input_vol = as.numeric(input_vol),
+           condition = relevel(as.factor(condition), ref = base_level)) %>% 
+    mutate_if(is.numeric, ~scale(., center = T)) %>% 
+    mutate_if(is.character, ~as.factor(.))
 
-input_se$quant_meta %>% 
-  mutate(input_vol = as.numeric(input_vol)) %>% 
-  mutate_if(is.numeric, ~scale(., center = T)) %>% 
-  mutate_if(is.character, ~as.factor(.)) -> input_se$quant_meta_for_de
+print(levels(scaled_quant_meta_for_de$condition))
 
-print(levels(input_se$quant_meta$condition))
+gencode_sex_filter.df <-
+  rowRanges(input_se[[type]]) %>% as.data.frame() %>% 
+  filter(seqnames %in% c('chrX', 'chrY'),
+         grepl('ENSG', group_name))
 
-rowRanges(input_se[[type]]) %>% as.data.frame() %>% 
-  filter(seqnames %in% c('chrX', 'chrY')) -> sex_filter
-
-count_matrix.df <- assay(input_se[[type]], 'counts') %>% 
+count_matrix.df <- 
+  assay(input_se[[type]], 'counts') %>% 
   as.data.frame() %>% 
   rownames_to_column('gene') %>% 
   mutate_if(is.numeric, round) %>% 
   column_to_rownames('gene')
 
-# dds_formula <- as.formula(~diabetes+age+input_vol+condition)
-dds_formula <- as.formula(~age+input_vol+condition)
-
 input_set_dds <- DESeqDataSetFromMatrix(countData = count_matrix.df, 
-                                        colData = input_se$quant_meta_for_de, 
+                                        colData = scaled_quant_meta_for_de.df, 
                                         design = dds_formula)
 
 input_set_dds <- estimateSizeFactors(input_set_dds)
 
-input_set_dds_norm_counts <- as.data.frame(counts(input_set_dds, normalized=T))
+input_set_dds_norm_counts.df <- as.data.frame(counts(input_set_dds, normalized=T))
 
-input_set_dds_norm_counts %>% 
-  rownames_to_column('ensg') %>% 
-  gather(sample, count, -ensg) %>% 
-  merge(input_se$quant_meta %>% select(sample, age, condition), by = 'sample') %>% 
-  group_by(condition, ensg) %>% 
-  summarize(age_cor = cor(count, age, method = 'pearson')) %>% 
-  drop_na() %>% 
-  filter(abs(age_cor) >= 0.70) %>% 
-  spread(condition, age_cor) -> condition_aware_age_cor_filter
+condition_aware_age_cor_filter <- 
+  input_set_dds_norm_counts.df %>% 
+    rownames_to_column('ensg') %>% 
+    gather(sample, count, -ensg) %>% 
+    merge(input_se$quant_meta %>% select(sample, age, condition), by = 'sample') %>% 
+    group_by(condition, ensg) %>% 
+    summarize(age_cor = cor(count, age, method = 'pearson')) %>% 
+    drop_na() %>% 
+    filter(abs(age_cor) >= 0.70) %>% 
+    spread(condition, age_cor)
+
+condition_aware_input_vol_cor_filter <- 
+  input_set_dds_norm_counts.df %>% 
+    rownames_to_column('ensg') %>% 
+    gather(sample, count, -ensg) %>% 
+    merge(input_se$quant_meta %>% select(sample, input_vol, condition), by = 'sample') %>% head()
+    group_by(condition, ensg) %>% 
+    summarize(input_vol_cor = cor(count, input_vol, method = 'pearson')) %>% 
+    drop_na() %>% 
+    filter(abs(input_vol_cor) >= 0.70) %>% 
+    spread(condition, input_vol_cor)
 
 input_set_dds_vst_counts <-  as.data.frame(assay(vst(input_set_dds, blind = F)))
 

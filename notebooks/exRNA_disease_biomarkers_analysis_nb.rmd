@@ -207,7 +207,8 @@ import::from(.directory = r_code.dir,
              .from = 'helper_analysisFunctions.R', 
              subset.tximeta.se)
 
-qc_fails <- c('panc.6.2.5', 'panc.7.2.5', 'panc.9.2.5', 'panc.10.2.5', 'covid.427.0.80', 'covid.381.0.80')
+qc_fails <- c('panc.6.2.5', 'panc.7.2.5', 'panc.9.2.5', 
+              'panc.10.2.5', 'covid.427.0.80', 'covid.381.0.80')
 
 salmon_quant$bioIvt_panc_salmon <- 
   subset.tximeta.se(salmon_quant$bioIvt_panc_salmon, 
@@ -322,8 +323,6 @@ print(levels(input_se$quant_meta$condition))
 rowRanges(input_se[[type]]) %>% as.data.frame() %>% 
   filter(seqnames %in% c('chrX', 'chrY')) -> sex_filter
 
-rowRanges(input_se[['txi']]) %>% as.data.frame() %>% View()
-
 count_matrix.df <- assay(input_se[[type]], 'counts') %>% 
   as.data.frame() %>% 
   rownames_to_column('gene') %>% 
@@ -348,11 +347,8 @@ input_set_dds_norm_counts %>%
   group_by(condition, ensg) %>% 
   summarize(age_cor = cor(count, age, method = 'pearson')) %>% 
   drop_na() %>% 
-  filter(abs(age_cor) >= 0.70) -> condition_aware_age_cor_filter
-
-condition_aware_age_cor_filter %>%
-  spread(condition, age_cor) %>% 
-  View()
+  filter(abs(age_cor) >= 0.70) %>% 
+  spread(condition, age_cor) -> condition_aware_age_cor_filter
 
 input_set_dds_vst_counts <-  as.data.frame(assay(vst(input_set_dds, blind = F)))
 
@@ -435,17 +431,19 @@ covid_vs_ctrl <-
   lfcShrink(input_set_dds, coef = coef_list[[1]]) %>% 
   as.data.frame() %>% 
   rownames_to_column('ensg') %>% 
-  # filter(!ensg %in% c(condition_aware_age_cor_filter$ensg,
-  #                            sex_filter$gene_id)) %>% 
+  filter(!ensg %in% c(condition_aware_age_cor_filter$ensg,
+                             sex_filter$gene_id))
+#%>%
   merge(rowRanges(input_se[[type]]) %>% as.data.frame(), by.x = 'ensg', by.y = 'gene_id') %>% 
   merge(reference_meta_data$total_tx_to_gene.df %>% select(ensg, gene) %>% distinct(), by = 'ensg')
 
 panc_vs_ctrl <- 
-  lfcShrink(input_set_dds, coef = coef_list[[1]]) %>% 
+  lfcShrink(input_set_dds, coef = coef_list[[2]]) %>% 
   as.data.frame() %>% 
   rownames_to_column('ensg') %>% 
   filter(!ensg %in% c(condition_aware_age_cor_filter$ensg,
-                             sex_filter$gene_id)) %>% 
+                             sex_filter$gene_id)) 
+#%>% 
   merge(rowRanges(input_se[[type]]) %>% as.data.frame(), by.x = 'ensg', by.y = 'gene_id') %>% 
   merge(reference_meta_data$total_tx_to_gene.df %>% select(ensg, gene) %>% distinct(), by = 'ensg')
 

@@ -111,9 +111,11 @@ gencode_ver <- 39
 three_color_pal <- RColorBrewer::brewer.pal(n = 3, 'Dark2')
 eight_color_pal <- RColorBrewer::brewer.pal(n = 8, 'Dark2')
 
+RColorBrewer::display.brewer.pal(n = 8, 'Dark2')
+
 identity_color_pal <- c('ctrl' = eight_color_pal[[8]],
-                        'panc' = eight_color_pal[[2]],
-                        'covid' = eight_color_pal[[3]])
+                        'panc' = eight_color_pal[[3]],
+                        'covid' = eight_color_pal[[5]])
 
 ```
 
@@ -319,7 +321,7 @@ if(! "apeglm" %in% rownames(installed.packages())) {
 
 type <- 'gxi'
 base_level <- 'ctrl'
-input_se <- ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid 
+input_se <- salmon_quant$analysis_set$ctrl_panc_covid 
 dds_formula <- as.formula(~age+input_vol+condition)
 
 scaled_quant_meta_for_de.df <- 
@@ -329,12 +331,13 @@ scaled_quant_meta_for_de.df <-
     mutate_if(is.numeric, ~scale(., center = T)) %>% 
     mutate_if(is.character, ~as.factor(.))
 
-print(levels(scaled_quant_meta_for_de$condition))
+print(levels(scaled_quant_meta_for_de.df$condition))
 
 gencode_sex_filter.df <-
   rowRanges(input_se[[type]]) %>% as.data.frame() %>% 
-  filter(seqnames %in% c('chrX', 'chrY'),
-         grepl('ENSG', group_name))
+  filter(seqnames %in% c('chrY'))
+  # filter(seqnames %in% c('chrY'),
+  #        grepl('ENSG', group_name))
 
 count_matrix.df <- 
   assay(input_se[[type]], 'counts') %>% 
@@ -362,22 +365,22 @@ condition_aware_age_cor_filter <-
     filter(abs(age_cor) >= 0.70) %>% 
     spread(condition, age_cor)
 
-condition_aware_input_vol_cor_filter <- 
-  input_set_dds_norm_counts.df %>% 
-    rownames_to_column('ensg') %>% 
-    gather(sample, count, -ensg) %>% 
-    merge(input_se$quant_meta %>% select(sample, input_vol, condition), by = 'sample') %>% head()
-    group_by(condition, ensg) %>% 
-    summarize(input_vol_cor = cor(count, input_vol, method = 'pearson')) %>% 
-    drop_na() %>% 
-    filter(abs(input_vol_cor) >= 0.70) %>% 
-    spread(condition, input_vol_cor)
+# condition_aware_input_vol_cor_filter <- 
+#   input_set_dds_norm_counts.df %>% 
+#     rownames_to_column('ensg') %>% 
+#     gather(sample, count, -ensg) %>% 
+#     merge(input_se$quant_meta %>% select(sample, input_vol, condition), by = 'sample') %>% head()
+#     group_by(condition, ensg) %>% 
+#     summarize(input_vol_cor = cor(count, input_vol, method = 'pearson')) %>% 
+#     drop_na() %>% 
+#     filter(abs(input_vol_cor) >= 0.70) %>% 
+#     spread(condition, input_vol_cor)
 
 input_set_dds_vst_counts <-  as.data.frame(assay(vst(input_set_dds, blind = F)))
 
 input_set_dds_vst_counts[! rownames(input_set_dds_vst_counts) %in% 
                            c(condition_aware_age_cor_filter$ensg,
-                             sex_filter$gene_id), ] %>% t() -> pca_tmp_in 
+                             gencode_sex_filter.df$gene_id), ] %>% t() -> pca_tmp_in 
   
 pca_tmp_in_sd <- apply(pca_tmp_in, 2, sd)
 pca_tmp_in_zero_sd <- pca_tmp_in[,pca_tmp_in_sd!=0]
@@ -395,7 +398,7 @@ print(as.data.frame(pcs.props) %>%
 
 pca.out <- as.data.frame(non_zero_pca$x) %>% 
   rownames_to_column('sample') %>% 
-  merge(input_se$quant_meta_for_de, by = 'sample')
+  merge(scaled_quant_meta_for_de.df, by = 'sample')
 
 pca.out.summary <- 
   as.data.frame(summary(non_zero_pca)$importance) %>% 
@@ -410,7 +413,9 @@ pca.out %>%
   xlab(paste('PC1', round(cumsum(pcs.props)[1], digits = 3), sep = ' ')) +
   ylab(paste('PC2', round(cumsum(pcs.props)[2] - cumsum(pcs.props)[1], digits = 3), sep = ' ')) +
   geom_vline(xintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) +
-  geom_hline(yintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25)
+  geom_hline(yintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) + 
+  # scale_color_manual(values = identity_color_pal)
+  scale_color_viridis_d()
 
 pca.out %>% 
   ggplot(aes(PC2, PC3,
@@ -419,7 +424,8 @@ pca.out %>%
   xlab(paste('PC2', round(cumsum(pcs.props)[2] - cumsum(pcs.props)[1], digits = 3), sep = ' ')) +
   ylab(paste('PC3', round(cumsum(pcs.props)[3] - cumsum(pcs.props)[2], digits = 3), sep = ' ')) +
   geom_vline(xintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) +
-  geom_hline(yintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25)
+  geom_hline(yintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) + 
+  scale_color_manual(values = identity_color_pal)
 
 
 Filter(function(x) sd(x) !=0, pca.out %>% select(where(is.numeric))) %>% 
@@ -479,4 +485,68 @@ boxplot(log10(assays(input_set_dds)[["cooks"]]), range=0, las=2)
 
 
 ```
+
+## compare_samples_w_nanopore
+```{r}
+panc.7.1.1_nanopore_tpm <- read_tsv(file.path(output_data.dir, 'nanopore', 'gencodev39', 'panc.7.1.1_gene_abundance.tsv'))
+panc.6.1.1_nanopore_tpm <- read_tsv(file.path(output_data.dir, 'nanopore', 'gencodev39', 'panc.6.1.1_gene_abundance.tsv'))
+
+
+input_set_dds_norm_counts.df[, 'panc.7.1.1', drop = F] %>% rownames_to_column('Gene ID') %>% 
+  merge(panc.7.1.1_nanopore_tpm, by = 'Gene ID') %>% 
+  dplyr::rename('nanopore_tpm' = TPM) %>% 
+  mutate(illumina_tpm = panc.7.1.1*1e6/(sum(panc.7.1.1))) -> panc.7.1.1_seq_compare.df
+
+input_set_dds_norm_counts.df[, 'panc.6.1.1', drop = F] %>% rownames_to_column('Gene ID') %>% 
+  merge(panc.6.1.1_nanopore_tpm, by = 'Gene ID') %>% 
+  dplyr::rename('nanopore_tpm' = TPM) %>% 
+  mutate(illumina_tpm = panc.6.1.1*1e6/(sum(panc.6.1.1))) -> panc.6.1.1_seq_compare.df
+
+
+panc.7.1.1_seq_compare.df %>% 
+  filter(illumina_tpm > 1 & nanopore_tpm > 1) %>% 
+  ggplot(aes(log2(illumina_tpm + 1), log2(nanopore_tpm + 1), label = `Gene ID`)) + 
+  geom_point(alpha = 0.4)
+
+panc.6.1.1_seq_compare.df %>% 
+  filter(illumina_tpm > 1 & nanopore_tpm > 1) %>% 
+  ggplot(aes(log2(illumina_tpm + 1), log2(nanopore_tpm + 1), label = `Gene ID`)) + 
+  geom_point(alpha = 0.4) 
+
+
+count_matrix.df[, 'panc.7.1.1', drop = F] %>% rownames_to_column('Gene ID') %>% 
+  mutate(panc.7.1.1_tpm = panc.7.1.1*1e6/(sum(panc.7.1.1))) %>% 
+  merge(panc.7.1.1_nanopore_tpm %>% select(`Gene ID`, TPM), by = 'Gene ID') %>% 
+  dplyr::rename('panc.7.1.1_nanopore_tpm' = TPM) %>% 
+  merge(count_matrix.df[, 'panc.6.1.1', drop = F] %>% rownames_to_column('Gene ID') %>% 
+        mutate(panc.6.1.1_tpm = panc.6.1.1 *1e6/(sum(panc.6.1.1))) %>% 
+            merge(panc.6.1.1_nanopore_tpm %>% select(`Gene ID`, TPM), by = 'Gene ID') %>% 
+            dplyr::rename('panc.6.1.1_nanopore_tpm' = TPM), by = 'Gene ID') -> panc_compare.df
+
+panc_compare.df %>% 
+  # filter_if(is.numeric, ~. > 1) %>% 
+  # ggplot(aes(log2(ctrl.10.0.4_tpm + 1), log2(panc.7.1.1_tpm + 1))) + 
+  ggplot(aes(panc.6.1.1_tpm, panc.7.1.1_tpm)) + 
+  geom_point(alpha = 0.4) -> plt.1
+
+panc_compare.df %>% 
+  # filter_if(is.numeric, ~. > 1) %>% 
+  ggplot(aes(log2(panc.6.1.1_nanopore_tpm + 1), log2(panc.7.1.1_nanopore_tpm + 1))) + 
+  geom_point(alpha = 0.4) -> plt.2
+
+panc_compare.df %>% 
+  # filter_if(is.numeric, ~. > 1) %>% 
+  ggplot(aes(log2(panc.6.1.1_nanopore_tpm + 1), log2(ctrl.10.0.4_tpm + 1))) + 
+  geom_point(alpha = 0.4) -> plt.3
+
+panc_compare.df %>% 
+  # filter_if(is.numeric, ~. > 1) %>% 
+  ggplot(aes(log2(panc.7.1.1_nanopore_tpm + 1), log2(panc.7.1.1_tpm + 1))) + 
+  geom_point(alpha = 0.4) -> plt.4
+
+plt.1 + plt.3 / plt.4 + plt.2
+
+
+```
+
 

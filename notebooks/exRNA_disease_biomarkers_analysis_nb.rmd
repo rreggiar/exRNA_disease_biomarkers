@@ -60,6 +60,7 @@ ggplot2::theme_set(ggthemes::theme_foundation(base_size = base_size,
                            legend.justification = c("right", "top"),
                            legend.box.just = "right",
                            legend.margin = margin(6, 6, 6, 6),
+                           plot.tag = element_text(size = base_size, face = 'bold'),
                            plot.margin=margin(0.04,
                                               0.04,
                                               0.04,
@@ -359,12 +360,16 @@ salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_corr_out.df <-
 ## Fig_1
 ```{r figure_1}
 
-save.manuscript.panel(figure = 1,
-                      figure.dir = figure.dir,
-                      name = 'pca_total_1A',
-                      width = figure_single_column_width,
-                      height = figure_depth/2,
-                      plot.in = salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_total.plt)
+import::from(.from = 'patchwork', plot_annotation, wrap_plots)
+
+# save.manuscript.panel(figure = 1,
+#                       figure.dir = figure.dir,
+#                       name = 'pca_total_1A',
+#                       width = figure_single_column_width,
+#                       height = figure_depth/2,
+#                       plot.in = salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_total.plt)
+
+salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_total.plt 
 
 
 salmon_quant$analysis_set$ctrl_panc_covid$quant_meta %>% 
@@ -383,7 +388,7 @@ tidy_quant_meta.df %>%
   geom_jitter(aes(shape = sex), width = 0.2) +
   scale_shape_manual(values = c(21,25)) +
   ylab('%') + xlab('') +
-  ggforce::facet_col(~var) + 
+  ggforce::facet_col(~var, scales = 'free_y') + 
   scale_color_manual(values = identity_color_pal) + 
   theme(legend.position = 'right', legend.justification = 'center') +
   ggpubr::stat_compare_means(comparisons = list(c('panc', 'covid'),
@@ -391,22 +396,38 @@ tidy_quant_meta.df %>%
                                                 c('ctrl', 'panc')), 
                              method = 'wilcox', size = 2.5) -> mapping_rate_dist.plt
 
-save.manuscript.panel(figure = 1,
-                      figure.dir = figure.dir,
-                      name = 'mapping_rate_dist_1B',
-                      width = figure_single_column_width,
-                      height = figure_depth/2,
-                      plot.in = mapping_rate_dist.plt)
+mapping_rate_dist.plt
+
+
+
+# save.manuscript.panel(figure = 1,
+#                       figure.dir = figure.dir,
+#                       name = 'mapping_rate_dist_1B',
+#                       width = figure_single_column_width,
+#                       height = figure_depth/2,
+#                       plot.in = mapping_rate_dist.plt)
 
 
 ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$quant_meta %>% 
   gather(var, value, -sample, -condition, -sex, -context) %>% 
   mutate(value = as.numeric(value)) %>% 
   filter(var == 'salmon_percent_mapped') %>% 
-  dplyr::rename('gencode_percent_mapped' = value) %>% 
-  merge(tidy_quant_meta.df %>% 
+  dplyr::rename('TE-aware' = value) %>% 
+  merge(tidy_quant_meta.df %>% select(sample, var, value) %>% 
         filter(var == 'salmon_percent_mapped') %>% 
-               dplyr::rename('TE-aware_percent_mapped' = value), by = 'sample') %>% View()
+               dplyr::rename('gencode' = value) %>% 
+          select(-var), by = 'sample') -> mapping_rate_compare.df
+
+mapping_rate_compare.df %>% 
+  gather(var, value, -sample, -context, -sex, -condition, -var) %>% 
+  ggplot(aes(var, value, color = condition)) + 
+  geom_boxplot(fill = NA, outlier.colour = NA) + 
+  geom_point(aes(shape = sex)) +
+  geom_line(aes(group = sample), alpha = 0.2) +
+  scale_shape_manual(values = c(21,25)) +
+  ylab('% mapped') + xlab('') + 
+  ggforce::facet_row(~condition) +
+  scale_color_manual(values = identity_color_pal)
 
 
 

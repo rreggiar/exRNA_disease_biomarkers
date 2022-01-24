@@ -201,10 +201,13 @@ salmon_quant <- load.tximeta.object.list('salmon',
 
 salmon_quant <- parse.tximeta.quant.metadata(salmon_quant)
 
+
 ucsc.rmsk.salmon_quant <- load.tximeta.object.list('ucsc.rmsk.salmon', 
                                                    output_data.dir = output_data.dir)
 
+
 ucsc.rmsk.salmon_quant <- parse.tximeta.quant.metadata(ucsc.rmsk.salmon_quant)
+
 
 process.aware.salmon_quant <- load.tximeta.object.list('process.aware.salmon', 
                                                        output_data.dir = output_data.dir)
@@ -247,8 +250,6 @@ ucsc.rmsk.salmon_quant$bioIvt_covid_ucsc.rmsk.salmon <-
 process.aware.salmon_quant$bioIvt_covid_process.aware.salmon <- 
   subset.tximeta.se(process.aware.salmon_quant$bioIvt_covid_process.aware.salmon, 
                     filter_list = qc_fails)
-
-
 ```
 
 ## construct_analysis_sets

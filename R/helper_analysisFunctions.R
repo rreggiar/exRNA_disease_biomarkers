@@ -153,11 +153,11 @@ build.analysis.set <- function(se_list,
   if(is.null(analysis_set_2) & !is.null(se_2)) { 
     
     quant_meta_return <- 
-      lapply(salmon_quant[names(se_list) %in% c(se_1, se_2)], 
+      lapply(se_list[names(se_list) %in% c(se_1, se_2)], 
              function(se) { se$quant_meta }) %>% bind_rows()
     
     sample_meta_return <- 
-      lapply(salmon_quant[names(se_list) %in% c(se_1, se_2)], 
+      lapply(se_list[names(se_list) %in% c(se_1, se_2)], 
              function(se) { colData(se$gxi) %>% 
                              as.data.frame() %>% 
                              remove_rownames() }) %>% bind_rows()
@@ -182,11 +182,11 @@ build.analysis.set <- function(se_list,
   } else {
     
     quant_meta_return <- 
-      lapply(salmon_quant[names(se_list) %in% c(se_1)], 
+      lapply(se_list[names(se_list) %in% c(se_1)], 
              function(se) { se$quant_meta }) %>% bind_rows()
     
     sample_meta_return <- 
-      lapply(salmon_quant[names(se_list) %in% c(se_1, se_2)], 
+      lapply(se_list[names(se_list) %in% c(se_1, se_2)], 
              function(se) { colData(se$gxi) %>% 
                  as.data.frame() %>% 
                  remove_rownames() }) %>% bind_rows()

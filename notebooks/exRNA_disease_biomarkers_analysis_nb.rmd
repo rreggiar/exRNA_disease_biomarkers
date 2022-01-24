@@ -345,7 +345,7 @@ ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$deseq <-
 ```{r}
 import::from(.directory = r_code.dir, 
              .from = 'helper_analysisFunctions.R', 
-              run.pca)
+              run.pca, extract.meta.pca.correlates)
 
 salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca <- 
   run.pca(input_de = salmon_quant$analysis_set$ctrl_panc_covid$deseq)
@@ -358,21 +358,10 @@ save.manuscript.panel(figure = 1,
                       plot.in = salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_total.plt)
 
 
+salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_corr_out.df <- 
+  extract.meta.pca.correlates(pca.out = salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_out.df)
 
-
-
-Filter(function(x) sd(x) !=0, pca.out %>% select(where(is.numeric))) %>% 
-  cor(method = 'pearson') %>% 
-  as.data.frame() %>% 
-  select(-starts_with('PC')) %>% 
-  rownames_to_column('pc') %>% 
-  filter(grepl('^PC', pc)) %>% 
-  gather(var, cor, -pc) %>% 
-  mutate(pc = as.factor(as.numeric(str_remove(pc, 'PC')))) %>% 
-  filter(pc %in% c(1,2,3)) -> pca_pearson_cor.df
-  
-  
-pca_pearson_cor.df %>% 
+salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_corr_out.df %>% 
   group_by(pc) %>% 
   mutate(pc = paste0('PC', pc)) %>% 
   filter(!grepl('num', var),

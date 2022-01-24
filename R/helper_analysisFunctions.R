@@ -408,3 +408,20 @@ run.pca <- function(input_de) {
       'pca_2v3.plt' = pca_2v3.plt)
 }
 
+
+extract.meta.pca.correlates <- function(pca.out) {
+  
+  Filter(function(x) sd(x) !=0, pca.out %>% select(where(is.numeric))) %>% 
+    cor(method = 'pearson') %>% 
+    as.data.frame() %>% 
+    select(-starts_with('PC')) %>% 
+    rownames_to_column('pc') %>% 
+    filter(grepl('^PC', pc)) %>% 
+    gather(var, cor, -pc) %>% 
+    mutate(pc = as.factor(as.numeric(str_remove(pc, 'PC')))) %>% 
+    filter(pc %in% c(1,2,3)) -> pca_pearson_cor.df
+  
+  pca_pearson_cor.df
+  
+  
+}

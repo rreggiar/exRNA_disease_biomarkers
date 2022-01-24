@@ -341,7 +341,7 @@ run_de_seq <- function(type = 'gxi', base_level = 'ctrl',
   
 }
 
-run.pca <- function(input_de) {
+run.pca <- function(input_de, identity_color_pal) {
   
   import::here(.from = 'tibble', lst)
   import::here(.from = 'stats', prcomp)

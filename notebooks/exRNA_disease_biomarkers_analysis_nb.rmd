@@ -341,11 +341,8 @@ ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$deseq <-
              ref_type = 'ucsc.rmsk')
 ```
 
+## run_pca
 ```{r}
-
-
-
-
 
 input_de <- salmon_quant$analysis_set$ctrl_panc_covid$deseq
 
@@ -370,8 +367,8 @@ print(as.data.frame(pcs.props) %>%
 
 pca.out <- as.data.frame(non_zero_pca$x) %>% 
   rownames_to_column('sample') %>% 
-  # merge(input_de$scaled_quant_meta_for_de.df, by = 'sample')
-  merge(salmon_quant$analysis_set$ctrl_panc_covid$quant_meta, by = 'sample')
+  merge(input_de$scaled_quant_meta_for_de.df, by = 'sample')
+  # merge(salmon_quant$analysis_set$ctrl_panc_covid$quant_meta, by = 'sample')
 
 
 pca.out.summary <- 
@@ -410,7 +407,7 @@ pca_plt
 
 Filter(function(x) sd(x) !=0, pca.out %>% select(where(is.numeric))) %>% 
   # filter(primary_diagnosis %in% c(' ', 'Pancreatic')) %>% 
-  cor(method = 'pearson') %>% 
+  cor(method = 'spearman') %>% 
   as.data.frame() %>% 
   select(-starts_with('PC')) %>% 
   rownames_to_column('pc') %>% 
@@ -418,13 +415,6 @@ Filter(function(x) sd(x) !=0, pca.out %>% select(where(is.numeric))) %>%
   gather(var, cor, -pc) %>% 
   mutate(pc = as.factor(as.numeric(str_remove(pc, 'PC')))) %>% 
   filter(pc %in% c(1,2,3)) -> tmp_df
-
-  ggplot(aes(pc, cor, label = var)) + 
-  geom_boxplot(fill = NA, outlier.colour = NA) + 
-  geom_point(alpha = 0.5) +
-  ggrepel::geom_text_repel(aes(label = ifelse(abs(cor) >= 0.70 & grepl('percent|splice', var), 
-                                              paste0(var,'_', round(cor, 3)), ''))) +
-  ylim(-1,1) + ylab('pearson correlation')
   
   
 tmp_df %>% 
@@ -435,7 +425,8 @@ tmp_df %>%
   geom_col(fill = NA, color = 'black') +
   coord_flip() + 
   ggforce::facet_col(~pc, scales = 'free_y') + 
-  ylab('')
+  xlab('') + ylab('pearson coeff.') + 
+  geom_hline(yintercept = c(-0.5, 0.5), linetype = 'dashed', alpha = 0.4)
 
 salmon_quant$analysis_set$ctrl_panc_covid$quant_meta %>% 
   gather(var, value, -sample, -condition, -sex, -context) %>% 

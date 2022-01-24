@@ -379,32 +379,36 @@ tidy_quant_meta.df %>%
          var = factor(var, levels = c('uniquely_mapped_percent', 'multimapped_percent'))) %>% 
   ggplot(aes(condition, value, color = condition)) + 
   geom_boxplot(fill = NA, outlier.colour = NA) + 
-  # geom_jitter() +
   geom_jitter(aes(shape = sex), width = 0.2) +
-  scale_shape_manual(values = c(22,23)) +
+  scale_shape_manual(values = c(21,25)) +
   ylab('%') + xlab('') +
-  ggforce::facet_col(~var, scales = 'free_y') + 
+  ggforce::facet_col(~var) + 
   scale_color_manual(values = identity_color_pal) + 
-  theme(legend.position = 'bottom') +
+  theme(legend.position = 'right', legend.justification = 'center') +
   ggpubr::stat_compare_means(comparisons = list(c('panc', 'covid'),
                                                 c('ctrl', 'covid'), 
                                                 c('ctrl', 'panc')), 
-                             method = 'wilcox')
+                             method = 'wilcox', size = 2.5) -> mapping_rate_dist.plt
 
-meta_of_interest <- c('star_avg_input_read_length')
+save.manuscript.panel(figure = 1,
+                      figure.dir = figure.dir,
+                      name = 'mapping_rate_dist_1B',
+                      width = figure_single_column_width,
+                      height = figure_depth/2,
+                      plot.in = mapping_rate_dist.plt)
 
-tidy_quant_meta.df %>%  
-  filter(var %in% meta_of_interest) %>% 
-  mutate(var = sub('star_', '', var)) %>% 
-  ggplot(aes(condition, value)) + 
-  geom_boxplot(fill = NA, outlier.colour = NA) + 
-  geom_jitter(width = 0.2, alpha = 0.4) +
-  ylab('bp') + xlab('') +
-  ggforce::facet_row(~var, scales = 'free_y') + 
-  ggpubr::stat_compare_means(comparisons = list(c('panc', 'covid'),
-                                                c('ctrl', 'covid'), 
-                                                c('ctrl', 'panc')), 
-                             method = 'wilcox')
+
+ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$quant_meta %>% 
+  gather(var, value, -sample, -condition, -sex, -context) %>% 
+  mutate(value = as.numeric(value)) %>% 
+  filter(var == 'salmon_percent_mapped') %>% 
+  dplyr::rename('gencode_percent_mapped' = value) %>% 
+  merge(tidy_quant_meta.df %>% 
+        filter(var == 'salmon_percent_mapped') %>% 
+               dplyr::rename('TE-aware_percent_mapped' = value), by = 'sample') %>% View()
+
+
+
 ```
 
 ```{r fig_s1}
@@ -427,6 +431,24 @@ save.manuscript.panel(figure = 's1',
                       width = figure_single_column_width,
                       height = figure_depth,
                       plot.in = pca_correlation_top7.plt)
+
+
+
+
+# meta_of_interest <- c('star_avg_input_read_length')
+# 
+# tidy_quant_meta.df %>%  
+#   filter(var %in% meta_of_interest) %>% 
+#   mutate(var = sub('star_', '', var)) %>% 
+#   ggplot(aes(condition, value)) + 
+#   geom_boxplot(fill = NA, outlier.colour = NA) + 
+#   geom_jitter(width = 0.2, alpha = 0.4) +
+#   ylab('bp') + xlab('') +
+#   ggforce::facet_row(~var, scales = 'free_y') + 
+#   ggpubr::stat_compare_means(comparisons = list(c('panc', 'covid'),
+#                                                 c('ctrl', 'covid'), 
+#                                                 c('ctrl', 'panc')), 
+#                              method = 'wilcox')
 ```
 
 

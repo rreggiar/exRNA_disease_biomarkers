@@ -345,6 +345,7 @@ run.pca <- function(input_de, identity_color_pal) {
   
   import::here(.from = 'tibble', lst)
   import::here(.from = 'stats', prcomp)
+  import::here(.from = 'patchwork', .all = T)
   
   
   input_de$vst_counts.df[! rownames(input_de$vst_counts.df) %in% 

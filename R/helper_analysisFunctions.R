@@ -341,7 +341,9 @@ run_de_seq <- function(type = 'gxi', base_level = 'ctrl',
   
 }
 
-run.pca <- function(input_de, identity_color_pal) {
+run.pca <- function(input_de, 
+                    identity_color_pal, 
+                    plot_tag = 'A') {
   
   import::here(.from = 'tibble', lst)
   import::here(.from = 'stats', prcomp)
@@ -404,7 +406,7 @@ run.pca <- function(input_de, identity_color_pal) {
   A
   B
   "
-  wrap_plots(pca_1v2.plt + labs(tag = 'A'), 
+  wrap_plots(pca_1v2.plt + labs(tag = plot_tag), 
               pca_2v3.plt, 
               design = layout, 
               guides = 'collect') & 

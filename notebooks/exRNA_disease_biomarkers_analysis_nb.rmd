@@ -443,14 +443,34 @@ meta_of_interest <- c('star_multimapped_percent',
 
 tidy_quant_meta.df %>%  
   filter(var %in% meta_of_interest) %>% 
+  mutate(var = sub('star_', '', var),
+         var = factor(var, levels = c('uniquely_mapped_percent', 'multimapped_percent'))) %>% 
+  ggplot(aes(condition, value)) + 
+  geom_boxplot(fill = NA, outlier.colour = NA) + 
+  # geom_jitter() +
+  geom_jitter(aes(shape = sex), width = 0.2) +
+  scale_shape_manual(values = c(22,23)) +
+  ylab('%') + xlab('') +
+  ggforce::facet_col(~var, scales = 'free_y') + 
+  ggpubr::stat_compare_means(comparisons = list(c('panc', 'covid'),
+                                                c('ctrl', 'covid'), 
+                                                c('ctrl', 'panc')), 
+                             method = 'wilcox')
+
+meta_of_interest <- c('star_avg_input_read_length')
+
+tidy_quant_meta.df %>%  
+  filter(var %in% meta_of_interest) %>% 
   mutate(var = sub('star_', '', var)) %>% 
   ggplot(aes(condition, value)) + 
   geom_boxplot(fill = NA, outlier.colour = NA) + 
-  geom_jitter(width = 0.2) +
-  ylab('%') +
-  ggforce::facet_col(~var, scales = 'free_y') + 
-  ggpubr::stat_compare_means(comparisons = list(c('ctrl', 'covid'), 
-                                                c('ctrl', 'panc')), )
+  geom_jitter(width = 0.2, alpha = 0.4) +
+  ylab('bp') + xlab('') +
+  ggforce::facet_row(~var, scales = 'free_y') + 
+  ggpubr::stat_compare_means(comparisons = list(c('panc', 'covid'),
+                                                c('ctrl', 'covid'), 
+                                                c('ctrl', 'panc')), 
+                             method = 'wilcox')
 
 
 de_filter <- rowSums(counts(input_set_dds, normalized=T) >= 10) >= ncol(input_set_dds_norm_counts)*0.75

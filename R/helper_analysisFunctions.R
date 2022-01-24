@@ -346,7 +346,7 @@ run.pca <- function(input_de, identity_color_pal) {
   import::here(.from = 'tibble', lst)
   import::here(.from = 'stats', prcomp)
   import::here(.from = 'patchwork', .all = T)
-  
+  import::here(.from = 'ggplot2', labs)
   
   input_de$vst_counts.df[! rownames(input_de$vst_counts.df) %in% 
                            c(input_de$age_filter.df$ensg,input_de$sex_filter.df$gene_id), ] %>% 
@@ -386,6 +386,7 @@ run.pca <- function(input_de, identity_color_pal) {
     geom_hline(yintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) + 
     scale_color_manual(values = identity_color_pal) + 
     theme(axis.title.x = element_blank()) +
+    
     ylim(-200,200) -> pca_1v2.plt
   
   pca.out %>% 
@@ -399,9 +400,24 @@ run.pca <- function(input_de, identity_color_pal) {
     scale_color_manual(values = identity_color_pal) + 
     ylim(-200,200) -> pca_2v3.plt
   
-  pca_1v2.plt / pca_2v3.plt + 
-    patchwork::plot_layout(guides = 'collect') & theme(legend.position = 'top',
-                                                       legend.justification = 'center') -> pca_plt
+  layout <- "
+  A
+  B
+  "
+  wrap_plots(pca_1v2.plt + labs(tag = 'A'), 
+              pca_2v3.plt, 
+              design = layout, 
+              guides = 'collect') & 
+    theme(legend.position = 'top', 
+          legend.justification = 'center', 
+          plot.tag.position = c(0.01, 0.99)) -> pca_plt
+  
+  # pca_1v2.plt / pca_2v3.plt -> tmp.plt
+  
+  # tmp.plt + patchwork::plot_layout(guides = 'collect') & 
+  #   theme(legend.position = 'top', 
+  #         legend.justification = 'center', 
+  #         plot.tag.position = 'topleft') -> pca_plt
   
   lst('pca_total.plt' = pca_plt,
       'pca_out.df' = pca.out,

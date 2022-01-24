@@ -409,7 +409,7 @@ run.pca <- function(input_de,
   wrap_plots(pca_1v2.plt + labs(tag = plot_tag), 
               pca_2v3.plt, 
               design = layout, 
-              guides = 'collect') & 
+              guides = 'auto') & 
     theme(legend.position = 'top', 
           legend.justification = 'center', 
           plot.tag.position = c(0.01, 0.99)) -> pca_plt

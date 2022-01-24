@@ -343,84 +343,41 @@ ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$deseq <-
 
 ## run_pca
 ```{r}
+import::from(.directory = r_code.dir, 
+             .from = 'helper_analysisFunctions.R', 
+              run.pca)
 
-input_de <- salmon_quant$analysis_set$ctrl_panc_covid$deseq
+salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca <- 
+  run.pca(input_de = salmon_quant$analysis_set$ctrl_panc_covid$deseq)
 
-
-input_de$vst_counts.df[! rownames(input_de$vst_counts.df) %in% 
-                         c(input_de$age_filter.df$ensg,input_de$sex_filter.df$gene_id), ] %>% 
-  t() -> pca_tmp_in 
-  
-pca_tmp_in_sd <- apply(pca_tmp_in, 2, sd)
-pca_tmp_in_zero_sd <- pca_tmp_in[,pca_tmp_in_sd!=0]
-non_zero_pca <- prcomp(pca_tmp_in_zero_sd, center = T, scale. = T, rank. = 50)
-
-summary(non_zero_pca)
-pcs.of.interest <- apply(non_zero_pca$x, 2, var)
-pcs.props <-  pcs.of.interest/sum(pcs.of.interest)
-cumsum(pcs.props)[c(1,2)]
-print(as.data.frame(pcs.props) %>% 
-  rownames_to_column('pc') %>% 
-  mutate(pc = as.numeric(sub('PC', '', pc))) %>% 
-  ggplot(aes(pc, pcs.props)) + 
-  geom_col())
-
-pca.out <- as.data.frame(non_zero_pca$x) %>% 
-  rownames_to_column('sample') %>% 
-  merge(input_de$scaled_quant_meta_for_de.df, by = 'sample')
-  # merge(salmon_quant$analysis_set$ctrl_panc_covid$quant_meta, by = 'sample')
+save.manuscript.panel(figure = 1, 
+                      figure.dir = figure.dir, 
+                      name = 'pca_total_1A', 
+                      width = figure_single_column_width,
+                      height = figure_depth/2,
+                      plot.in = salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_total.plt)
 
 
-pca.out.summary <- 
-  as.data.frame(summary(non_zero_pca)$importance) %>% 
-  rownames_to_column('metric') %>% 
-  gather(pc, value, -metric) %>% 
-  spread(metric, value)
 
-pca.out %>% 
-  ggplot(aes(PC1, PC2,
-             color = condition)) +
-  geom_point(size = rel(2), alpha = 0.8) + 
-  xlab(paste('PC1', round(cumsum(pcs.props)[1], digits = 3), sep = ' ')) +
-  ylab(paste('PC2', round(cumsum(pcs.props)[2] - cumsum(pcs.props)[1], digits = 3), sep = ' ')) +
-  geom_vline(xintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) +
-  geom_hline(yintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) + 
-  scale_color_manual(values = identity_color_pal)  -> pca_1v2.plt
-
-pca.out %>% 
-  ggplot(aes(PC3, PC2,
-             color = condition)) +
-  geom_point(size = rel(2), alpha = 0.8) + 
-  # ylab(paste('PC2', round(cumsum(pcs.props)[2] - cumsum(pcs.props)[1], digits = 3), sep = ' ')) +
-  xlab(paste('PC3', round(cumsum(pcs.props)[3] - cumsum(pcs.props)[2], digits = 3), sep = ' ')) +
-  geom_vline(xintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) +
-  geom_hline(yintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) + 
-  scale_color_manual(values = identity_color_pal) + 
-  theme(axis.title.y = element_blank())  -> pca_2v3.plt
-
-pca_1v2.plt + pca_2v3.plt + 
-  patchwork::plot_layout(guides = 'collect') & theme(legend.position = 'top',
-                                                     legend.justification = 'center') -> pca_plt
-
-pca_plt
 
 
 Filter(function(x) sd(x) !=0, pca.out %>% select(where(is.numeric))) %>% 
-  # filter(primary_diagnosis %in% c(' ', 'Pancreatic')) %>% 
-  cor(method = 'spearman') %>% 
+  cor(method = 'pearson') %>% 
   as.data.frame() %>% 
   select(-starts_with('PC')) %>% 
   rownames_to_column('pc') %>% 
   filter(grepl('^PC', pc)) %>% 
   gather(var, cor, -pc) %>% 
   mutate(pc = as.factor(as.numeric(str_remove(pc, 'PC')))) %>% 
-  filter(pc %in% c(1,2,3)) -> tmp_df
+  filter(pc %in% c(1,2,3)) -> pca_pearson_cor.df
   
   
-tmp_df %>% 
+pca_pearson_cor.df %>% 
   group_by(pc) %>% 
   mutate(pc = paste0('PC', pc)) %>% 
-  top_n(5, wt = abs(cor)) %>% 
+  filter(!grepl('num', var),
+         ! var %in% c('input_vol', 'age')) %>% 
+  top_n(4, wt = abs(cor)) %>% 
   ggplot(aes(reorder(var, -cor), cor)) + 
   geom_col(fill = NA, color = 'black') +
   coord_flip() + 

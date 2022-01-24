@@ -341,3 +341,70 @@ run_de_seq <- function(type = 'gxi', base_level = 'ctrl',
   
 }
 
+run.pca <- function(input_de) {
+  
+  import::here(.from = 'tibble', lst)
+  import::here(.from = 'stats', prcomp)
+  
+  
+  input_de$vst_counts.df[! rownames(input_de$vst_counts.df) %in% 
+                           c(input_de$age_filter.df$ensg,input_de$sex_filter.df$gene_id), ] %>% 
+    t() -> pca_tmp_in 
+  
+  pca_tmp_in_sd <- apply(pca_tmp_in, 2, sd)
+  pca_tmp_in_zero_sd <- pca_tmp_in[,pca_tmp_in_sd!=0]
+  non_zero_pca <- prcomp(pca_tmp_in_zero_sd, center = T, scale. = T, rank. = 50)
+  
+  summary(non_zero_pca)
+  pcs.of.interest <- apply(non_zero_pca$x, 2, var)
+  pcs.props <-  pcs.of.interest/sum(pcs.of.interest)
+  cumsum(pcs.props)[c(1,2)]
+  print(as.data.frame(pcs.props) %>% 
+          rownames_to_column('pc') %>% 
+          mutate(pc = as.numeric(sub('PC', '', pc))) %>% 
+          ggplot(aes(pc, pcs.props)) + 
+          geom_col())
+  
+  pca.out <- as.data.frame(non_zero_pca$x) %>% 
+    rownames_to_column('sample') %>% 
+    merge(input_de$scaled_quant_meta_for_de.df, by = 'sample')
+  
+  pca.out.summary <- 
+    as.data.frame(summary(non_zero_pca)$importance) %>% 
+    rownames_to_column('metric') %>% 
+    gather(pc, value, -metric) %>% 
+    spread(metric, value)
+  
+  pca.out %>% 
+    ggplot(aes(PC2, PC1,
+               color = condition)) +
+    geom_point(size = rel(2), alpha = 0.8) + 
+    ylab(paste('PC1', round(cumsum(pcs.props)[1], digits = 3), sep = ' ')) +
+    # xlab(paste('PC2', round(cumsum(pcs.props)[2] - cumsum(pcs.props)[1], digits = 3), sep = ' ')) +
+    geom_vline(xintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) +
+    geom_hline(yintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) + 
+    scale_color_manual(values = identity_color_pal) + 
+    theme(axis.title.x = element_blank()) +
+    ylim(-200,200) -> pca_1v2.plt
+  
+  pca.out %>% 
+    ggplot(aes(PC2, PC3,
+               color = condition)) +
+    geom_point(size = rel(2), alpha = 0.8) + 
+    xlab(paste('PC2', round(cumsum(pcs.props)[2] - cumsum(pcs.props)[1], digits = 3), sep = ' ')) +
+    ylab(paste('PC3', round(cumsum(pcs.props)[3] - cumsum(pcs.props)[2], digits = 3), sep = ' ')) +
+    geom_vline(xintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) +
+    geom_hline(yintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) + 
+    scale_color_manual(values = identity_color_pal) + 
+    ylim(-200,200) -> pca_2v3.plt
+  
+  pca_1v2.plt / pca_2v3.plt + 
+    patchwork::plot_layout(guides = 'collect') & theme(legend.position = 'top',
+                                                       legend.justification = 'center') -> pca_plt
+  
+  lst('pca_total.plt' = pca_plt,
+      'pca_out.df' = pca.out,
+      'pca_1v2.plt' = pca_1v2.plt,
+      'pca_2v3.plt' = pca_2v3.plt)
+}
+

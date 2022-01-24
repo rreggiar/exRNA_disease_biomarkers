@@ -316,6 +316,20 @@ process.aware.salmon_quant$analysis_set$ctrl_panc_covid <-
 
 ## save memory
 ```{r}
+salmon_quant$bioIvt_covid_ucsc.rmsk.salmon <- 'NULL'
+salmon_quant$bioIvt_panc_ucsc.rmsk.salmon <- 'NULL'
+salmon_quant$bioIvt_ctrl_ucsc.rmsk.salmon <- 'NULL'
+salmon_quant$bioIvt_luad_ucsc.rmsk.salmon <- 'NULL'
+salmon_quant$panc1_intra_ucsc.rmsk.salmon <- 'NULL'
+salmon_quant$pittsburgh_ctrl_ucsc.rmsk.salmon <- 'NULL'
+
+ucsc.rmsk.salmon_quant$bioIvt_covid_ucsc.rmsk.salmon <- 'NULL'
+ucsc.rmsk.salmon_quant$bioIvt_panc_ucsc.rmsk.salmon <- 'NULL'
+ucsc.rmsk.salmon_quant$bioIvt_ctrl_ucsc.rmsk.salmon <- 'NULL'
+ucsc.rmsk.salmon_quant$bioIvt_luad_ucsc.rmsk.salmon <- 'NULL'
+ucsc.rmsk.salmon_quant$panc1_intra_ucsc.rmsk.salmon <- 'NULL'
+ucsc.rmsk.salmon_quant$pittsburgh_ctrl_ucsc.rmsk.salmon <- 'NULL'
+
 ucsc.rmsk.salmon_quant$bioIvt_covid_ucsc.rmsk.salmon <- 'NULL'
 ucsc.rmsk.salmon_quant$bioIvt_panc_ucsc.rmsk.salmon <- 'NULL'
 ucsc.rmsk.salmon_quant$bioIvt_ctrl_ucsc.rmsk.salmon <- 'NULL'
@@ -330,7 +344,6 @@ ucsc.rmsk.salmon_quant$pittsburgh_ctrl_ucsc.rmsk.salmon <- 'NULL'
 import::from(.directory = r_code.dir, 
              .from = 'helper_analysisFunctions.R', 
               run_de_seq)
-##
 
 salmon_quant$analysis_set$ctrl_panc_covid$deseq <- 
   run_de_seq(type = 'gxi', 
@@ -360,7 +373,7 @@ salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_corr_out.df <-
 ## Fig_1
 ```{r figure_1}
 
-import::from(.from = 'patchwork', plot_annotation, wrap_plots)
+import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area)
 
 # save.manuscript.panel(figure = 1,
 #                       figure.dir = figure.dir,
@@ -369,7 +382,7 @@ import::from(.from = 'patchwork', plot_annotation, wrap_plots)
 #                       height = figure_depth/2,
 #                       plot.in = salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_total.plt)
 
-salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_total.plt 
+salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_total.plt + theme(legend.position = 'none')
 
 
 salmon_quant$analysis_set$ctrl_panc_covid$quant_meta %>% 
@@ -384,8 +397,8 @@ tidy_quant_meta.df %>%
   mutate(var = sub('star_', '', var),
          var = factor(var, levels = c('uniquely_mapped_percent', 'multimapped_percent'))) %>% 
   ggplot(aes(condition, value, color = condition)) + 
-  geom_boxplot(fill = NA, outlier.colour = NA) + 
-  geom_jitter(aes(shape = sex), width = 0.2) +
+  geom_boxplot(fill = NA, outlier.colour = NA, show.legend = F) + 
+  geom_point(position = position_jitter(width = 0.2), aes(shape = sex), size = rel(2), alpha = 0.8) +
   scale_shape_manual(values = c(21,25)) +
   ylab('%') + xlab('') +
   ggforce::facet_col(~var, scales = 'free_y') + 
@@ -396,7 +409,7 @@ tidy_quant_meta.df %>%
                                                 c('ctrl', 'panc')), 
                              method = 'wilcox', size = 2.5) -> mapping_rate_dist.plt
 
-mapping_rate_dist.plt
+mapping_rate_dist.plt + labs(tag = 'B') + theme(plot.tag.position = c(0.01, 0.99))
 
 
 
@@ -421,13 +434,38 @@ ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$quant_meta %>%
 mapping_rate_compare.df %>% 
   gather(var, value, -sample, -context, -sex, -condition, -var) %>% 
   ggplot(aes(var, value, color = condition)) + 
-  geom_boxplot(fill = NA, outlier.colour = NA) + 
-  geom_point(aes(shape = sex)) +
-  geom_line(aes(group = sample), alpha = 0.2) +
+  geom_boxplot(fill = NA, outlier.colour = NA, show.legend = F) + 
+  geom_point(aes(shape = sex), size = rel(2), alpha = 0.8) +
+  geom_line(aes(group = sample), alpha = 0.2, show.legend = F) +
   scale_shape_manual(values = c(21,25)) +
-  ylab('% mapped') + xlab('') + 
-  ggforce::facet_row(~condition) +
-  scale_color_manual(values = identity_color_pal)
+  ylab('salmon % mapped') + xlab('') + 
+  ggforce::facet_row(~condition, scales = 'free_y') +
+  scale_color_manual(values = identity_color_pal) + 
+  ggpubr::stat_compare_means(comparisons = list(c('gencode', 'TE-aware')), 
+                             method = 'wilcox', paired = T, size = 2.5) -> mapping_rate_compare.plt
+
+```
+
+```{r}
+
+fig_1_layout <- "
+AC
+BC
+DD
+EE
+"
+
+wrap_plots(salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_1v2.plt + 
+             theme(legend.position = 'none') + labs(tag = 'A'),
+           salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_2v3.plt + theme(legend.position = 'none'),
+           mapping_rate_dist.plt + labs(tag = 'B'),
+           guide_area(),
+           mapping_rate_compare.plt + labs(tag = 'C'),
+           design = fig_1_layout, guides = 'collect',
+           heights = c(1,1,0.125,1)) & theme(plot.tag.position = c(0.01, 0.99), 
+                                              legend.position = 'bottom',
+                                              legend.title = element_text(vjust = -0.1),
+                                              legend.justification = c(0.5, 0.5))
 
 
 

@@ -322,7 +322,7 @@ ucsc.rmsk.salmon_quant$panc1_intra_ucsc.rmsk.salmon <- 'NULL'
 ucsc.rmsk.salmon_quant$pittsburgh_ctrl_ucsc.rmsk.salmon <- 'NULL'
 ```
 
-## generate_filters_and_normalized_counts
+## run_de_seq
 ```{r}
 
 import::from(.directory = r_code.dir, 
@@ -339,6 +339,9 @@ ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$deseq <-
   run_de_seq(type = 'gxi', 
              input_se = ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid, 
              ref_type = 'ucsc.rmsk')
+```
+
+```{r}
 
 
 

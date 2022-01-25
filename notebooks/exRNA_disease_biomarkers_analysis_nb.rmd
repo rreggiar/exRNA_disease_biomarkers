@@ -119,6 +119,16 @@ identity_color_pal <- c('ctrl' = viridis_three_color_pal[[1]],
                         'panc' = viridis_three_color_pal[[2]],
                         'covid' = viridis_three_color_pal[[3]])
 
+te_aware_annotation_levels <- c('gencode_coding',
+                                 'gencode_lncRNA',
+                                 'LINE',
+                                 'SINE',
+                                 'LTR',
+                                 'DNA',
+                                 'other')
+
+te_color_pal <- c('grey', RColorBrewer::brewer.pal(n = 6, 'Dark2'))
+names(te_color_pal) <- te_aware_annotation_levels
 
 
 ```
@@ -340,7 +350,6 @@ process.aware.salmon_quant$pittsburgh_ctrl_ucsc.rmsk.salmon <- 'NULL'
 
 ## run_de_seq
 ```{r}
-
 import::from(.directory = r_code.dir, 
              .from = 'helper_analysisFunctions.R', 
               run_de_seq)
@@ -363,17 +372,31 @@ import::from(.directory = r_code.dir,
               run.pca, extract.meta.pca.correlates)
 
 salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca <-
-  run.pca(input_de = salmon_quant$analysis_set$ctrl_panc_covid$deseq, identity_color_pal = identity_color_pal)
+  run.pca(input_de = salmon_quant$analysis_set$ctrl_panc_covid$deseq,
+          identity_color_pal = identity_color_pal)
 
 salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_corr_out.df <- 
-  extract.meta.pca.correlates(pca.out = salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_out.df)
+  extract.meta.pca.correlates(pca.out =
+                            salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_out.df)
+
+
+te_only_deseq <- ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$deseq
+
+
+te_only_deseq$vst_counts.df <- 
+  te_only_deseq$vst_counts.df[!rownames(te_only_deseq$vst_counts.df) %in% 
+                                reference_meta_data$gencode_tx_to_gene.df$gene, ]
+
+te_only_deseq$pca <-
+  run.pca(input_de = te_only_deseq,
+          identity_color_pal = identity_color_pal)
+
 ```
 
 # Figures
 # Fig_1
 ## Fig_1A
 ```{r 1A}
-
 # save.manuscript.panel(figure = 1,
 #                       figure.dir = figure.dir,
 #                       name = 'pca_total_1A',
@@ -459,11 +482,11 @@ import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_
 
 
 fig_1_layout <- "
+FF
 AC
 BC
 DD
 EE
-FF
 "
 
 wrap_plots(fig.1A_1.plt,
@@ -474,7 +497,7 @@ wrap_plots(fig.1A_1.plt,
            plot_spacer(),
            design = fig_1_layout, 
            guides = 'collect',
-           heights = c(1,1,0.0625,1,1)) & 
+           heights = c(1,1,1,0.0625,1)) & 
   theme(plot.tag.position = c(0.01, 0.99), 
         legend.position = 'bottom',
         legend.title = element_text(vjust = 1.25),
@@ -492,8 +515,15 @@ save.manuscript.panel(figure = 1,
 
 
 ```
-
-```{r fig_s1}
+# Fig_S1
+## Fig_S1A
+```{r S1A}
+fig.S1A.plt <- 
+  salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_3v4.plt + 
+  labs(tag = 'A')
+```
+## Fig_S1B
+```{r S1A}
 salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_corr_out.df %>% 
   group_by(pc) %>% 
   mutate(pc = paste0('PC', pc)) %>% 
@@ -507,30 +537,181 @@ salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_corr_out.df %>%
   xlab('') + ylab('pearson coeff.') + 
   geom_hline(yintercept = c(-0.5, 0.5), linetype = 'dashed', alpha = 0.4) -> pca_correlation_top7.plt
 
+
+fig.S1B.plt <- pca_correlation_top7.plt + labs(tag = 'B')
+
+# save.manuscript.panel(figure = 's1',
+#                       figure.dir = figure.dir,
+#                       name = 'pca_correlation_s1A',
+#                       width = figure_single_column_width,
+#                       height = figure_depth,
+#                       plot.in = pca_correlation_top7.plt)
+```
+## Fig_S1C
+```{r 1B}
+tidy_quant_meta.df %>% 
+  filter(var %in% c('age')) %>%  
+  ggplot(aes(condition, value, color = condition)) + 
+  geom_boxplot(fill = NA, outlier.colour = NA, show.legend = F) + 
+  geom_point(aes(shape = sex), size = rel(2), alpha = 1) +
+  scale_shape_manual(values = c(21,25)) +
+  scale_color_manual(values = identity_color_pal) + 
+  ylab('Age -- years') + xlab('') + labs(tag = 'C') -> fig.S1C.plt
+```
+## Fig_S1D
+```{r}
+tidy_quant_meta.df %>% 
+  filter(var %in% c('input_vol')) %>%  
+  ggplot(aes(condition, value, color = condition)) + 
+  geom_boxplot(fill = NA, outlier.colour = NA, show.legend = F) + 
+  geom_point(aes(shape = sex), size = rel(2), alpha = 1) +
+  scale_shape_manual(values = c(21,25)) +
+  scale_color_manual(values = identity_color_pal) + 
+  ylab('Input Volume -- mL') + xlab('') + labs(tag = 'D') -> fig.S1D.plt
+
+```
+### Fig_S1_patchwork
+```{r Fig1}
+import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer)
+
+
+fig_S1_layout <- "
+AB
+CB
+DB
+EB
+"
+
+wrap_plots(fig.S1A.plt,
+           fig.S1B.plt,
+           guide_area(),
+           fig.S1C.plt,
+           fig.S1D.plt,
+           design = fig_S1_layout, 
+           guides = 'collect',
+           heights = c(1,1,1,1,1),
+           widths = c(1,1)) & 
+  theme(plot.tag.position = c(0.01, 0.99), 
+        legend.position = 'left', 
+        legend.title = element_text(vjust = 1.25),
+        legend.justification = c(0.5, 0.5)) -> fig.S1.patchwork
+
+
+fig.S1.patchwork
+
 save.manuscript.panel(figure = 's1',
                       figure.dir = figure.dir,
-                      name = 'pca_correlation_s1A',
-                      width = figure_single_column_width,
+                      name = 'patchwork_full_fig_s1',
+                      width = figure_double_column_width,
                       height = figure_depth,
-                      plot.in = pca_correlation_top7.plt)
+                      plot.in = fig.S1.patchwork)
 
 
+```
+# Fig_2
+## Fig_2A
+```{r}
+ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$deseq$panc_vs_ctrl %>% 
+  merge(reference_meta_data$ucsc_rmsk_insert_info.df, by = 'gene', all.x = T) %>% 
+  mutate(family = ifelse(gene %in% reference_meta_data$gencode_lncRNA_gene_names.df$gene,
+                         'gencode_lncRNA', family),
+         family = ifelse(is.na(family), 'gencode_coding', family),
+         clade = ifelse(grepl('gencode', family), family, clade),
+         clade = ifelse(clade %in% c('gencode_coding',
+                                     'gencode_lncRNA',
+                                     'LINE',
+                                     'SINE',
+                                     'LTR',
+                                     'DNA'), clade, 'other'),
+         type = ifelse(grepl('gencode',family), 'GENCODE', 'TE'),
+         clade = factor(clade, levels = annotation_levels)) %>% 
+  filter(!grepl('^MT-', gene)) -> panc_annotated_rmsk_de
+
+panc_annotated_rmsk_de %>%
+  filter(clade == 'gencode_coding') %>% 
+  ggplot(aes(log2FoldChange, -log10(padj), color = clade)) + 
+  geom_point(size = 2, alpha = 0.6) -> gencode_layer.plt
+
+gencode_layer.plt + 
+  geom_point(data = filter(panc_annotated_rmsk_de, clade != 'gencode_coding') %>% 
+               mutate(clade = factor(clade, levels = annotation_levels)),
+             aes(log2FoldChange, -log10(padj), color = clade), size = 2, alpha = 0.6) +
+  scale_color_manual(values = te_color_pal) +
+  xlim(-5.5,5.5) + labs(tag = 'A') -> fig.2A.plt
+
+```
+## Fig_2B
+```{r}
+ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$deseq$covid_vs_ctrl %>% 
+  merge(reference_meta_data$ucsc_rmsk_insert_info.df, by = 'gene', all.x = T) %>% 
+  mutate(family = ifelse(gene %in% reference_meta_data$gencode_lncRNA_gene_names.df$gene,
+                         'gencode_lncRNA', family),
+         family = ifelse(is.na(family), 'gencode_coding', family),
+         clade = ifelse(grepl('gencode', family), family, clade),
+         clade = ifelse(clade %in% c('gencode_coding',
+                                     'gencode_lncRNA',
+                                     'LINE',
+                                     'SINE',
+                                     'LTR',
+                                     'DNA'), clade, 'other'),
+         type = ifelse(grepl('gencode',family), 'GENCODE', 'TE'),
+         clade = factor(clade, levels = annotation_levels)) %>% 
+  filter(!grepl('^MT-', gene)) -> covid_annotated_rmsk_de
+
+covid_annotated_rmsk_de %>%
+  filter(clade == 'gencode_coding') %>% 
+  ggplot(aes(log2FoldChange, -log10(padj), color = clade)) + 
+  geom_point(size = 2, alpha = 0.6) -> gencode_layer.plt
+
+gencode_layer.plt + 
+  geom_point(data = filter(covid_annotated_rmsk_de, clade != 'gencode_coding') %>% 
+               mutate(clade = factor(clade, levels = annotation_levels)),
+             aes(log2FoldChange, -log10(padj), color = clade), size = 2, alpha = 0.6) +
+  scale_color_manual(values = te_color_pal) +
+  xlim(-6,6) + labs(tag = 'B') -> fig.2B.plt
+```
+### Fig_2_patchwork
+```{r Fig1}
+import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer)
 
 
-# meta_of_interest <- c('star_avg_input_read_length')
-# 
-# tidy_quant_meta.df %>%  
-#   filter(var %in% meta_of_interest) %>% 
-#   mutate(var = sub('star_', '', var)) %>% 
-#   ggplot(aes(condition, value)) + 
-#   geom_boxplot(fill = NA, outlier.colour = NA) + 
-#   geom_jitter(width = 0.2, alpha = 0.4) +
-#   ylab('bp') + xlab('') +
-#   ggforce::facet_row(~var, scales = 'free_y') + 
-#   ggpubr::stat_compare_means(comparisons = list(c('panc', 'covid'),
-#                                                 c('ctrl', 'covid'), 
-#                                                 c('ctrl', 'panc')), 
-#                              method = 'wilcox')
+fig_2_layout <- "
+AB
+CC
+DD
+EE
+"
+
+wrap_plots(fig.2A.plt,
+           fig.2B.plt,
+           guide_area(),
+           plot_spacer(),
+           plot_spacer(),
+           design = fig_2_layout, 
+           guides = 'collect',
+           heights = c(1,0.0937,1,1,1)) & 
+  theme(plot.tag.position = c(0.01, 0.99), 
+        legend.position = 'bottom',
+        legend.title = element_text(vjust = 1.25),
+        legend.justification = c(0.5, 0.5)) -> fig.2.patchwork
+
+
+fig.2.patchwork
+
+save.manuscript.panel(figure = 2,
+                      figure.dir = figure.dir,
+                      name = 'patchwork_full_fig_2',
+                      width = figure_double_column_width,
+                      height = figure_depth,
+                      plot.in = fig.2.patchwork)
+
+
+```
+# Fig_S2
+```{r}
+salmon_quant$analysis_set$ctrl_panc_covid$deseq$norm_counts.df
+
+reference_meta_data$gencode_lncRNA_gene_names.df
 ```
 
 

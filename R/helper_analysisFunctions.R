@@ -341,6 +341,115 @@ run.de.seq <- function(type = 'gxi', base_level = 'ctrl',
   
 }
 
+run.de.seq.individual <- function(type = 'gxi', base_level = 'ctrl', 
+                                  top_level = 'panc',
+                                   input_se = salmon_quant$analysis_set$ctrl_panc_covid, 
+                                   dds_formula = as.formula('~age+input_vol+condition'), 
+                                   ref_type = 'salmon',
+                                   reference_meta_in = reference_meta_data$total_tx_to_gene.df) {  
+  
+  import::here(.from = 'SummarizedExperiment', colData, assay, rowRanges, assays)
+  import::here(.from = 'DESeq2', .all = T)
+  import::here(.from = 'tibble', lst)
+  
+  if(! "apeglm" %in% rownames(installed.packages())) { 
+    BiocManager::install('apeglm', update = FALSE)
+  }
+  
+  scaled_quant_meta_for_de.df <- 
+    input_se$quant_meta %>% 
+    mutate(input_vol = as.numeric(input_vol),
+           condition = relevel(as.factor(condition), ref = base_level)) %>% 
+    mutate_if(is.numeric, ~scale(., center = T)) %>% 
+    mutate_if(is.character, ~as.factor(.))
+  
+  print(levels(scaled_quant_meta_for_de.df$condition))
+  
+  if (ref_type == 'ucsc.rmsk') { 
+    
+    gencode_sex_filter.df <-
+      rowRanges(input_se[[type]]) %>% as.data.frame() %>% 
+      filter(seqnames %in% c('chrY'),
+             grepl('ENSG', group_name))
+    
+  } else {
+    gencode_sex_filter.df <-
+      rowRanges(input_se[[type]]) %>% as.data.frame() %>% 
+      filter(seqnames %in% c('chrY'))
+    
+  }
+  
+  count_matrix.df <- 
+    assay(input_se[[type]], 'counts') %>% 
+    as.data.frame() %>% 
+    rownames_to_column('gene') %>% 
+    mutate_if(is.numeric, round) %>% 
+    column_to_rownames('gene')
+  
+  input_set_dds <- DESeqDataSetFromMatrix(countData = count_matrix.df, 
+                                          colData = scaled_quant_meta_for_de.df, 
+                                          design = dds_formula)
+  
+  input_set_dds <- estimateSizeFactors(input_set_dds)
+  
+  input_set_dds_norm_counts.df <- as.data.frame(counts(input_set_dds, normalized=T))
+  
+  condition_aware_age_cor_filter <- 
+    input_set_dds_norm_counts.df %>% 
+    rownames_to_column('ensg') %>% 
+    gather(sample, count, -ensg) %>% 
+    merge(input_se$quant_meta %>% select(sample, age, condition), by = 'sample') %>% 
+    group_by(condition, ensg) %>% 
+    summarize(age_cor = cor(count, age, method = 'pearson')) %>% 
+    drop_na() %>% 
+    filter(abs(age_cor) >= 0.70) %>% 
+    spread(condition, age_cor)
+  
+  input_set_dds_vst_counts <-  as.data.frame(assay(vst(input_set_dds, blind = F)))
+  
+  de_filter <- rowSums(counts(input_set_dds, normalized=T) >= 10) >= ncol(input_set_dds_norm_counts.df)*0.75
+  
+  input_set_dds <- DESeq(input_set_dds[de_filter,])
+  
+  print(resultsNames(input_set_dds))
+  
+  tail(resultsNames(input_set_dds), n=1)
+  
+  coef_list <- tail(resultsNames(input_set_dds), n=1)
+  
+  if (ref_type != 'ucsc.rmsk') { 
+    
+    de_out <- 
+      lfcShrink(input_set_dds, coef = coef_list[[1]]) %>% 
+      as.data.frame() %>% 
+      rownames_to_column('ensg') %>% 
+      filter(!ensg %in% c(condition_aware_age_cor_filter[, c(base_level, top_level)]$ensg,
+                          gencode_sex_filter.df$gene_id)) %>%
+      merge(rowRanges(input_se[[type]]) %>% as.data.frame(), by.x = 'ensg', by.y = 'gene_id') %>%
+      merge(reference_meta_in %>% select(ensg, gene) %>% distinct(), by = 'ensg')
+    
+  } else { 
+    
+    de_out <- 
+      lfcShrink(input_set_dds, coef = coef_list[[1]]) %>% 
+      as.data.frame() %>% 
+      rownames_to_column('ensg') %>% 
+      filter(!ensg %in% c(condition_aware_age_cor_filter[, c(base_level, top_level)]$ensg,
+                          gencode_sex_filter.df$gene_id)) %>%
+      merge(reference_meta_in %>% select(ensg, gene) %>% distinct(), by = 'ensg')
+    
+  }
+  
+  lst('norm_counts.df' = input_set_dds_norm_counts.df,
+      'vst_counts.df' = input_set_dds_vst_counts,
+      'age_filter.df' = condition_aware_age_cor_filter,
+      'sex_filter.df' = gencode_sex_filter.df,
+      'dds_object' = input_set_dds,
+      'de_out' = de_out,
+      'scaled_quant_meta_for_de.df' = scaled_quant_meta_for_de.df)  
+  
+}
+
 run.pca <- function(input_de, 
                     identity_color_pal, 
                     plot_tag = 'A') {

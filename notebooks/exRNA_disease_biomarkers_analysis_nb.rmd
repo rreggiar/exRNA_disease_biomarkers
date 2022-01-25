@@ -352,17 +352,27 @@ process.aware.salmon_quant$pittsburgh_ctrl_ucsc.rmsk.salmon <- 'NULL'
 ```{r}
 import::from(.directory = r_code.dir, 
              .from = 'helper_analysisFunctions.R', 
-              run.de.seq)
+              run.de.seq,
+              run.de.seq.individual)
 
 salmon_quant$analysis_set$ctrl_panc_covid$deseq <- 
-  run_de_seq(type = 'gxi', 
+  run.de.seq(type = 'gxi', 
              input_se = salmon_quant$analysis_set$ctrl_panc_covid, 
              ref_type = 'salmon')
 
 ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$deseq <- 
-  run_de_seq(type = 'gxi', 
+  run.de.seq(type = 'gxi', 
              input_se = ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid, 
              ref_type = 'ucsc.rmsk')
+
+
+ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq <- 
+  run.de.seq.individual(input_se = ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl,
+                        type = 'gxi',
+                        base_level = 'ctrl',
+                        top_level = 'panc',
+                        ref_type = 'ucsc.rmsk',
+                        dds_formula = as.formula('~age+input_vol+diabetes+condition'))
 ```
 
 ## run_pca

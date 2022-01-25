@@ -216,7 +216,7 @@ build.analysis.set <- function(se_list,
   
 }
 
-run_de_seq <- function(type = 'gxi', base_level = 'ctrl', 
+run.de.seq <- function(type = 'gxi', base_level = 'ctrl', 
                        input_se = salmon_quant$analysis_set$ctrl_panc_covid, 
                        dds_formula = as.formula('~age+input_vol+condition'), 
                        ref_type = 'salmon',

@@ -405,7 +405,7 @@ run.de.seq.individual <- function(type = 'gxi', base_level = 'ctrl',
     filter(abs(age_cor) >= 0.70) %>% 
     spread(condition, age_cor)
   
-  input_set_dds_vst_counts <-  as.data.frame(assay(vst(input_set_dds, blind = F)))
+  input_set_dds_vst_counts <- as.data.frame(assay(vst(input_set_dds, blind = F)))
   
   de_filter <- rowSums(counts(input_set_dds, normalized=T) >= 10) >= ncol(input_set_dds_norm_counts.df)*0.75
   
@@ -417,11 +417,15 @@ run.de.seq.individual <- function(type = 'gxi', base_level = 'ctrl',
   
   coef_list <- tail(resultsNames(input_set_dds), n=1)
   
+  print(coef_list[[1]])
+  
   if (ref_type != 'ucsc.rmsk') { 
     
     de_out <- 
       lfcShrink(input_set_dds, coef = coef_list[[1]]) %>% 
       as.data.frame() %>% 
+      # indiv comparisons return flipped values ?
+      # mutate(log2FoldChange = -log2FoldChange) %>% 
       rownames_to_column('ensg') %>% 
       filter(!ensg %in% c(condition_aware_age_cor_filter[, c(base_level, top_level)]$ensg,
                           gencode_sex_filter.df$gene_id)) %>%
@@ -433,6 +437,8 @@ run.de.seq.individual <- function(type = 'gxi', base_level = 'ctrl',
     de_out <- 
       lfcShrink(input_set_dds, coef = coef_list[[1]]) %>% 
       as.data.frame() %>% 
+      # indiv comparisons return flipped values ?
+      # mutate(log2FoldChange = -log2FoldChange) %>% 
       rownames_to_column('ensg') %>% 
       filter(!ensg %in% c(condition_aware_age_cor_filter[, c(base_level, top_level)]$ensg,
                           gencode_sex_filter.df$gene_id)) %>%

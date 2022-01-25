@@ -366,13 +366,37 @@ ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$deseq <-
              ref_type = 'ucsc.rmsk')
 
 
+salmon_quant$analysis_set$panc_ctrl$deseq <- 
+  run.de.seq.individual(input_se = salmon_quant$analysis_set$panc_ctrl,
+                        type = 'gxi',
+                        base_level = 'panc',
+                        top_level = 'ctrl',
+                        ref_type = 'salmon',
+                        dds_formula = as.formula('~age+diabetes+condition'))
+
+salmon_quant$analysis_set$covid_ctrl$deseq <- 
+  run.de.seq.individual(input_se = salmon_quant$analysis_set$covid_ctrl,
+                        type = 'gxi',
+                        base_level = 'ctrl',
+                        top_level = 'covid',
+                        ref_type = 'salmon',
+                        dds_formula = as.formula('~age+condition'))
+
 ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq <- 
   run.de.seq.individual(input_se = ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl,
                         type = 'gxi',
-                        base_level = 'ctrl',
-                        top_level = 'panc',
+                        base_level = 'panc',
+                        top_level = 'ctrl',
                         ref_type = 'ucsc.rmsk',
-                        dds_formula = as.formula('~age+input_vol+diabetes+condition'))
+                        dds_formula = as.formula('~age+diabetes+condition'))
+
+ucsc.rmsk.salmon_quant$analysis_set$covid_ctrl$deseq <- 
+  run.de.seq.individual(input_se = ucsc.rmsk.salmon_quant$analysis_set$covid_ctrl,
+                        type = 'gxi',
+                        base_level = 'ctrl',
+                        top_level = 'covid',
+                        ref_type = 'ucsc.rmsk',
+                        dds_formula = as.formula('~age+condition'))
 ```
 
 ## run_pca
@@ -413,15 +437,15 @@ import::from(.from = 'msigdbr',
              msigdbr)
 
 msig.df <- 
-  msigdbr(species = 'Homo sapiens') %>% 
+  msigdbr(species = 'Homo sapiens', category = 'H') %>% 
   dplyr::select(gene_symbol, gs_name) %>% 
   split(x = .$gene_symbol, f = .$gs_name)
 
 salmon_quant$analysis_set$ctrl_panc_covid$deseq$fgsea$panc_v_ctrl <- 
-  make.fgsea.ranks(de.seq = salmon_quant$analysis_set$ctrl_panc_covid$deseq$panc_vs_ctrl)
+  make.fgsea.ranks(de.seq = salmon_quant$analysis_set$panc_ctrl$deseq$de_out)
 
 salmon_quant$analysis_set$ctrl_panc_covid$deseq$fgsea$covid_v_ctrl <- 
-  make.fgsea.ranks(de.seq = salmon_quant$analysis_set$ctrl_panc_covid$deseq$covid_vs_ctrl)
+  make.fgsea.ranks(de.seq = salmon_quant$analysis_set$covid_ctrl$deseq$de_out)
 
 ```
 
@@ -643,7 +667,17 @@ save.manuscript.panel(figure = 's1',
 # Fig_2
 ## Fig_2A
 ```{r}
-ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$deseq$panc_vs_ctrl %>% 
+import::from(.from = 'SummarizedExperiment',
+             rowRanges)
+
+rowRanges(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$gxi) %>% 
+  as.data.frame() %>% 
+  filter(seqnames == 'chrM') %>% 
+  select(group_name) %>% 
+  unlist() %>% unname() -> chrM.filter.list
+
+ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out %>% 
+# ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$deseq$panc_vs_ctrl %>% 
   merge(reference_meta_data$ucsc_rmsk_insert_info.df, by = 'gene', all.x = T) %>% 
   mutate(family = ifelse(gene %in% reference_meta_data$gencode_lncRNA_gene_names.df$gene,
                          'gencode_lncRNA', family),
@@ -656,25 +690,38 @@ ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$deseq$panc_vs_ctrl %>%
                                      'LTR',
                                      'DNA'), clade, 'other'),
          type = ifelse(grepl('gencode',family), 'GENCODE', 'TE'),
-         clade = factor(clade, levels = annotation_levels)) %>% 
-  filter(!grepl('^MT-', gene)) -> panc_annotated_rmsk_de
+         clade = factor(clade, levels = te_aware_annotation_levels)) %>% 
+  filter(!ensg %in% chrM.filter.list,
+         !grepl('^MT', gene)) -> panc_annotated_rmsk_de
+
+panc_label_list <- panc_annotated_rmsk_de %>% 
+  top_n(3, wt = log2FoldChange)
 
 panc_annotated_rmsk_de %>%
   filter(clade == 'gencode_coding') %>% 
   ggplot(aes(log2FoldChange, -log10(padj), color = clade)) + 
-  geom_point(size = 2, alpha = 0.6) -> gencode_layer.plt
+  geom_point(size = 2, alpha = 0.6, show.legend = FALSE) +
+  ggrepel::geom_text_repel(aes(label = ifelse(gene %in% label_list$gene, gene, '')), 
+                           show.legend = F, color = 'black', max.overlaps = 100) -> gencode_layer.plt
 
 gencode_layer.plt + 
   geom_point(data = filter(panc_annotated_rmsk_de, clade != 'gencode_coding') %>% 
-               mutate(clade = factor(clade, levels = annotation_levels)),
-             aes(log2FoldChange, -log10(padj), color = clade), size = 2, alpha = 0.6) +
-  scale_color_manual(values = te_color_pal) +
-  xlim(-5.5,5.5) + labs(tag = 'A') -> fig.2A.plt
+               mutate(clade = factor(clade, levels = te_aware_annotation_levels)),
+             aes(log2FoldChange, -log10(padj), color = clade), size = 2, alpha = 0.8, show.legend = F) +
+  scale_color_manual(values = te_color_pal) + 
+  ggrepel::geom_text_repel(data = panc_annotated_rmsk_de %>% 
+               mutate(clade = factor(clade, levels = te_aware_annotation_levels)),
+                      aes(label = ifelse(gene %in% panc_label_list$gene, gene, '')), 
+                           show.legend = F, color = 'black', max.overlaps = 1000) + 
+  labs(tag = 'A') -> fig.2A.plt
+
+# fig.2A.plt
 
 ```
 ## Fig_2B
 ```{r}
-ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$deseq$covid_vs_ctrl %>% 
+ucsc.rmsk.salmon_quant$analysis_set$covid_ctrl$deseq$de_out %>% 
+# ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$deseq$covid_vs_ctrl %>% 
   merge(reference_meta_data$ucsc_rmsk_insert_info.df, by = 'gene', all.x = T) %>% 
   mutate(family = ifelse(gene %in% reference_meta_data$gencode_lncRNA_gene_names.df$gene,
                          'gencode_lncRNA', family),
@@ -687,20 +734,30 @@ ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$deseq$covid_vs_ctrl %>%
                                      'LTR',
                                      'DNA'), clade, 'other'),
          type = ifelse(grepl('gencode',family), 'GENCODE', 'TE'),
-         clade = factor(clade, levels = annotation_levels)) %>% 
-  filter(!grepl('^MT-', gene)) -> covid_annotated_rmsk_de
+         clade = factor(clade, levels = te_aware_annotation_levels)) %>% 
+  filter(!ensg %in% chrM.filter.list,
+         !grepl('^MT', gene)) -> covid_annotated_rmsk_de
+
+covid_label_list <- covid_annotated_rmsk_de %>% 
+  top_n(3, wt = log2FoldChange)
 
 covid_annotated_rmsk_de %>%
   filter(clade == 'gencode_coding') %>% 
   ggplot(aes(log2FoldChange, -log10(padj), color = clade)) + 
-  geom_point(size = 2, alpha = 0.6) -> gencode_layer.plt
+  geom_point(size = 2, alpha = 0.6, show.legend = FALSE) -> gencode_layer.plt
 
 gencode_layer.plt + 
   geom_point(data = filter(covid_annotated_rmsk_de, clade != 'gencode_coding') %>% 
-               mutate(clade = factor(clade, levels = annotation_levels)),
-             aes(log2FoldChange, -log10(padj), color = clade), size = 2, alpha = 0.6) +
-  scale_color_manual(values = te_color_pal) +
-  xlim(-6,6) + labs(tag = 'B') -> fig.2B.plt
+               mutate(clade = factor(clade, levels = te_aware_annotation_levels)),
+             aes(log2FoldChange, -log10(padj), color = clade), size = 2, alpha = 0.8) +
+  scale_color_manual(values = te_color_pal) + 
+  ggrepel::geom_text_repel(data = covid_annotated_rmsk_de %>% 
+             mutate(clade = factor(clade, levels = te_aware_annotation_levels)),
+                    aes(label = ifelse(gene %in% covid_label_list$gene, gene, '')), 
+                         show.legend = F, color = 'black', max.overlaps = 1000) + 
+  labs(tag = 'B') + xlim(-7.5,7.5) -> fig.2B.plt
+
+# fig.2B.plt
 ```
 ### Fig_2_patchwork
 ```{r Fig1}
@@ -724,7 +781,7 @@ wrap_plots(fig.2A.plt,
            heights = c(1,0.0937,1,1,1)) & 
   theme(plot.tag.position = c(0.01, 0.99), 
         legend.position = 'bottom',
-        legend.title = element_text(vjust = 1.25),
+        legend.title = element_text(vjust = 0.5),
         legend.justification = c(0.5, 0.5)) -> fig.2.patchwork
 
 
@@ -740,12 +797,57 @@ save.manuscript.panel(figure = 2,
 
 ```
 # Fig_S2
+## Fig_S2A
+```{r}
+bind_rows(list('panc' = salmon_quant$analysis_set$ctrl_panc_covid$deseq$fgsea$panc_v_ctrl,
+          'covid' = salmon_quant$analysis_set$ctrl_panc_covid$deseq$fgsea$covid_v_ctrl),
+          .id = 'condition') %>% 
+  select(condition, pathway, padj, NES) %>% 
+  gridExtra::tableGrob(theme = gridExtra::ttheme_minimal()) -> fig.S2A.fgsea_table.grob
+
+```
+
 ```{r}
 salmon_quant$analysis_set$ctrl_panc_covid$deseq$norm_counts.df
 
 reference_meta_data$gencode_lncRNA_gene_names.df
 ```
+### Fig_2_patchwork
+```{r Fig1}
+import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer)
 
+
+fig_S2_layout <- "
+AA
+BB
+CC
+DD
+"
+
+wrap_plots(patchwork::wrap_elements(fig.S2A.fgsea_table.grob, ignore_tag = F),
+           plot_spacer(),
+           plot_spacer(),
+           plot_spacer(),
+           design = fig_S2_layout, 
+           guides = 'collect',
+           heights = c(0.35,1,1,1)) + plot_annotation(tag_levels = 'A') & 
+  theme(plot.tag.position = c(0.01, 0.99), 
+        legend.position = 'bottom',
+        legend.title = element_text(vjust = 0.5),
+        legend.justification = c(0.5, 0.5)) -> fig.S2.patchwork
+
+
+fig.S2.patchwork
+
+save.manuscript.panel(figure = 's2',
+                      figure.dir = figure.dir,
+                      name = 'patchwork_full_fig_S2',
+                      width = figure_double_column_width,
+                      height = figure_depth,
+                      plot.in = fig.S2.patchwork)
+
+
+```
 
 ## compare_samples_w_nanopore
 ```{r}

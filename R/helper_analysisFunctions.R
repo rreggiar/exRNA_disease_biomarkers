@@ -439,3 +439,37 @@ extract.meta.pca.correlates <- function(pca.out) {
   
   
 }
+
+make.fgsea.ranks <- function(de.seq){
+  
+  import::here(.from = 'fgsea', fgsea)
+  
+  # build a ranked gene list in the appropriate format (named list)
+  # using shrunken log2 Fold Change values from DESeqII
+  de.seq <- 
+    de.seq %>%
+    mutate(rank = as.double(log2FoldChange),
+           Gene = as.character(gene)) %>% 
+    dplyr::select(Gene, rank) %>%
+    mutate(rank = scale(rank)) 
+  
+  de.seq.rnk <- 
+    de.seq$rank
+  de.seq.rnk <- 
+    setNames(de.seq$rank, de.seq$Gene)
+  # run the GSEA implementation on the hallmark sets supplemented with custom sets
+  message('fgsea')
+  de.seq.fgsea.res <- 
+    fgsea(pathways = msig.df, 
+          stats = de.seq.rnk, eps = 0.0)
+  
+  message('padj filter and clean names')
+  # convert to a tidy format, clean the names for display
+  de.seq.fgsea.df <-
+    as_tibble(de.seq.fgsea.res) %>%
+    filter(padj < 0.05) %>%
+    mutate(pathway = gsub('_', ' ', pathway))
+  
+  return(de.seq.fgsea.df)
+  
+}

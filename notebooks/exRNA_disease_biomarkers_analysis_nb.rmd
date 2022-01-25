@@ -370,10 +370,9 @@ salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_corr_out.df <-
 ```
 
 # Figures
-## Fig_1
+# Fig_1
+## Fig_1A
 ```{r figure_1}
-
-import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area)
 
 # save.manuscript.panel(figure = 1,
 #                       figure.dir = figure.dir,
@@ -382,9 +381,14 @@ import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area)
 #                       height = figure_depth/2,
 #                       plot.in = salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_total.plt)
 
-salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_total.plt + theme(legend.position = 'none')
+fig.1A_1.plt <- 
+  salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_1v2.plt + labs(tag = 'A')
+fig.1A_2.plt <- 
+  salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_2v3.plt
 
-
+```
+## Fig_1B
+```{r}
 salmon_quant$analysis_set$ctrl_panc_covid$quant_meta %>% 
   gather(var, value, -sample, -condition, -sex, -context) %>% 
   mutate(value = as.numeric(value)) -> tidy_quant_meta.df
@@ -409,10 +413,6 @@ tidy_quant_meta.df %>%
                                                 c('ctrl', 'panc')), 
                              method = 'wilcox', size = 2.5) -> mapping_rate_dist.plt
 
-mapping_rate_dist.plt + labs(tag = 'B') + theme(plot.tag.position = c(0.01, 0.99))
-
-
-
 # save.manuscript.panel(figure = 1,
 #                       figure.dir = figure.dir,
 #                       name = 'mapping_rate_dist_1B',
@@ -420,6 +420,10 @@ mapping_rate_dist.plt + labs(tag = 'B') + theme(plot.tag.position = c(0.01, 0.99
 #                       height = figure_depth/2,
 #                       plot.in = mapping_rate_dist.plt)
 
+fig.1B.plt <- mapping_rate_dist.plt + labs(tag = 'B')
+```
+## Fig_1C
+```{r}
 
 ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$quant_meta %>% 
   gather(var, value, -sample, -condition, -sex, -context) %>% 
@@ -444,9 +448,13 @@ mapping_rate_compare.df %>%
   ggpubr::stat_compare_means(comparisons = list(c('gencode', 'TE-aware')), 
                              method = 'wilcox', paired = T, size = 2.5) -> mapping_rate_compare.plt
 
-```
+fig.1C.plt <- mapping_rate_compare.plt + labs(tag = 'C')
 
+```
+### Fig_1_patchwork
 ```{r}
+import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area)
+
 
 fig_1_layout <- "
 AC
@@ -455,17 +463,21 @@ DD
 EE
 "
 
-wrap_plots(salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_1v2.plt + 
-             theme(legend.position = 'none') + labs(tag = 'A'),
-           salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_2v3.plt + theme(legend.position = 'none'),
-           mapping_rate_dist.plt + labs(tag = 'B'),
+wrap_plots(fig.1A_1.plt,
+           fig.1A_2.plt,
+           fig.1B.plt,
            guide_area(),
-           mapping_rate_compare.plt + labs(tag = 'C'),
-           design = fig_1_layout, guides = 'collect',
-           heights = c(1,1,0.125,1)) & theme(plot.tag.position = c(0.01, 0.99), 
-                                              legend.position = 'bottom',
-                                              legend.title = element_text(vjust = -0.1),
-                                              legend.justification = c(0.5, 0.5))
+           fig.1C.plt,
+           design = fig_1_layout, 
+           guides = 'collect',
+           heights = c(1,1,0.125,1)) & 
+  theme(plot.tag.position = c(0.01, 0.99), 
+        legend.position = 'bottom',
+        legend.title = element_text(vjust = -0.1),
+        legend.justification = c(0.5, 0.5)) -> fig.1.patchwork
+
+
+fig.1.patchwork
 
 
 

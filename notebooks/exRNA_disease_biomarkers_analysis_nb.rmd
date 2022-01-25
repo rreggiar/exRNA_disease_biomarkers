@@ -393,6 +393,28 @@ te_only_deseq$pca <-
 
 ```
 
+## run_fgsea
+```{r}
+import::from(.directory = r_code.dir, 
+             .from = 'helper_analysisFunctions.R', 
+              make.fgsea.ranks)
+
+import::from(.from = 'msigdbr',
+             msigdbr)
+
+msig.df <- 
+  msigdbr(species = 'Homo sapiens') %>% 
+  dplyr::select(gene_symbol, gs_name) %>% 
+  split(x = .$gene_symbol, f = .$gs_name)
+
+salmon_quant$analysis_set$ctrl_panc_covid$deseq$fgsea$panc_v_ctrl <- 
+  make.fgsea.ranks(de.seq = salmon_quant$analysis_set$ctrl_panc_covid$deseq$panc_vs_ctrl)
+
+salmon_quant$analysis_set$ctrl_panc_covid$deseq$fgsea$covid_v_ctrl <- 
+  make.fgsea.ranks(de.seq = salmon_quant$analysis_set$ctrl_panc_covid$deseq$covid_vs_ctrl)
+
+```
+
 # Figures
 # Fig_1
 ## Fig_1A

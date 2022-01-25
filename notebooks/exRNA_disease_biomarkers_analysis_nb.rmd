@@ -87,7 +87,7 @@ r_code.dir <- here::here('R')
 ## figure_export
 ```{r}
 figure_single_column_width = unit(89, 'mm')
-figure_double_column_with = unit(183, 'mm')
+figure_double_column_width = unit(183, 'mm')
 figure_depth = unit(247, 'mm')
 panel_height_1 = unit(247/3, 'mm')
 
@@ -330,12 +330,12 @@ ucsc.rmsk.salmon_quant$bioIvt_luad_ucsc.rmsk.salmon <- 'NULL'
 ucsc.rmsk.salmon_quant$panc1_intra_ucsc.rmsk.salmon <- 'NULL'
 ucsc.rmsk.salmon_quant$pittsburgh_ctrl_ucsc.rmsk.salmon <- 'NULL'
 
-ucsc.rmsk.salmon_quant$bioIvt_covid_ucsc.rmsk.salmon <- 'NULL'
-ucsc.rmsk.salmon_quant$bioIvt_panc_ucsc.rmsk.salmon <- 'NULL'
-ucsc.rmsk.salmon_quant$bioIvt_ctrl_ucsc.rmsk.salmon <- 'NULL'
-ucsc.rmsk.salmon_quant$bioIvt_luad_ucsc.rmsk.salmon <- 'NULL'
-ucsc.rmsk.salmon_quant$panc1_intra_ucsc.rmsk.salmon <- 'NULL'
-ucsc.rmsk.salmon_quant$pittsburgh_ctrl_ucsc.rmsk.salmon <- 'NULL'
+process.aware.salmon_quant$bioIvt_covid_ucsc.rmsk.salmon <- 'NULL'
+process.aware.salmon_quant$bioIvt_panc_ucsc.rmsk.salmon <- 'NULL'
+process.aware.salmon_quant$bioIvt_ctrl_ucsc.rmsk.salmon <- 'NULL'
+process.aware.salmon_quant$bioIvt_luad_ucsc.rmsk.salmon <- 'NULL'
+process.aware.salmon_quant$panc1_intra_ucsc.rmsk.salmon <- 'NULL'
+process.aware.salmon_quant$pittsburgh_ctrl_ucsc.rmsk.salmon <- 'NULL'
 ```
 
 ## run_de_seq
@@ -372,7 +372,7 @@ salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_corr_out.df <-
 # Figures
 # Fig_1
 ## Fig_1A
-```{r figure_1}
+```{r 1A}
 
 # save.manuscript.panel(figure = 1,
 #                       figure.dir = figure.dir,
@@ -388,10 +388,11 @@ fig.1A_2.plt <-
 
 ```
 ## Fig_1B
-```{r}
+```{r 1B}
 salmon_quant$analysis_set$ctrl_panc_covid$quant_meta %>% 
   gather(var, value, -sample, -condition, -sex, -context) %>% 
-  mutate(value = as.numeric(value)) -> tidy_quant_meta.df
+  mutate(value = as.numeric(value),
+         condition = factor(condition, levels = c('panc', 'ctrl', 'covid'))) -> tidy_quant_meta.df
 
 meta_of_interest <- c('star_multimapped_percent',
                       'star_uniquely_mapped_percent')
@@ -402,7 +403,7 @@ tidy_quant_meta.df %>%
          var = factor(var, levels = c('uniquely_mapped_percent', 'multimapped_percent'))) %>% 
   ggplot(aes(condition, value, color = condition)) + 
   geom_boxplot(fill = NA, outlier.colour = NA, show.legend = F) + 
-  geom_point(position = position_jitter(width = 0.2), aes(shape = sex), size = rel(2), alpha = 0.8) +
+  geom_point(position = position_jitter(width = 0.2), aes(shape = sex), size = rel(2), alpha = 1) +
   scale_shape_manual(values = c(21,25)) +
   ylab('%') + xlab('') +
   ggforce::facet_col(~var, scales = 'free_y') + 
@@ -423,11 +424,12 @@ tidy_quant_meta.df %>%
 fig.1B.plt <- mapping_rate_dist.plt + labs(tag = 'B')
 ```
 ## Fig_1C
-```{r}
+```{r 1C}
 
 ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$quant_meta %>% 
   gather(var, value, -sample, -condition, -sex, -context) %>% 
-  mutate(value = as.numeric(value)) %>% 
+  mutate(value = as.numeric(value),
+         condition = factor(condition, levels = c('panc', 'ctrl', 'covid'))) %>% 
   filter(var == 'salmon_percent_mapped') %>% 
   dplyr::rename('TE-aware' = value) %>% 
   merge(tidy_quant_meta.df %>% select(sample, var, value) %>% 
@@ -439,7 +441,7 @@ mapping_rate_compare.df %>%
   gather(var, value, -sample, -context, -sex, -condition, -var) %>% 
   ggplot(aes(var, value, color = condition)) + 
   geom_boxplot(fill = NA, outlier.colour = NA, show.legend = F) + 
-  geom_point(aes(shape = sex), size = rel(2), alpha = 0.8) +
+  geom_point(aes(shape = sex), size = rel(2), alpha = 1) +
   geom_line(aes(group = sample), alpha = 0.2, show.legend = F) +
   scale_shape_manual(values = c(21,25)) +
   ylab('salmon % mapped') + xlab('') + 
@@ -452,8 +454,8 @@ fig.1C.plt <- mapping_rate_compare.plt + labs(tag = 'C')
 
 ```
 ### Fig_1_patchwork
-```{r}
-import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area)
+```{r Fig1}
+import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer)
 
 
 fig_1_layout <- "
@@ -461,6 +463,7 @@ AC
 BC
 DD
 EE
+FF
 "
 
 wrap_plots(fig.1A_1.plt,
@@ -468,17 +471,24 @@ wrap_plots(fig.1A_1.plt,
            fig.1B.plt,
            guide_area(),
            fig.1C.plt,
+           plot_spacer(),
            design = fig_1_layout, 
            guides = 'collect',
-           heights = c(1,1,0.125,1)) & 
+           heights = c(1,1,0.0625,1,1)) & 
   theme(plot.tag.position = c(0.01, 0.99), 
         legend.position = 'bottom',
-        legend.title = element_text(vjust = -0.1),
+        legend.title = element_text(vjust = 1.25),
         legend.justification = c(0.5, 0.5)) -> fig.1.patchwork
 
 
 fig.1.patchwork
 
+save.manuscript.panel(figure = 1,
+                      figure.dir = figure.dir,
+                      name = 'patchwork_full_fig_1',
+                      width = figure_double_column_width,
+                      height = figure_depth,
+                      plot.in = fig.1.patchwork)
 
 
 ```

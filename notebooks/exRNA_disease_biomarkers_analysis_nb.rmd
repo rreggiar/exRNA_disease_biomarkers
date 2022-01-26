@@ -125,10 +125,22 @@ te_aware_annotation_levels <- c('gencode_coding',
                                  'SINE',
                                  'LTR',
                                  'DNA',
+                                 'Simple_repeat',
                                  'other')
 
-te_color_pal <- c('grey', RColorBrewer::brewer.pal(n = 6, 'Dark2'))
+te_color_pal <- c('grey', RColorBrewer::brewer.pal(n = 7, 'Dark2'))
 names(te_color_pal) <- te_aware_annotation_levels
+
+te_alone_annotation_levels <- c('LINE',
+                                'SINE',
+                                'LTR',
+                                'DNA',
+                                'Simple_repeat',
+                                'rRNA',
+                                'tRNA')
+te_alone_color_pal <- RColorBrewer::brewer.pal(n = 8, 'Dark2')[2:8]
+names(te_alone_color_pal) <- te_alone_annotation_levels
+
 
 
 ```
@@ -158,8 +170,8 @@ if (! file.exists(file.path(meta_data.dir, 'reference_meta_data_df.rds'))) {
     dplyr::tally() -> reference_meta_data$gencode_biotype_count.df
   
   reference_meta_data$gencode_tx_to_gene.df %>% 
-    dplyr::select(gene,biotype) %>% 
-    dplyr::group_by(gene) %>% 
+    dplyr::select(ensg,biotype) %>% 
+    dplyr::group_by(ensg) %>% 
     dplyr::filter(all(biotype == 'lncRNA')) %>% 
     dplyr::distinct() -> reference_meta_data$gencode_lncRNA_gene_names.df
   
@@ -688,7 +700,8 @@ ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out %>%
                                      'LINE',
                                      'SINE',
                                      'LTR',
-                                     'DNA'), clade, 'other'),
+                                     'DNA',
+                                     'Simple_repeat'), clade, 'other'),
          type = ifelse(grepl('gencode',family), 'GENCODE', 'TE'),
          clade = factor(clade, levels = te_aware_annotation_levels)) %>% 
   filter(!ensg %in% chrM.filter.list,
@@ -701,7 +714,7 @@ panc_annotated_rmsk_de %>%
   filter(clade == 'gencode_coding') %>% 
   ggplot(aes(log2FoldChange, -log10(padj), color = clade)) + 
   geom_point(size = 2, alpha = 0.6, show.legend = FALSE) +
-  ggrepel::geom_text_repel(aes(label = ifelse(gene %in% label_list$gene, gene, '')), 
+  ggrepel::geom_text_repel(aes(label = ifelse(gene %in% panc_label_list$gene, gene, '')), 
                            show.legend = F, color = 'black', max.overlaps = 100) -> gencode_layer.plt
 
 gencode_layer.plt + 
@@ -732,7 +745,8 @@ ucsc.rmsk.salmon_quant$analysis_set$covid_ctrl$deseq$de_out %>%
                                      'LINE',
                                      'SINE',
                                      'LTR',
-                                     'DNA'), clade, 'other'),
+                                     'DNA',
+                                     'Simple_repeat'), clade, 'other'),
          type = ifelse(grepl('gencode',family), 'GENCODE', 'TE'),
          clade = factor(clade, levels = te_aware_annotation_levels)) %>% 
   filter(!ensg %in% chrM.filter.list,
@@ -759,6 +773,100 @@ gencode_layer.plt +
 
 # fig.2B.plt
 ```
+## Fig_2C
+```{r}
+ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$deseq$norm_counts.df %>% 
+  rownames_to_column('gene') %>% 
+  merge(reference_meta_data$ucsc_rmsk_insert_info.df, by = 'gene', all.x = T) %>% 
+  mutate(family = ifelse(gene %in% reference_meta_data$gencode_lncRNA_gene_names.df$ensg,
+                         'gencode_lncRNA', family),
+         family = ifelse(is.na(family), 'gencode_coding', family),
+         clade = ifelse(grepl('gencode', family), family, clade),
+         clade = ifelse(clade %in% c('gencode_coding',
+                                     'gencode_lncRNA',
+                                     'LINE',
+                                     'SINE',
+                                     'LTR',
+                                     'DNA',
+                                     'Simple_repeat'), clade, 'other'),
+         type = ifelse(grepl('gencode',family), 'GENCODE', 'TE'),
+         clade = factor(clade, levels = te_aware_annotation_levels)) %>% 
+  filter(!gene %in% chrM.filter.list) -> total_annotated_rmsk_counts
+
+total_annotated_rmsk_counts %>% 
+  gather(sample, count, -gene, -clade, -family, -type) %>% 
+  merge(ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$deseq$scaled_quant_meta_for_de.df %>%
+          select(sample, condition), by = 'sample') -> tidy_total_annotated_rmsk_counts
+
+tidy_total_annotated_rmsk_counts %>% 
+  group_by(sample, condition, clade) %>% 
+  summarize(clade_sum = sum(count)) %>% 
+  mutate(clade_frac = clade_sum/sum(clade_sum),
+         condition = factor(condition, levels = c('panc', 'ctrl', 'covid'))) %>% 
+  ggplot(aes(sample, clade_frac, fill = clade)) + 
+  geom_col(color = 'white', show.legend = F) + 
+  scale_fill_manual(values = te_color_pal) + 
+  ggforce::facet_row(~condition, scales = 'free_x') +
+  theme(axis.text.x = element_blank()) + 
+  xlab('sample') + ylab('norm. count fraction') + 
+  labs(tag = 'C') -> fig.2C.plt
+
+
+```
+## Fig_2D
+```{r}
+unique(c(filter(ucsc.rmsk.salmon_quant$analysis_set$covid_ctrl$deseq$de_out,
+                abs(log2FoldChange) > 3.5)$ensg,
+  filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out,
+         abs(log2FoldChange) > 1.5)$ensg)) -> de_ensg_names
+
+
+ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$deseq$norm_counts.df %>% 
+  rownames_to_column('ensg') %>% 
+  filter(ensg %in% de_ensg_names,
+         ensg %in% reference_meta_data$ucsc_rmsk_insert_info.df$gene) %>% 
+  mutate_if(is.numeric, ~scale(log2(. + 1), center = T)) %>% 
+  column_to_rownames('ensg') %>% as.matrix() %>% t() -> hm_count_data
+
+hm_meta_data <- ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$deseq$scaled_quant_meta_for_de.df
+
+left_hma <- ComplexHeatmap::rowAnnotation(df = hm_meta_data %>% select(condition), 
+                                          col = list(condition = identity_color_pal), 
+                                          show_annotation_name = F, simple_anno_size = unit(.3, "cm"))
+
+
+reference_meta_data$ucsc_rmsk_insert_info.df %>% 
+  filter(gene %in% colnames(hm_count_data)) %>% 
+  select(gene, clade) %>% 
+  mutate(clade = ifelse(clade %in% names(te_color_pal), clade, 'other')) %>% 
+  column_to_rownames('gene') -> hm_te_data
+
+hm_te_data <- hm_te_data[match(colnames(hm_count_data), rownames(hm_te_data)), , drop = F]
+
+top_hma <- ComplexHeatmap::columnAnnotation(df = hm_te_data, 
+                                            col = list(clade = te_color_pal), 
+                                            show_annotation_name = T,
+                                            annotation_name_side = 'left',
+                                            annotation_name_gp = grid::gpar(fontsize = 10, fontface = 'italic'),
+                                            show_legend = F, 
+                                            simple_anno_size = unit(.375, "cm"))
+
+set.seed(129)
+ComplexHeatmap::Heatmap(hm_count_data, 
+                        show_row_names = F, 
+                        show_column_names = T, 
+                        heatmap_width = figure_double_column_width * 0.85,
+                        left_annotation = left_hma, 
+                        column_dend_height = unit(.75, "cm"),
+                        heatmap_legend_param = 
+                          list(legend_gp = grid::gpar(fontsize = 8)),
+                        # col = circlize::colorRamp2(breaks = c(-4,-2,0,2,4),
+                        #                            colors = viridis::rocket(n = 5)),
+                        top_annotation = top_hma,
+                        column_names_gp = grid::gpar(fontsize = 8),
+                        name = 'Z-score') -> fig.2D.chm
+  
+```
 ### Fig_2_patchwork
 ```{r Fig1}
 import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer)
@@ -774,18 +882,19 @@ EE
 wrap_plots(fig.2A.plt,
            fig.2B.plt,
            guide_area(),
-           plot_spacer(),
-           plot_spacer(),
+           fig.2C.plt,
+           patchwork::wrap_elements(full = grid::grid.grabExpr(ComplexHeatmap::draw(fig.2D.chm), 
+                                                                width = figure_double_column_width)),
            design = fig_2_layout, 
            guides = 'collect',
-           heights = c(1,0.0937,1,1,1)) & 
+           heights = c(0.75,0.0937,0.75,1)) + plot_annotation(tag_levels = 'A') & 
   theme(plot.tag.position = c(0.01, 0.99), 
         legend.position = 'bottom',
         legend.title = element_text(vjust = 0.5),
         legend.justification = c(0.5, 0.5)) -> fig.2.patchwork
 
 
-fig.2.patchwork
+# fig.2.patchwork
 
 save.manuscript.panel(figure = 2,
                       figure.dir = figure.dir,
@@ -806,13 +915,18 @@ bind_rows(list('panc' = salmon_quant$analysis_set$ctrl_panc_covid$deseq$fgsea$pa
   gridExtra::tableGrob(theme = gridExtra::ttheme_minimal()) -> fig.S2A.fgsea_table.grob
 
 ```
-
+## Fig_S2B
 ```{r}
-salmon_quant$analysis_set$ctrl_panc_covid$deseq$norm_counts.df
+salmon_quant$analysis_set$ctrl_panc_covid$deseq$norm_counts.df %>% 
+  rownames_to_column('ensg') %>% 
+  gather(sample, count, -ensg) %>% 
+  merge(salmon_quant$analysis_set$ctrl_panc_covid$deseq$scaled_quant_meta_for_de.df, by = 'sample') %>% 
+  merge(reference_meta_data$gencode_lncRNA_gene_names.df, by = 'ensg', all.x = T) -> salmon_gencode_biotype 
+
 
 reference_meta_data$gencode_lncRNA_gene_names.df
 ```
-### Fig_2_patchwork
+### Fig_S2_patchwork
 ```{r Fig1}
 import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer)
 

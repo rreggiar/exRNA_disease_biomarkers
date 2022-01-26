@@ -595,8 +595,7 @@ save.manuscript.panel(figure = 1,
 ## Fig_S1A
 ```{r S1A}
 fig.S1A.plt <- 
-  salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_3v4.plt + 
-  labs(tag = 'A')
+  salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_3v4.plt
 ```
 ## Fig_S1B
 ```{r S1A}
@@ -618,16 +617,17 @@ salmon_pca_corr_top_7.df %>%
   merge(ucsc.rmsk.salmon_pca_corr_compare.df, by = c('pc', 'var')) %>% 
   gather(reference, cor, -pc, -var) %>% 
   ggplot(aes(reorder(var, -abs(cor)), abs(cor), fill = reference)) + 
-  geom_col(color = 'black', position = position_dodge()) +
+  geom_col(color = 'white', position = position_dodge()) +
   coord_flip() + 
   ggforce::facet_col(~pc, scales = 'free_y') + 
   xlab('') + ylab('pearson coeff.') + 
   geom_hline(yintercept = c(0.5), linetype = 'dashed', alpha = 0.4) + 
-  theme(legend.position = 'bottom', legend.justification = 'center')#-> pca_correlation_top7.plt
+  theme(legend.position = 'bottom', legend.justification = 'center') + 
+  scale_fill_manual(values =RColorBrewer::brewer.pal(n = 3, 'Dark2')[1:2]) -> pca_correlation_top7.plt
   
   
   
-fig.S1B.plt <- pca_correlation_top7.plt + labs(tag = 'B')
+fig.S1B.plt <- pca_correlation_top7.plt
 
 # save.manuscript.panel(figure = 's1',
 #                       figure.dir = figure.dir,
@@ -642,10 +642,10 @@ tidy_quant_meta.df %>%
   filter(var %in% c('age')) %>%  
   ggplot(aes(condition, value, color = condition)) + 
   geom_boxplot(fill = NA, outlier.colour = NA, show.legend = F) + 
-  geom_point(aes(shape = sex), size = rel(2), alpha = 1) +
-  scale_shape_manual(values = c(21,25)) +
+  geom_point(size = rel(2), alpha = 1) +
+  # scale_shape_manual(values = c(21,25)) +
   scale_color_manual(values = identity_color_pal) + 
-  ylab('Age -- years') + xlab('') + labs(tag = 'C') -> fig.S1C.plt
+  ylab('Age -- years') + xlab('') -> fig.S1C.plt
 ```
 ## Fig_S1D
 ```{r}
@@ -653,10 +653,10 @@ tidy_quant_meta.df %>%
   filter(var %in% c('input_vol')) %>%  
   ggplot(aes(condition, value, color = condition)) + 
   geom_boxplot(fill = NA, outlier.colour = NA, show.legend = F) + 
-  geom_point(aes(shape = sex), size = rel(2), alpha = 1) +
-  scale_shape_manual(values = c(21,25)) +
+  geom_point(size = rel(2), alpha = 1) +
+  # scale_shape_manual(values = c(21,25)) +
   scale_color_manual(values = identity_color_pal) + 
-  ylab('Input Volume -- mL') + xlab('') + labs(tag = 'D') -> fig.S1D.plt
+  ylab('Input Volume -- mL') + xlab('') -> fig.S1D.plt
 
 ```
 ### Fig_S1_patchwork
@@ -678,10 +678,11 @@ wrap_plots(fig.S1A.plt,
            fig.S1D.plt,
            design = fig_S1_layout, 
            guides = 'collect',
-           heights = c(1,1,1,1,1),
-           widths = c(1,1)) & 
+           heights = c(1,0.25,1,1,1),
+           widths = c(1,1)) + plot_annotation(tag_levels = 'A') & 
   theme(plot.tag.position = c(0.01, 0.99), 
-        legend.position = 'left', 
+        legend.position = 'left',
+        legend.direction = 'horizontal',
         legend.title = element_text(vjust = 1.25),
         legend.justification = c(0.5, 0.5)) -> fig.S1.patchwork
 

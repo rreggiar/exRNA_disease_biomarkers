@@ -496,8 +496,8 @@ run.pca <- function(input_de,
   pca.out %>% 
     ggplot(aes(PC2, PC1,
                color = condition)) +
-    geom_point(aes(shape = sex), size = rel(2), alpha = 1) + 
-    scale_shape_manual(values = c(21,25)) +
+    geom_point(size = rel(2), alpha = 1) + 
+    # scale_shape_manual(values = c(21,25)) +
     ylab(paste('PC1', round(cumsum(pcs.props)[1], digits = 3), sep = ' ')) +
     # xlab(paste('PC2', round(cumsum(pcs.props)[2] - cumsum(pcs.props)[1], digits = 3), sep = ' ')) +
     geom_vline(xintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) +
@@ -510,8 +510,8 @@ run.pca <- function(input_de,
   pca.out %>% 
     ggplot(aes(PC2, PC3,
                color = condition)) +
-    geom_point(aes(shape = sex), size = rel(2), alpha = 1) + 
-    scale_shape_manual(values = c(21,25)) +
+    geom_point(size = rel(2), alpha = 1) +
+    # scale_shape_manual(values = c(21,25)) +
     xlab(paste('PC2', round(cumsum(pcs.props)[2] - cumsum(pcs.props)[1], digits = 3), sep = ' ')) +
     ylab(paste('PC3', round(cumsum(pcs.props)[3] - cumsum(pcs.props)[2], digits = 3), sep = ' ')) +
     geom_vline(xintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) +
@@ -522,8 +522,8 @@ run.pca <- function(input_de,
   pca.out %>% 
     ggplot(aes(PC3, PC4,
                color = condition)) +
-    geom_point(aes(shape = sex), size = rel(2), alpha = 1) + 
-    scale_shape_manual(values = c(21,25)) +
+    geom_point(size = rel(2), alpha = 1) + 
+    # scale_shape_manual(values = c(21,25)) +
     xlab(paste('PC3', round(cumsum(pcs.props)[3] - cumsum(pcs.props)[2], digits = 3), sep = ' ')) +
     ylab(paste('PC4', round(cumsum(pcs.props)[4] - cumsum(pcs.props)[3], digits = 3), sep = ' ')) +
     geom_vline(xintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) +

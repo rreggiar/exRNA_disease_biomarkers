@@ -26,7 +26,7 @@ base_size = 10
 
 ggplot2::theme_set(ggthemes::theme_foundation(base_size = base_size,
                                               base_family = 'Helvetica') + 
-                     theme(plot.title = element_blank(),
+                     theme(plot.title = element_text(size = base_size, face = 'bold'),
                            panel.background = element_rect(colour = NA),
                            plot.background = element_rect(colour = NA),
                            panel.border = element_rect(colour = NA), 
@@ -425,6 +425,14 @@ salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_corr_out.df <-
   extract.meta.pca.correlates(pca.out =
                             salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_out.df)
 
+ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca <-
+  run.pca(input_de = ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$deseq,
+          identity_color_pal = identity_color_pal)
+
+ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_corr_out.df <- 
+  extract.meta.pca.correlates(pca.out =
+                            ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_out.df)
+
 
 te_only_deseq <- ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$deseq
 
@@ -473,7 +481,7 @@ salmon_quant$analysis_set$ctrl_panc_covid$deseq$fgsea$covid_v_ctrl <-
 #                       plot.in = salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_total.plt)
 
 fig.1A_1.plt <- 
-  salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_1v2.plt + labs(tag = 'A')
+  salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_1v2.plt + labs(tag = 'B')
 fig.1A_2.plt <- 
   salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_2v3.plt
 
@@ -494,8 +502,8 @@ tidy_quant_meta.df %>%
          var = factor(var, levels = c('uniquely_mapped_percent', 'multimapped_percent'))) %>% 
   ggplot(aes(condition, value, color = condition)) + 
   geom_boxplot(fill = NA, outlier.colour = NA, show.legend = F) + 
-  geom_point(position = position_jitter(width = 0.2), aes(shape = sex), size = rel(2), alpha = 1) +
-  scale_shape_manual(values = c(21,25)) +
+  geom_point(position = position_jitter(width = 0.2), size = rel(2), alpha = 1) +
+  # scale_shape_manual(values = c(21,25)) +
   ylab('%') + xlab('') +
   ggforce::facet_col(~var, scales = 'free_y') + 
   scale_color_manual(values = identity_color_pal) + 
@@ -512,7 +520,7 @@ tidy_quant_meta.df %>%
 #                       height = figure_depth/2,
 #                       plot.in = mapping_rate_dist.plt)
 
-fig.1B.plt <- mapping_rate_dist.plt + labs(tag = 'B')
+fig.1B.plt <- mapping_rate_dist.plt + labs(tag = 'C')
 ```
 ## Fig_1C
 ```{r 1C}
@@ -532,16 +540,16 @@ mapping_rate_compare.df %>%
   gather(var, value, -sample, -context, -sex, -condition, -var) %>% 
   ggplot(aes(var, value, color = condition)) + 
   geom_boxplot(fill = NA, outlier.colour = NA, show.legend = F) + 
-  geom_point(aes(shape = sex), size = rel(2), alpha = 1) +
+  geom_point(size = rel(2), alpha = 1) +
   geom_line(aes(group = sample), alpha = 0.2, show.legend = F) +
-  scale_shape_manual(values = c(21,25)) +
+  # scale_shape_manual(values = c(21,25)) +
   ylab('salmon % mapped') + xlab('') + 
   ggforce::facet_row(~condition, scales = 'free_y') +
   scale_color_manual(values = identity_color_pal) + 
   ggpubr::stat_compare_means(comparisons = list(c('gencode', 'TE-aware')), 
                              method = 'wilcox', paired = T, size = 2.5) -> mapping_rate_compare.plt
 
-fig.1C.plt <- mapping_rate_compare.plt + labs(tag = 'C')
+fig.1C.plt <- mapping_rate_compare.plt + labs(tag = 'D')
 
 ```
 ### Fig_1_patchwork
@@ -873,21 +881,21 @@ import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_
 
 
 fig_2_layout <- "
-AB
-CC
+AA
+BC
 DD
 EE
 "
 
-wrap_plots(fig.2A.plt,
-           fig.2B.plt,
+wrap_plots(fig.2C.plt,
+           fig.2A.plt + labs(title = 'panc'),
+           fig.2B.plt + labs(title = 'covid'),
            guide_area(),
-           fig.2C.plt,
            patchwork::wrap_elements(full = grid::grid.grabExpr(ComplexHeatmap::draw(fig.2D.chm), 
                                                                 width = figure_double_column_width)),
            design = fig_2_layout, 
            guides = 'collect',
-           heights = c(0.75,0.0937,0.75,1)) + plot_annotation(tag_levels = 'A') & 
+           heights = c(0.75,0.75,0.0937,1)) + plot_annotation(tag_levels = 'A') & 
   theme(plot.tag.position = c(0.01, 0.99), 
         legend.position = 'bottom',
         legend.title = element_text(vjust = 0.5),

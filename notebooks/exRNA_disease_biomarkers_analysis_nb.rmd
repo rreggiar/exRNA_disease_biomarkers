@@ -606,14 +606,27 @@ salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_corr_out.df %>%
   filter(!grepl('num', var),
          ! var %in% c('input_vol', 'age')) %>% 
   top_n(7, wt = abs(cor)) %>% 
-  ggplot(aes(reorder(var, -cor), cor)) + 
-  geom_col(fill = NA, color = 'black') +
+  dplyr::rename('gencode' = 'cor') -> salmon_pca_corr_top_7.df
+
+ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_corr_out.df %>% 
+  group_by(pc) %>% 
+  mutate(pc = paste0('PC', pc)) %>% 
+  filter(var %in% salmon_pca_corr_top_7.df$var) %>% 
+  dplyr::rename('TE-aware' = 'cor') -> ucsc.rmsk.salmon_pca_corr_compare.df
+
+salmon_pca_corr_top_7.df %>% 
+  merge(ucsc.rmsk.salmon_pca_corr_compare.df, by = c('pc', 'var')) %>% 
+  gather(reference, cor, -pc, -var) %>% 
+  ggplot(aes(reorder(var, -abs(cor)), abs(cor), fill = reference)) + 
+  geom_col(color = 'black', position = position_dodge()) +
   coord_flip() + 
   ggforce::facet_col(~pc, scales = 'free_y') + 
   xlab('') + ylab('pearson coeff.') + 
-  geom_hline(yintercept = c(-0.5, 0.5), linetype = 'dashed', alpha = 0.4) -> pca_correlation_top7.plt
-
-
+  geom_hline(yintercept = c(0.5), linetype = 'dashed', alpha = 0.4) + 
+  theme(legend.position = 'bottom', legend.justification = 'center')#-> pca_correlation_top7.plt
+  
+  
+  
 fig.S1B.plt <- pca_correlation_top7.plt + labs(tag = 'B')
 
 # save.manuscript.panel(figure = 's1',

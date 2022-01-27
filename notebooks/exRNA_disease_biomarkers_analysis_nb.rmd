@@ -933,6 +933,52 @@ bind_rows(list('panc' = salmon_quant$analysis_set$ctrl_panc_covid$deseq$fgsea$pa
   gridExtra::tableGrob(theme = gridExtra::ttheme_minimal()) -> fig.S2A.fgsea_table.grob
 
 ```
+## Fig_S2B
+```{r}
+de_compare_list <- list('panc' = ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out,
+                        'covid' = ucsc.rmsk.salmon_quant$analysis_set$covid_ctrl$deseq$de_out)
+
+purrr::imap(de_compare_list, function(de, de_name) {
+  
+  de %>% 
+    filter(gene %in% msig.df$HALLMARK_MYC_TARGETS_V1,
+           padj < 0.05,
+           abs(log2FoldChange) > 0.5) %>% 
+    mutate(id = de_name)
+  
+}) %>% bind_rows() -> de_upset.df
+
+de_upset.df %>% 
+  group_by(gene) %>% 
+  summarize(context = list(id)) %>% 
+  ggplot(aes(context)) + 
+  geom_bar(fill = 'white', color = 'black') + 
+  ggupset::scale_x_upset() +
+  geom_text(stat='count', aes(label=after_stat(count)), nudge_y = -2) + 
+  xlab('') + ylab('MYC Target V1 genes') -> fig.S2B.plt
+
+
+de_upset.df %>% 
+  group_by(id) %>% 
+  top_n(5, wt = log2FoldChange) %>% 
+  ggplot(aes(reorder(gene, -log2FoldChange), log2FoldChange)) + 
+  geom_col(fill = NA, color = 'black') + 
+  coord_flip() + 
+  ggforce::facet_col(~id, scales = 'free_y') + 
+  geom_hline(yintercept = 1.0, linetype = 'dashed', alpha = 0.6) + 
+  xlab('')
+
+de_upset.df %>% 
+  select(gene, log2FoldChange, id) %>% 
+  spread(id, log2FoldChange) %>% 
+  ggplot(aes(covid, panc, label = gene)) + 
+  geom_point() + 
+  geom_hline(yintercept = 0, linetype = 'dashed', alpha = 0.6) +
+  geom_vline(xintercept = 0, linetype = 'dashed', alpha = 0.6) + 
+  ggrepel::geom_text_repel() -> fig.S2B_2.plt
+
+```
+
 ## Fig_S2C
 ```{r}
 import::from(.from = 'SummarizedExperiment',
@@ -979,7 +1025,8 @@ gencode_layer.plt +
              mutate(clade = factor(clade, levels = te_aware_annotation_levels)),
                     aes(label = ifelse(gene %in% mt_panc_label_list$gene, gene, '')), 
                          show.legend = F, color = 'black', max.overlaps = 1000) + 
-  xlim(-8.5,8.5) -> fig.S2C.plt
+  xlim(-8.5,8.5) + 
+  ggtitle('panc') -> fig.S2C.plt
 
 fig.S2C.plt
 ```
@@ -987,7 +1034,6 @@ fig.S2C.plt
 ## Fig_S2D
 ```{r}
 ucsc.rmsk.salmon_quant$analysis_set$covid_ctrl$deseq$de_out %>% 
-# ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$deseq$covid_vs_ctrl %>% 
   merge(reference_meta_data$ucsc_rmsk_insert_info.df, by = 'gene', all.x = T) %>% 
   mutate(family = ifelse(ensg %in% reference_meta_data$gencode_lncRNA_gene_names.df$ensg,
                          'gencode_lncRNA', family),
@@ -1021,7 +1067,8 @@ gencode_layer.plt +
              mutate(clade = factor(clade, levels = te_aware_annotation_levels)),
                     aes(label = ifelse(gene %in% mt_covid_label_list$gene, gene, '')), 
                          show.legend = F, color = 'black', max.overlaps = 1000) + 
-  xlim(-7.5,7.5) -> fig.S2D.plt
+  xlim(-7.5,7.5) + 
+  ggtitle('covid') -> fig.S2D.plt
 
 fig.S2D.plt
 ```
@@ -1032,18 +1079,20 @@ import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_
 
 fig_S2_layout <- "
 AA
-BB
-CC
+BC
 DD
+EF
 "
 
 wrap_plots(patchwork::wrap_elements(fig.S2A.fgsea_table.grob, ignore_tag = F),
-           plot_spacer(),
-           plot_spacer(),
-           plot_spacer(),
+           fig.S2B.plt,
+           fig.S2B_2.plt,
+           guide_area(),
+           fig.S2C.plt,
+           fig.S2D.plt,
            design = fig_S2_layout, 
            guides = 'collect',
-           heights = c(0.35,1,1,1)) + plot_annotation(tag_levels = 'A') & 
+           heights = c(0.35,1,0.0937,1,1)) + plot_annotation(tag_levels = 'A') & 
   theme(plot.tag.position = c(0.01, 0.99), 
         legend.position = 'bottom',
         legend.title = element_text(vjust = 0.5),

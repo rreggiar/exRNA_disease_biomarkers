@@ -713,7 +713,7 @@ rowRanges(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$gxi) %>%
 ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out %>% 
 # ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$deseq$panc_vs_ctrl %>% 
   merge(reference_meta_data$ucsc_rmsk_insert_info.df, by = 'gene', all.x = T) %>% 
-  mutate(family = ifelse(gene %in% reference_meta_data$gencode_lncRNA_gene_names.df$gene,
+  mutate(family = ifelse(ensg %in% reference_meta_data$gencode_lncRNA_gene_names.df$ensg,
                          'gencode_lncRNA', family),
          family = ifelse(is.na(family), 'gencode_coding', family),
          clade = ifelse(grepl('gencode', family), family, clade),
@@ -750,7 +750,7 @@ gencode_layer.plt +
                            show.legend = F, color = 'black', max.overlaps = 1000) + 
   labs(tag = 'A') -> fig.2A.plt
 
-# fig.2A.plt
+fig.2A.plt
 
 ```
 ## Fig_2B
@@ -758,7 +758,7 @@ gencode_layer.plt +
 ucsc.rmsk.salmon_quant$analysis_set$covid_ctrl$deseq$de_out %>% 
 # ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$deseq$covid_vs_ctrl %>% 
   merge(reference_meta_data$ucsc_rmsk_insert_info.df, by = 'gene', all.x = T) %>% 
-  mutate(family = ifelse(gene %in% reference_meta_data$gencode_lncRNA_gene_names.df$gene,
+  mutate(family = ifelse(ensg %in% reference_meta_data$gencode_lncRNA_gene_names.df$ensg,
                          'gencode_lncRNA', family),
          family = ifelse(is.na(family), 'gencode_coding', family),
          clade = ifelse(grepl('gencode', family), family, clade),
@@ -793,7 +793,7 @@ gencode_layer.plt +
                          show.legend = F, color = 'black', max.overlaps = 1000) + 
   labs(tag = 'B') + xlim(-7.5,7.5) -> fig.2B.plt
 
-# fig.2B.plt
+fig.2B.plt
 ```
 ## Fig_2C
 ```{r}
@@ -937,16 +937,34 @@ bind_rows(list('panc' = salmon_quant$analysis_set$ctrl_panc_covid$deseq$fgsea$pa
   gridExtra::tableGrob(theme = gridExtra::ttheme_minimal()) -> fig.S2A.fgsea_table.grob
 
 ```
-## Fig_S2B
+## Fig_S2C
 ```{r}
-salmon_quant$analysis_set$ctrl_panc_covid$deseq$norm_counts.df %>% 
-  rownames_to_column('ensg') %>% 
-  gather(sample, count, -ensg) %>% 
-  merge(salmon_quant$analysis_set$ctrl_panc_covid$deseq$scaled_quant_meta_for_de.df, by = 'sample') %>% 
-  merge(reference_meta_data$gencode_lncRNA_gene_names.df, by = 'ensg', all.x = T) -> salmon_gencode_biotype 
+import::from(.from = 'SummarizedExperiment',
+             rowRanges)
 
+rowRanges(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$gxi) %>% 
+  as.data.frame() %>% 
+  filter(seqnames == 'chrM') %>% 
+  select(group_name) %>% 
+  unlist() %>% unname() -> chrM.filter.list
 
-reference_meta_data$gencode_lncRNA_gene_names.df
+ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out %>% 
+# ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$deseq$panc_vs_ctrl %>% 
+  merge(reference_meta_data$ucsc_rmsk_insert_info.df, by = 'gene', all.x = T) %>% 
+  mutate(family = ifelse(ensg %in% reference_meta_data$gencode_lncRNA_gene_names.df$ensg,
+                         'gencode_lncRNA', family),
+         family = ifelse(is.na(family), 'gencode_coding', family),
+         clade = ifelse(grepl('gencode', family), family, clade),
+         clade = ifelse(clade %in% c('gencode_coding',
+                                     'gencode_lncRNA',
+                                     'LINE',
+                                     'SINE',
+                                     'LTR',
+                                     'DNA',
+                                     'Simple_repeat'), clade, 'other'),
+         type = ifelse(grepl('gencode',family), 'GENCODE', 'TE'),
+         clade = factor(clade, levels = te_aware_annotation_levels)) %>% 
+  filter(ensg %in% chrM.filter.list | grepl('^MT', gene)) -> mt_panc_annotated_rmsk_de
 ```
 ### Fig_S2_patchwork
 ```{r Fig1}

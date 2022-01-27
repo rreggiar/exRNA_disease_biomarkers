@@ -978,7 +978,6 @@ de_upset.df %>%
   ggrepel::geom_text_repel() -> fig.S2B_2.plt
 
 ```
-
 ## Fig_S2C
 ```{r}
 import::from(.from = 'SummarizedExperiment',
@@ -1030,7 +1029,6 @@ gencode_layer.plt +
 
 fig.S2C.plt
 ```
-
 ## Fig_S2D
 ```{r}
 ucsc.rmsk.salmon_quant$analysis_set$covid_ctrl$deseq$de_out %>% 
@@ -1111,7 +1109,86 @@ save.manuscript.panel(figure = 's2',
 
 ```
 
-## compare_samples_w_nanopore
+# Fig_3
+```{r}
+# install.packages('glmnet')
+# install.packages('doMC')
+# install.packages('pROC')
+library(glmnet)
+library(pROC)
+install.packages('caret')
+
+doMC::registerDoMC(cores = 6)
+
+unique(c(filter(ucsc.rmsk.salmon_quant$analysis_set$covid_ctrl$deseq$de_out, 
+                padj < 0.01 & abs(log2FoldChange > 0.25))$ensg,
+  filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
+         padj < 0.01 & abs(log2FoldChange > 0.25))$ensg)) ->
+  de_ensg_names
+
+x_in <- t(ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$deseq$norm_counts.df)
+
+x_in_filt <- x_in[, colnames(x_in) %in% c(de_ensg_names)]
+
+y_in <- ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$deseq$scaled_quant_meta_for_de.df %>% 
+  select(sample, condition) %>% 
+  mutate(condition = ifelse(condition == 'ctrl', 0, 
+                            ifelse(condition == 'panc', 1, 2))) %>% 
+  column_to_rownames('sample')
+
+y <- y_in[match(rownames(x_in_filt), rownames(y_in)), ]
+
+set.seed(123)
+
+mult_model <- 
+  cv.glmnet(x = x_in_filt,
+            y = y,
+            family = 'multinomial',
+            type.measure = 'class',
+            nfolds = nrow(x_in_filt), 
+            alpha = 0.5, 
+            parallel = TRUE,
+            keep = TRUE)
+
+
+coef_tmp <- Reduce(cbind, coef(mult_model, s = mult_model$lambda.1se))
+
+beta <- coef_tmp[apply(coef_tmp != 0, 1, any), ]
+
+colnames(beta) <- names(coef(mult_model, s = mult_model$lambda.1se))
+
+beta
+
+inverse.logit.calc <- function(y_hat) { exp(y_hat)/(1+exp(y_hat)) }
+softmax.logit.calc <- function(y_hat) { exp(y_hat)/sum(exp(y_hat)) }
+
+y_hat_matrix <- mult_model$fit.preval[,,which(mult_model$lambda == mult_model$lambda.min)]
+
+# multi-nomial so need to apply softmax to each row (sample)
+mult_response_matrix <- 
+  t(apply(y_hat_matrix, 1, softmax.logit.calc))
+
+mult_response_matrix
+
+# which column is the max -- so need to pull from column names
+y_hat_predictions <- 
+  colnames(mult_response_matrix)[apply(mult_response_matrix, 1, which.max)]
+
+multi_roc <- 
+  pROC::multiclass.roc(response = y, 
+                       predictor = mult_response_matrix, 
+                       levels = c('0','1','2'))
+
+# multi_roc$rocs[[3]]$specificities
+# multi_roc$rocs[[3]]$sensitivities
+# multi_roc$rocs[[3]]$thresholds
+# plot(multi_roc$rocs[[2]])
+
+caret::confusionMatrix(data = as.factor(y_hat_predictions),
+                       reference = as.factor(y))
+```
+
+# compare_samples_w_nanopore
 ```{r}
 panc.7.1.1_nanopore_tpm <- read_tsv(file.path(output_data.dir, 'nanopore', 'gencodev39', 'panc.7.1.1_gene_abundance.tsv'))
 panc.6.1.1_nanopore_tpm <- read_tsv(file.path(output_data.dir, 'nanopore', 'gencodev39', 'panc.6.1.1_gene_abundance.tsv'))
@@ -1173,5 +1250,6 @@ plt.1 + plt.3 / plt.4 + plt.2
 
 
 ```
+
 
 

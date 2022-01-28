@@ -1119,18 +1119,81 @@ import::from(.from = 'SummarizedExperiment', rowRanges)
 
 # BiocManager::install('DECIPHER')
 # BiocManager::install('ggtree')
-
+# install.packages('foreach')
+# install.packages('doMC')
+doMC::registerDoMC(5)
 
 library(BSgenome.Hsapiens.UCSC.hg38)
 library(BSgenome)
 library(ggtree)
-
+library(foreach)
 
 ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out %>% 
   filter(grepl('Alu', ensg), log2FoldChange > 1) %>% 
   mutate(condition = 'panc') -> panc_upreg_alu.df
 
-rowRanges(ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$txi)[gene_id %in% panc_upreg_alu.df]
+rowRanges(ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$txi) %>% 
+  as.data.frame() %>% 
+  filter(grepl('^chr', seqnames)) -> txi_rr
+
+# foreach::foreach(alu = panc_upreg_alu.df$ensg, .combine = rbind) %dopar% {
+#   
+#   txi_tmp <- txi_rr[txi_rr$gene_id == alu, ]
+#   
+#   # message(alu)
+#   
+#   de_alu_gr <- makeGRangesFromDataFrame(head(txi_tmp), keep.extra.columns = T)
+#   
+#   # message('getting seq...')
+#   
+#   de_alu_seq <- Biostrings::getSeq(BSgenome.Hsapiens.UCSC.hg38, de_alu_gr)
+# 
+#   # message('aligning seqs.....')
+#   
+#   alu_seq_aln <- DECIPHER::AlignSeqs(de_alu_seq, processors = 5)
+#   
+#   # message('grabbing consesnsus......')
+#   
+#   alu_seq_cons <- DECIPHER::ConsensusSequence(alu_seq_aln)
+#   
+#   return(alu_seq_cons)
+#   
+# } -> alu_cons_list
+
+lapply(panc_upreg_alu.df$ensg[1:2], function(alu) {
+  
+  txi_tmp <- txi_rr[txi_rr$gene_id == alu, ]
+  message(alu)
+  
+  de_alu_gr <- makeGRangesFromDataFrame(txi_tmp, keep.extra.columns = T)
+  message('getting seq...')
+
+  de_alu_seq <- Biostrings::getSeq(BSgenome.Hsapiens.UCSC.hg38, de_alu_gr)
+  message('aligning seqs.....')
+
+  alu_seq_aln <- DECIPHER::AlignSeqs(de_alu_seq, processors = 5)
+  message('grabbing consesnsus......')
+
+  alu_seq_cons <- DECIPHER::ConsensusSequence(alu_seq_aln)
+  
+  alu_seq_cons
+  
+}) -> alu_seq_cons.lst
+
+txi_tmp <- txi_rr[txi_rr$gene_id == 'AluYa5', ]
+
+de_alu_gr <- makeGRangesFromDataFrame(head(txi_tmp), keep.extra.columns = T)
+
+
+de_alu_seq <- Biostrings::getSeq(BSgenome.Hsapiens.UCSC.hg38, de_alu_gr)
+
+message('aligning seqs.....')
+
+alu_seq_aln <- DECIPHER::AlignSeqs(de_alu_seq, processors = 5)
+
+
+alu_seq_cons <- DECIPHER::ConsensusSequence(alu_seq_aln)
+
 
 SummarizedExperiment::elementMetadata(ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$txi)[gene_id %in% panc_upreg_alu.df]
   as.data.frame() %>% 
@@ -1140,7 +1203,7 @@ SummarizedExperiment::elementMetadata(ucsc.rmsk.salmon_quant$analysis_set$ctrl_p
 tx_row_ranges.df %>% 
   filter(gene_id %in% panc_upreg_alu.df$ensg,
          grepl('chr', seqnames)) %>% 
-  head(n = 50) -> de_alu_insertion_ranges.df
+  tail(n = 50) -> de_alu_insertion_ranges.df
 
 de_alu_gr <- makeGRangesFromDataFrame(de_alu_insertion_ranges.df, keep.extra.columns = T)
 
@@ -1150,11 +1213,17 @@ names(de_alu_seq) <- de_alu_gr$tx_name
 
 alu_seq_aln <- DECIPHER::AlignSeqs(de_alu_seq, processors = 5)
 
-alu_seq_distance <- DECIPHER::DistanceMatrix(alu_seq_aln)
+alu_seq_distance <- DECIPHER::DistanceMatrix(c(alu_seq_cons.lst[[1]], alu_seq_cons.lst[[2]]))
 
 alu_seq_dend <- DECIPHER::IdClusters(alu_seq_distance, type = 'dendrogram')
 
 ggtree::ggtree(alu_seq_dend) + geom_tiplab() + ggplot2::xlim(0, 0.25)
+
+
+cons_1 <- DECIPHER::ConsensusSequence(alu_seq_aln)
+cons_2 <- DECIPHER::ConsensusSequence(alu_seq_aln)
+
+DECIPHER::BrowseSeqs(c(alu_seq_cons.lst[[1]], alu_seq_cons.lst[[2]]))
 
 ```
 

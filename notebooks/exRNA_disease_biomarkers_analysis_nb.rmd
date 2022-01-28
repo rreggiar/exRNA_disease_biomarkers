@@ -1111,13 +1111,16 @@ save.manuscript.panel(figure = 's2',
 
 ```
 
-## compare_samples_w_nanopore
+# Fig_Nanopore
 ```{r}
-panc.7.1.1_nanopore_tpm <- read_tsv(file.path(output_data.dir, 'nanopore', 'gencodev39', 'panc.7.1.1_gene_abundance.tsv'))
-panc.6.1.1_nanopore_tpm <- read_tsv(file.path(output_data.dir, 'nanopore', 'gencodev39', 'panc.6.1.1_gene_abundance.tsv'))
+panc.7.1.1_nanopore_tpm <- read_tsv(file.path(output_data.dir, 'nanopore', 'gencode_39_rmsk', 'panc.7.1.1_gene_abundance.tsv'))
+panc.6.1.1_nanopore_tpm <- read_tsv(file.path(output_data.dir, 'nanopore', 'gencode_39_rmsk', 'panc.6.1.1_gene_abundance.tsv'))
 
+import::from(.from = 'SummarizedExperiment', assay)
 
-input_set_dds_norm_counts.df[, 'panc.7.1.1', drop = F] %>% rownames_to_column('Gene ID') %>% 
+assay(ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$gxi, 'counts')[, 'panc.7.1.1', drop = F]
+
+ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$deseq$[, 'panc.7.1.1', drop = F] %>% head() rownames_to_column('Gene ID') %>% head()
   merge(panc.7.1.1_nanopore_tpm, by = 'Gene ID') %>% 
   dplyr::rename('nanopore_tpm' = TPM) %>% 
   mutate(illumina_tpm = panc.7.1.1*1e6/(sum(panc.7.1.1))) -> panc.7.1.1_seq_compare.df

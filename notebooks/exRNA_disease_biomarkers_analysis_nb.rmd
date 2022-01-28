@@ -1111,6 +1111,54 @@ save.manuscript.panel(figure = 's2',
 
 ```
 
+# Fig_4
+## Fig_4A
+```{r}
+
+import::from(.from = 'SummarizedExperiment', rowRanges)
+
+# BiocManager::install('DECIPHER')
+# BiocManager::install('ggtree')
+
+
+library(BSgenome.Hsapiens.UCSC.hg38)
+library(BSgenome)
+library(ggtree)
+
+
+ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out %>% 
+  filter(grepl('Alu', ensg), log2FoldChange > 1) %>% 
+  mutate(condition = 'panc') -> panc_upreg_alu.df
+
+rowRanges(ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$txi)[gene_id %in% panc_upreg_alu.df]
+
+SummarizedExperiment::elementMetadata(ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$txi)[gene_id %in% panc_upreg_alu.df]
+  as.data.frame() %>% 
+  filter(grepl('Alu', gene_id)) -> tx_row_ranges.df
+
+
+tx_row_ranges.df %>% 
+  filter(gene_id %in% panc_upreg_alu.df$ensg,
+         grepl('chr', seqnames)) %>% 
+  head(n = 50) -> de_alu_insertion_ranges.df
+
+de_alu_gr <- makeGRangesFromDataFrame(de_alu_insertion_ranges.df, keep.extra.columns = T)
+
+de_alu_seq <- Biostrings::getSeq(BSgenome.Hsapiens.UCSC.hg38, de_alu_gr)
+
+names(de_alu_seq) <- de_alu_gr$tx_name
+
+alu_seq_aln <- DECIPHER::AlignSeqs(de_alu_seq, processors = 5)
+
+alu_seq_distance <- DECIPHER::DistanceMatrix(alu_seq_aln)
+
+alu_seq_dend <- DECIPHER::IdClusters(alu_seq_distance, type = 'dendrogram')
+
+ggtree::ggtree(alu_seq_dend) + geom_tiplab() + ggplot2::xlim(0, 0.25)
+
+```
+
+
 ## compare_samples_w_nanopore
 ```{r}
 panc.7.1.1_nanopore_tpm <- read_tsv(file.path(output_data.dir, 'nanopore', 'gencodev39', 'panc.7.1.1_gene_abundance.tsv'))

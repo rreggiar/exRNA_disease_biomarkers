@@ -1160,7 +1160,7 @@ rowRanges(ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$txi) %>%
 #   
 # } -> alu_cons_list
 
-lapply(panc_upreg_alu.df$ensg[1:2], function(alu) {
+lapply(panc_upreg_alu.df$ensg, function(alu) {
   
   txi_tmp <- txi_rr[txi_rr$gene_id == alu, ]
   message(alu)
@@ -1173,29 +1173,28 @@ lapply(panc_upreg_alu.df$ensg[1:2], function(alu) {
 
   alu_seq_aln <- DECIPHER::AlignSeqs(de_alu_seq, processors = 5)
   message('grabbing consesnsus......')
-
-  alu_seq_cons <- DECIPHER::ConsensusSequence(alu_seq_aln)
   
+  alu_seq_aln
+
+  # alu_seq_cons <- DECIPHER::ConsensusSequence(alu_seq_aln)
+  # 
+  # alu_seq_cons
+  
+}) -> alu_seq_aln.lst
+
+lapply(alu_seq_aln.lst, function(alu_seq_aln) {
+  
+  alu_seq_cons <- DECIPHER::ConsensusSequence(alu_seq_aln)
+
   alu_seq_cons
   
 }) -> alu_seq_cons.lst
 
-txi_tmp <- txi_rr[txi_rr$gene_id == 'AluYa5', ]
-
-de_alu_gr <- makeGRangesFromDataFrame(head(txi_tmp), keep.extra.columns = T)
 
 
-de_alu_seq <- Biostrings::getSeq(BSgenome.Hsapiens.UCSC.hg38, de_alu_gr)
 
-message('aligning seqs.....')
-
-alu_seq_aln <- DECIPHER::AlignSeqs(de_alu_seq, processors = 5)
-
-
-alu_seq_cons <- DECIPHER::ConsensusSequence(alu_seq_aln)
-
-
-SummarizedExperiment::elementMetadata(ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$txi)[gene_id %in% panc_upreg_alu.df]
+SummarizedExperiment::elementMetadata(ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$txi)[gene_id %in%
+                                                                                                panc_upreg_alu.df]
   as.data.frame() %>% 
   filter(grepl('Alu', gene_id)) -> tx_row_ranges.df
 
@@ -1213,17 +1212,21 @@ names(de_alu_seq) <- de_alu_gr$tx_name
 
 alu_seq_aln <- DECIPHER::AlignSeqs(de_alu_seq, processors = 5)
 
-alu_seq_distance <- DECIPHER::DistanceMatrix(c(alu_seq_cons.lst[[1]], alu_seq_cons.lst[[2]]))
+alu_seq_distance <- DECIPHER::DistanceMatrix(DECIPHER::RemoveGaps(do.call(c, alu_seq_cons.lst)))
 
 alu_seq_dend <- DECIPHER::IdClusters(alu_seq_distance, type = 'dendrogram')
 
 ggtree::ggtree(alu_seq_dend) + geom_tiplab() + ggplot2::xlim(0, 0.25)
 
+DECIPHER::RemoveGaps(do.call(c, alu_seq_cons.lst))
+
 
 cons_1 <- DECIPHER::ConsensusSequence(alu_seq_aln)
 cons_2 <- DECIPHER::ConsensusSequence(alu_seq_aln)
 
-DECIPHER::BrowseSeqs(c(alu_seq_cons.lst[[1]], alu_seq_cons.lst[[2]]))
+DECIPHER::BrowseSeqs(DECIPHER::RemoveGaps(do.call(c, alu_seq_cons.lst)))
+
+DECIPHER::ConsensusSequence(DECIPHER::RemoveGaps(do.call(c, alu_seq_cons.lst)), threshold = 0.1)
 
 ```
 

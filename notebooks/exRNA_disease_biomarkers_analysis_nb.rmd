@@ -1118,12 +1118,111 @@ panc.6.1.1_nanopore_tpm <- read_tsv(file.path(output_data.dir, 'nanopore', 'genc
 
 import::from(.from = 'SummarizedExperiment', assay)
 
-assay(ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$gxi, 'counts')[, 'panc.7.1.1', drop = F]
 
-ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$deseq$[, 'panc.7.1.1', drop = F] %>% head() rownames_to_column('Gene ID') %>% head()
+panc.7.1.1_nanopore_tpm %<>% 
+  group_by(`Gene ID`) %>% 
+  summarize(nanopore_tpm = sum(TPM))
+
+as.data.frame(as.matrix(assay(ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$gxi, 'counts')[, 'panc.7.1.1', drop = F])) %>% 
+  rownames_to_column('Gene ID') %>% 
   merge(panc.7.1.1_nanopore_tpm, by = 'Gene ID') %>% 
-  dplyr::rename('nanopore_tpm' = TPM) %>% 
+  dplyr::rename('ensg' = 'Gene ID') %>% 
   mutate(illumina_tpm = panc.7.1.1*1e6/(sum(panc.7.1.1))) -> panc.7.1.1_seq_compare.df
+
+panc.7.1.1_seq_compare.df %<>%
+  merge(reference_meta_data$ucsc_rmsk_insert_info.df, by.x = 'ensg', by.y = 'gene', all.x = T) %>% 
+  mutate(family = ifelse(ensg %in% reference_meta_data$gencode_lncRNA_gene_names.df$ensg,
+                         'gencode_lncRNA', family),
+         family = ifelse(is.na(family), 'gencode_coding', family),
+         clade = ifelse(grepl('gencode', family), family, clade),
+         clade = ifelse(clade %in% c('gencode_coding',
+                                     'gencode_lncRNA',
+                                     'LINE',
+                                     'SINE',
+                                     'LTR',
+                                     'DNA',
+                                     'Simple_repeat'), clade, 'other'),
+         type = ifelse(grepl('gencode',family), 'GENCODE', 'TE'),
+         clade = factor(clade, levels = te_aware_annotation_levels)) %>% 
+   filter(!ensg %in% chrM.filter.list) 
+
+panc.7.1.1_seq_compare.df %>%
+  ggplot(aes(nanopore_tpm, illumina_tpm, color = clade)) + 
+  geom_point() +
+  scale_color_manual(values = te_color_pal) + 
+  ggforce::facet_col(~clade, scales = 'free') +
+  geom_smooth(method = 'lm', show.legend = F) + 
+  ggrepel::geom_text_repel(aes(label = ifelse(ensg %in% filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
+                                                               padj < 0.01 & log2FoldChange > 0)$ensg, ensg, '')), 
+                           show.legend = F)
+
+
+panc.6.1.1_nanopore_tpm %<>% 
+  group_by(`Gene ID`) %>% 
+  summarize(nanopore_tpm = sum(TPM))
+
+as.data.frame(as.matrix(assay(ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$gxi, 'counts')[, 'panc.6.1.1', drop = F])) %>% 
+  rownames_to_column('Gene ID') %>% 
+  merge(panc.6.1.1_nanopore_tpm, by = 'Gene ID') %>% 
+  dplyr::rename('ensg' = 'Gene ID') %>% 
+  mutate(illumina_tpm = panc.6.1.1*1e6/(sum(panc.6.1.1))) -> panc.6.1.1_seq_compare.df
+
+panc.6.1.1_seq_compare.df %<>%
+  merge(reference_meta_data$ucsc_rmsk_insert_info.df, by.x = 'ensg', by.y = 'gene', all.x = T) %>% 
+  mutate(family = ifelse(ensg %in% reference_meta_data$gencode_lncRNA_gene_names.df$ensg,
+                         'gencode_lncRNA', family),
+         family = ifelse(is.na(family), 'gencode_coding', family),
+         clade = ifelse(grepl('gencode', family), family, clade),
+         clade = ifelse(clade %in% c('gencode_coding',
+                                     'gencode_lncRNA',
+                                     'LINE',
+                                     'SINE',
+                                     'LTR',
+                                     'DNA',
+                                     'Simple_repeat'), clade, 'other'),
+         type = ifelse(grepl('gencode',family), 'GENCODE', 'TE'),
+         clade = factor(clade, levels = te_aware_annotation_levels)) %>% 
+   filter(!ensg %in% chrM.filter.list) 
+
+panc.6.1.1_seq_compare.df %>%
+  ggplot(aes(nanopore_tpm, illumina_tpm, color = clade)) + 
+  geom_point() +
+  scale_color_manual(values = te_color_pal) + 
+  ggforce::facet_col(~clade, scales = 'free') +
+  geom_smooth(method = 'lm', show.legend = F) #+ 
+  ggrepel::geom_text_repel(aes(label = ifelse(ensg %in% filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
+                                                               padj < 0.01 & log2FoldChange > 0)$ensg, ensg, '')), 
+                           show.legend = F)
+
+
+
+
+
+
+
+panc.7.1.1_seq_compare.df %>% 
+  
+  filter(nanopore_tpm < 50000 & illumina_tpm < 50000) %>% 
+  ggplot(aes(nanopore_tpm, illumina_tpm, color = clade)) + 
+  geom_point() + 
+  scale_color_manual(values = te_color_pal) 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 input_set_dds_norm_counts.df[, 'panc.6.1.1', drop = F] %>% rownames_to_column('Gene ID') %>% 
   merge(panc.6.1.1_nanopore_tpm, by = 'Gene ID') %>% 

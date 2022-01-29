@@ -1213,7 +1213,18 @@ panc.7.1.1_seq_compare.df %>%
 
 
 
+total_compare.df <- 
+  merge(panc.7.1.1_seq_compare.df,
+        panc.6.1.1_seq_compare.df, by = 'ensg')
 
+total_compare.df %>% 
+  ggplot(aes(illumina_tpm.x, illumina_tpm.y, color = clade.x)) + 
+  geom_hline(yintercept = seq(0,80000, 20000), alpha = 0.2) +
+  geom_vline(xintercept = seq(0,80000, 20000), alpha = 0.2) +
+  geom_point() + 
+  scale_color_manual(values = te_color_pal) +
+  ylab('panc.6.1.1') + xlab('panc.7.1.1') + 
+  ggtitle('illumina tpm comparison')
 
 
 

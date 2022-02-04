@@ -1121,6 +1121,7 @@ import::from(.from = 'SummarizedExperiment', rowRanges)
 # BiocManager::install('ggtree')
 # install.packages('foreach')
 # install.packages('doMC')
+install.packages('kmer')
 doMC::registerDoMC(5)
 
 library(BSgenome.Hsapiens.UCSC.hg38)
@@ -1191,6 +1192,16 @@ lapply(alu_seq_aln.lst, function(alu_seq_aln) {
 }) -> alu_seq_cons.lst
 
 
+
+library('kmer')
+
+kmer::kdistance(DECIPHER::RemoveGaps(alu_seq_aln.lst[[1]]))
+
+tmp_no_gap <- ape::as.DNAbin(DECIPHER::RemoveGaps(do.call(c, alu_seq_cons.lst)))
+
+tmp_dist <- kmer::kdistance(tmp_no_gap, residues = "DNA", k = 12)
+
+tmp_count <- kmer::kcount(tmp_no_gap, residues = "DNA", k = 12)
 
 
 SummarizedExperiment::elementMetadata(ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$txi)[gene_id %in%

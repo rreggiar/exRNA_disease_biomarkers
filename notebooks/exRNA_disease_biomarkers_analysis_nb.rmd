@@ -1169,6 +1169,7 @@ len_compare.df %>%
   summarize(read_length = mean(read_length)) %>% 
   merge(nanopore_biotype_labels, by.x = 'biotype.x', by.y = 'biotype') %>% 
   mutate(biolabel = factor(biolabel, levels = te_aware_annotation_levels)) %>% 
+  # mutate(gene = str_split_fixed(tx, pattern = '_', n = 4)[,1])
   ggplot(aes(read_length, len, color = sample)) + 
   geom_point(alpha = 0.4) + 
   xlab('avg. observed length') + ylab('expected_length') +
@@ -1176,9 +1177,20 @@ len_compare.df %>%
   scale_color_manual(values = RColorBrewer::brewer.pal(3, 'Dark2'))
 
 len_compare.df %>% 
-  filter(biotype.x == 'SINE') -> alu_len.df
+  filter(biotype.x == 'SINE') %>% 
+  select(tx, sequence = reference_name) -> alu_len.df
+
+library(BSgenome.Hsapiens.UCSC.hg38)
+library(BSgenome)
+library(ggtree)
 
 
+alu_len.lst <- as.list(alu_len.df$sequence)
+names(alu_len.lst) <- alu_len.df$tx
+
+alu_read.string <- Biostrings::AAStringSet(unlist(alu_len.lst))
+
+DECIPHER::
 
 
 

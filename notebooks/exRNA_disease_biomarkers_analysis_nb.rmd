@@ -1124,7 +1124,7 @@ panc.7.1.1_read_len <- read_csv(file.path(output_data.dir, 'nanopore', 'panc.7.1
 
 panc.6.1.1_read_len <- read_csv(file.path(output_data.dir, 'nanopore', 'panc.6.1.1_biotype_read_lengths.csv')) %>% 
   separate(sample, sep = '[.]', into = c(NA,NA,'biotype',NA)) %>% 
-  mutate(biotype = sub('_extraction', '', biotype))
+  mutate(biotype = sub('_extraction', '', biotype))d
 
 panc.7.1.1_read_len %>% 
   mutate(sample = 'panc.7.1.1') %>% 
@@ -1150,6 +1150,34 @@ panc_nanopore_read_length.df %>%
   geom_histogram(aes(y=stat(density*width)), bins = 100) + 
   ggforce::facet_col(~biolabel, scales = 'free')  +
   scale_fill_manual(values = RColorBrewer::brewer.pal(3, 'Dark2'))
+
+panc_nanopore_read_length.df %>% 
+  ungroup() %>% 
+  mutate(originally_multisample = ifelse(grepl('^ENST', originally_multisample), 
+            str_split_fixed(originally_multisample, pattern = '[|]', n = 10)[,1],
+            originally_multisample)) %>% 
+  mutate(originally_multisample = ifelse(grepl('_range', originally_multisample),
+            str_split_fixed(originally_multisample, pattern = '::', n = 2)[,1],
+            originally_multisample)) %>%
+  merge(reference_meta_data$total_tx_to_gene.df, by.x = 'originally_multisample', by.y = 'enst') %>% 
+  mutate(len = as.numeric(len)) -> len_compare.df
+
+
+len_compare.df %>% 
+  filter(biotype.x == 'L1') %>% 
+  group_by(tx, len, biotype.x, sample) %>%
+  summarize(read_length = mean(read_length)) %>% 
+  merge(nanopore_biotype_labels, by.x = 'biotype.x', by.y = 'biotype') %>% 
+  mutate(biolabel = factor(biolabel, levels = te_aware_annotation_levels)) %>% 
+  ggplot(aes(read_length, len, color = sample)) + 
+  geom_point(alpha = 0.4) + 
+  xlab('observed length') + ylab('expected_length') +
+  ggforce::facet_col(~biolabel, scales = 'free') +
+  scale_color_manual(values = RColorBrewer::brewer.pal(3, 'Dark2'))
+
+
+
+panc_nanopore_read_length.df
 
 import::from(.from = 'SummarizedExperiment', assay)
 

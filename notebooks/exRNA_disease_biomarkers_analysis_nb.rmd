@@ -1368,6 +1368,13 @@ imap(panc_ip, function(x, name){
   
 })
 
+imap(covid_ip, function(x, name){
+  
+  write_csv(x, file = file.path(output_data.dir,
+                                paste0('covid_', name, '.csv')))
+  
+})
+
 
 ```
 

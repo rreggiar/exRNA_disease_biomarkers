@@ -711,7 +711,6 @@ rowRanges(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$gxi) %>%
   unlist() %>% unname() -> chrM.filter.list
 
 ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out %>% 
-# ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$deseq$panc_vs_ctrl %>% 
   merge(reference_meta_data$ucsc_rmsk_insert_info.df, by = 'gene', all.x = T) %>% 
   mutate(family = ifelse(ensg %in% reference_meta_data$gencode_lncRNA_gene_names.df$ensg,
                          'gencode_lncRNA', family),
@@ -1320,7 +1319,8 @@ build_ip_tables <- function(analysis_set,
                                   log2FoldChange > 1)$ensg) %>% 
     merge(annotated_de %>% select(gene, ensg, padj, baseMean, log2FoldChange), 
           by.x = 'group_name', by.y = 'ensg') %>% 
-    select(gene, chr = seqnames, start, end, width, baseMean, padj, log2FoldChange) -> gencode_ip_table.tmp
+    select(gene, chr = seqnames, start, end, width, baseMean, padj, log2FoldChange) %>% 
+    mutate(reference = 'hg38_gencode_v39') -> gencode_ip_table.tmp
 
   rowRanges(analysis_set$txi) %>% 
     as.data.frame() %>% 
@@ -1346,7 +1346,8 @@ build_ip_tables <- function(analysis_set,
            gene = as.character(gene)) %>% 
     merge(annotated_de %>% 
           select(gene, baseMean, padj, log2FoldChange), by = 'gene') %>% 
-    select(gene, tx_name, chr, start, end, width, baseMean, padj, log2FoldChange) -> rmsk_ip_table.tmp
+    select(gene, tx_name, chr, start, end, width, baseMean, padj, log2FoldChange) %>% 
+    mutate(reference = 'hg38_ucscGB_rmsk')-> rmsk_ip_table.tmp
   
   return(list('gencode_ip_table' = gencode_ip_table.tmp,
               'rmsk_ip_table' = rmsk_ip_table.tmp))
@@ -1357,23 +1358,34 @@ panc_ip <- build_ip_tables(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl,
                            panc_annotated_rmsk_de,
                            zero_cutoff = 5)
 
-covid_ip <- build_ip_tables(ucsc.rmsk.salmon_quant$analysis_set$covid_ctrl,
-                            covid_annotated_rmsk_de,
-                            zero_cutoff = 5)
+# covid_ip <- build_ip_tables(ucsc.rmsk.salmon_quant$analysis_set$covid_ctrl,
+#                             covid_annotated_rmsk_de,
+#                             zero_cutoff = 5)
+
+table(panc_ip$rmsk_ip_table$gene)
 
 imap(panc_ip, function(x, name){
   
-  write_csv(x, file = file.path(output_data.dir,
+  write_csv(x, file = file.path(output_data.dir, 'ip_data',
                                 paste0('panc_', name, '.csv')))
   
 })
 
-imap(covid_ip, function(x, name){
-  
-  write_csv(x, file = file.path(output_data.dir,
-                                paste0('covid_', name, '.csv')))
-  
-})
+# imap(covid_ip, function(x, name){
+#   
+#   write_csv(x, file = file.path(output_data.dir,
+#                                 paste0('covid_', name, '.csv')))
+#   
+# })
+
+
+filter(panc_annotated_rmsk_de, clade != 'gencode_coding') %>% 
+             mutate(clade = factor(clade, levels = te_aware_annotation_levels)) %>% 
+  ggplot(aes(log2FoldChange, -log10(padj), color = clade, label = gene)) + 
+  geom_point(size = 2, alpha = 0.8) +
+  scale_color_manual(values = te_color_pal) + 
+  ggrepel::geom_text_repel(aes(label = ifelse(grepl('Alu', gene), gene, '')),
+                               show.legend = F, color = 'black', max.overlaps = 1000)
 
 
 ```

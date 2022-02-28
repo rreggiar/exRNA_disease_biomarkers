@@ -1113,8 +1113,27 @@ save.manuscript.panel(figure = 's2',
 
 # Fig_Nanopore
 ```{r}
-panc.7.1.1_nanopore_tpm <- read_tsv(file.path(output_data.dir, 'nanopore', 'gencode_39_rmsk', 'panc.7.1.1_gene_abundance.tsv'))
-panc.6.1.1_nanopore_tpm <- read_tsv(file.path(output_data.dir, 'nanopore', 'gencode_39_rmsk', 'panc.6.1.1_gene_abundance.tsv'))
+panc.7.1.1_nanopore_tpm <- 
+  read_tsv(file.path(output_data.dir, 'nanopore', 'gencode_39_rmsk', 'panc.7.1.1_gene_abundance.tsv'))
+
+panc.6.1.1_nanopore_tpm <- 
+  read_tsv(file.path(output_data.dir, 'nanopore', 'gencode_39_rmsk', 'panc.6.1.1_gene_abundance.tsv'))
+
+panc.7.1.1_read_len <- read_csv(file.path(output_data.dir, 'nanopore', 'panc.7.1.1_biotype_read_lengths.csv')) %>% 
+  separate(sample, sep = '[.]', into = c(NA,NA,'biotype',NA)) %>% 
+  mutate(biotype = sub('_extraction', '', biotype))
+
+tmp_read_len <- read_csv(file.path(output_data.dir, 'nanopore', 'bioIVT_panc_1_2_3.biotype_read_lengths.csv')) %>% 
+  separate(sample, sep = '[.]', into = c(NA,NA,'biotype',NA)) %>% 
+  mutate(biotype = sub('_extraction', '', biotype))
+
+tmp_read_len %>% 
+  ggplot(aes(abs(read_length))) + 
+  geom_histogram(aes(y=..count../sum(..count..)), bins = 100) + 
+  ggforce::facet_col(~biotype, scales = 'free') 
+
+
+panc.6.1.1_read_len <- read_csv(file.path(output_data.dir, 'nanopore', 'panc.6.1.1_biotype_read_lengths.csv'))
 
 import::from(.from = 'SummarizedExperiment', assay)
 
@@ -1286,5 +1305,71 @@ plt.1 + plt.3 / plt.4 + plt.2
 
 
 ```
+# Ip_tables
+```{r}
+
+build_ip_tables <- function(analysis_set,
+                            annotated_de,
+                            zero_cutoff = 5){
+  
+  rowRanges(analysis_set$gxi) %>% 
+    as.data.frame() %>% 
+    filter(group_name %in% filter(annotated_de, 
+                                  type == 'GENCODE',
+                                  padj < 0.1,
+                                  log2FoldChange > 1)$ensg) %>% 
+    merge(annotated_de %>% select(gene, ensg, padj, baseMean, log2FoldChange), 
+          by.x = 'group_name', by.y = 'ensg') %>% 
+    select(gene, chr = seqnames, start, end, width, baseMean, padj, log2FoldChange) -> gencode_ip_table.tmp
+
+  rowRanges(analysis_set$txi) %>% 
+    as.data.frame() %>% 
+    remove_rownames() %>% 
+    filter(gene_id %in% filter(annotated_de, 
+                                  type == 'TE',
+                                  padj < 0.1,
+                                  log2FoldChange > 1)$ensg) -> rmsk_enrich_1
+  
+  assay(analysis_set$txi, 'counts') %>% 
+    as.data.frame() %>% 
+    select(contains('panc')) %>% 
+    rownames_to_column('tx') %>% 
+    filter(tx %in% rmsk_enrich_1$tx_name) -> insert_count
+  
+  insert_count %>% 
+    filter(rowSums(across(where(is.numeric)) == 0) <= zero_cutoff) -> keep_inserts
+  
+  rmsk_enrich_1 %>% 
+    filter(tx_name %in% keep_inserts$tx) %>% 
+    select(gene = gene_id, chr = seqnames, start, end, width, strand, tx_name) %>% 
+    mutate(chr = as.character(chr),
+           gene = as.character(gene)) %>% 
+    merge(annotated_de %>% 
+          select(gene, baseMean, padj, log2FoldChange), by = 'gene') %>% 
+    select(gene, tx_name, chr, start, end, width, baseMean, padj, log2FoldChange) -> rmsk_ip_table.tmp
+  
+  return(list('gencode_ip_table' = gencode_ip_table.tmp,
+              'rmsk_ip_table' = rmsk_ip_table.tmp))
+  
+}
+
+panc_ip <- build_ip_tables(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl,
+                           panc_annotated_rmsk_de,
+                           zero_cutoff = 5)
+
+covid_ip <- build_ip_tables(ucsc.rmsk.salmon_quant$analysis_set$covid_ctrl,
+                            covid_annotated_rmsk_de,
+                            zero_cutoff = 5)
+
+imap(panc_ip, function(x, name){
+  
+  write_csv(x, file = file.path(output_data.dir,
+                                paste0('panc_', name, '.csv')))
+  
+})
+
+
+```
+
 
 

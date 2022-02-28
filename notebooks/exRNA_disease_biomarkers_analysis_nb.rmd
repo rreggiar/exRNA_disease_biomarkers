@@ -1122,17 +1122,34 @@ panc.7.1.1_read_len <- read_csv(file.path(output_data.dir, 'nanopore', 'panc.7.1
   separate(sample, sep = '[.]', into = c(NA,NA,'biotype',NA)) %>% 
   mutate(biotype = sub('_extraction', '', biotype))
 
-tmp_read_len <- read_csv(file.path(output_data.dir, 'nanopore', 'bioIVT_panc_1_2_3.biotype_read_lengths.csv')) %>% 
+panc.6.1.1_read_len <- read_csv(file.path(output_data.dir, 'nanopore', 'panc.6.1.1_biotype_read_lengths.csv')) %>% 
   separate(sample, sep = '[.]', into = c(NA,NA,'biotype',NA)) %>% 
   mutate(biotype = sub('_extraction', '', biotype))
 
-tmp_read_len %>% 
-  ggplot(aes(abs(read_length))) + 
-  geom_histogram(aes(y=..count../sum(..count..)), bins = 100) + 
-  ggforce::facet_col(~biotype, scales = 'free') 
+panc.7.1.1_read_len %>% 
+  mutate(sample = 'panc.7.1.1') %>% 
+  rbind(panc.6.1.1_read_len %>%
+         mutate(sample = 'panc.6.1.1')) %>% 
+  group_by(biotype) -> panc_nanopore_read_length.df
 
+panc_nanopore_read_length.df %>% 
+  group_by(biotype) %>% 
+  mutate(z_score = scale(read_length)) %>% 
+  filter(between(z_score, -2.5, 2.5))-> panc_nanopore_read_length.df
 
-panc.6.1.1_read_len <- read_csv(file.path(output_data.dir, 'nanopore', 'panc.6.1.1_biotype_read_lengths.csv'))
+table(panc_nanopore_read_length.df$biotype) %>% 
+  as.data.frame() %>% 
+  select(biotype = Var1) %>% 
+  mutate(biolabel = c('LINE', 'gencode_lncRNA', 'LTR', 'gencode_coding', 'SINE')) -> nanopore_biotype_labels
+
+panc_nanopore_read_length.df %>% 
+  group_by(biotype) %>%
+  merge(nanopore_biotype_labels, by = 'biotype') %>% 
+  mutate(biolabel = factor(biolabel, levels = te_aware_annotation_levels)) %>% 
+  ggplot(aes(read_length, fill = sample)) + 
+  geom_histogram(aes(y=stat(density*width)), bins = 100) + 
+  ggforce::facet_col(~biolabel, scales = 'free')  +
+  scale_fill_manual(values = RColorBrewer::brewer.pal(3, 'Dark2'))
 
 import::from(.from = 'SummarizedExperiment', assay)
 
@@ -1141,7 +1158,8 @@ panc.7.1.1_nanopore_tpm %<>%
   group_by(`Gene ID`) %>% 
   summarize(nanopore_tpm = sum(TPM))
 
-as.data.frame(as.matrix(assay(ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$gxi, 'counts')[, 'panc.7.1.1', drop = F])) %>% 
+as.data.frame(as.matrix(assay(ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$gxi, 
+                              'counts')[, 'panc.7.1.1', drop = F])) %>% 
   rownames_to_column('Gene ID') %>% 
   merge(panc.7.1.1_nanopore_tpm, by = 'Gene ID') %>% 
   dplyr::rename('ensg' = 'Gene ID') %>% 

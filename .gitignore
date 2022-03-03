@@ -52,6 +52,9 @@ data/output_data/*_quant
 
 # meta_data dep
 data/meta_data/deprecated/
+data/meta_data/reference_meta_data_df.rds
+# ip data
+data/output_data/ip_data
 
 # deprecated code
 R/deprecated/

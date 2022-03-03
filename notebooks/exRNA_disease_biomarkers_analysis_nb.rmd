@@ -1134,7 +1134,7 @@ panc.7.1.1_read_len %>%
 
 panc_nanopore_read_length.df %>% 
   group_by(biotype) %>% 
-  mutate(z_score = scale(read_length)) %>% 
+  mutate(z_score = scale(abs(read_length))) %>% 
   filter(between(z_score, -2.5, 2.5))-> panc_nanopore_read_length.df
 
 table(panc_nanopore_read_length.df$biotype) %>% 
@@ -1146,7 +1146,7 @@ panc_nanopore_read_length.df %>%
   group_by(biotype) %>%
   merge(nanopore_biotype_labels, by = 'biotype') %>% 
   mutate(biolabel = factor(biolabel, levels = te_aware_annotation_levels)) %>% 
-  ggplot(aes(read_length, fill = sample)) + 
+  ggplot(aes(abs(read_length), fill = sample)) + 
   geom_histogram(aes(y=stat(density*width)), bins = 100) + 
   ggforce::facet_col(~biolabel, scales = 'free')  +
   scale_fill_manual(values = RColorBrewer::brewer.pal(3, 'Dark2'))
@@ -1171,10 +1171,55 @@ len_compare.df %>%
   mutate(biolabel = factor(biolabel, levels = te_aware_annotation_levels)) %>% 
   # mutate(gene = str_split_fixed(tx, pattern = '_', n = 4)[,1])
   ggplot(aes(read_length, len, color = sample)) + 
-  geom_point(alpha = 0.4) + 
-  xlab('avg. observed length') + ylab('expected_length') +
+  geom_point(alpha = 0.2) + 
+  xlab('avg. observed length') + ylab('expected length') +
   ggforce::facet_col(~biolabel, scales = 'free') +
   scale_color_manual(values = RColorBrewer::brewer.pal(3, 'Dark2'))
+
+illumina_read_len <- list.files(file.path(output_data.dir, 'nanopore', 'illumina_read_lengths'), full.names = T)
+names(illumina_read_len) <- gsub(basename(illumina_read_len), pattern = '.csv', replacement = '')
+
+lapply(illumina_read_len, function(file) { 
+  
+  read_len_file <- read_csv(file = file, 
+                            col_names = c('read', 'read_length', 'seq_1', 
+                                          'seq_2', 'originally_multisample', 
+                                          'tx', 'sample'))
+  read_len_file %>%
+    mutate(tx = ifelse(grepl('^ENST', tx),
+            str_split_fixed(tx, pattern = '[|]', n = 10)[,1],
+            tx)) %>%
+    mutate(tx = ifelse(grepl('_range', tx),
+            str_split_fixed(tx, pattern = '::', n = 2)[,1],
+            tx)) %>%
+    merge(reference_meta_data$total_tx_to_gene.df, by.x = 'tx', by.y = 'enst')
+  
+  
+}) -> illumina_read_len.list
+
+# illumina_read_len.list %>% 
+#   bind_rows(.id = 'sample') %>% 
+illumina_read_len.list[[1]] %>% 
+  group_by(biotype) %>% 
+  mutate(z_score = scale(abs(read_length))) %>% 
+  filter(between(z_score, -2.5, 2.5)) -> illumina_read_len.df
+
+table(illumina_read_len.df$biotype) %>% 
+  as.data.frame() %>% 
+  select(biotype = Var1) %>% 
+  filter(biotype %in% c('LINE', 'lncRNA', 'LTR', 'protein_coding', 'SINE')) %>% 
+  mutate(biolabel = c('LINE', 'gencode_lncRNA', 'LTR', 'gencode_coding', 'SINE')) -> illumina_biotype_labels
+
+illumina_read_len.df %>% 
+  filter(biotype %in% nanopore_biotype_labels$biotype) %>% 
+  group_by(biotype) %>%
+  merge(nanopore_biotype_labels, by = 'biotype') %>% 
+  mutate(biolabel = factor(biolabel, levels = te_aware_annotation_levels)) %>% 
+  ggplot(aes(abs(read_length))) + 
+  geom_histogram(aes(y=stat(density*width)), bins = 100) + 
+  ggforce::facet_col(~biolabel, scales = 'free') 
+
+
 
 len_compare.df %>% 
   filter(biotype.x == 'SINE') %>% 
@@ -1190,8 +1235,7 @@ names(alu_len.lst) <- alu_len.df$tx
 
 alu_read.string <- Biostrings::AAStringSet(unlist(alu_len.lst))
 
-DECIPHER::
-
+alu_aln <- DECIPHER::AlignSeqs(alu_read.string, processors = 5)
 
 
 

@@ -87,7 +87,8 @@ parse.tximeta.quant.metadata <- function(se_list, qc_data.dir = here::here('data
 
 	  salmon_meta_tmp %>% mutate(sample = names) -> salmon_meta_tmp
 	  
-	  if(grepl('process.aware.salmon', project)) {process_aware = T}
+	  process_aware = F
+	  if(grepl('process.aware', project)) {process_aware = T}
 
 	  project <- sub('_salmon', '', project)
 	  project <- sub('_ucsc.rmsk.salmon', '', project)
@@ -110,15 +111,15 @@ parse.tximeta.quant.metadata <- function(se_list, qc_data.dir = here::here('data
 	  
 	  if (process_aware == T){
 
-	    lst('txi' = data$txi, 
-	        'gxi' = data$gxi, 
-	        'gxi.split' = data$gxi.split,
-	        'quant_meta' = meta_out)
+	    return(lst('txi' = data$txi, 
+        	        'gxi' = data$gxi, 
+        	        'gxi.split' = data$gxi.split,
+        	        'quant_meta' = meta_out))
   
 	  } else {
-	    lst('txi' = data$txi,
-	        'gxi' = data$gxi,
-	        'quant_meta' = meta_out) 
+	    return(lst('txi' = data$txi,
+        	        'gxi' = data$gxi,
+        	        'quant_meta' = meta_out))
 	  }
 	  
 	  }) -> return_lst 

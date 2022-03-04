@@ -52,8 +52,7 @@ load.tximeta.object.list <- function(reference, output_data.dir = here::here('da
 
 			     if (reference == 'process.aware.salmon'){
 				     gxi.split <- loadHDF5SummarizedExperiment(dir=file.path(output_data_path,
-											     paste0(sample, 
-												    '_gene_split_h5_se')))
+											     paste0(sample, '_gene_split_h5_se')))
 				     return(list('txi' = txi, 'gxi' = gxi, 'gxi.split' = gxi.split)) 
 			     } else {
 				     return(list('txi' = txi, 'gxi' = gxi)) 
@@ -87,6 +86,8 @@ parse.tximeta.quant.metadata <- function(se_list, qc_data.dir = here::here('data
 	  colnames(salmon_meta_tmp) <- paste0('salmon_', colnames(salmon_meta_tmp))
 
 	  salmon_meta_tmp %>% mutate(sample = names) -> salmon_meta_tmp
+	  
+	  if(grepl('process.aware.salmon', project)) {process_aware = T}
 
 	  project <- sub('_salmon', '', project)
 	  project <- sub('_ucsc.rmsk.salmon', '', project)
@@ -106,10 +107,19 @@ parse.tximeta.quant.metadata <- function(se_list, qc_data.dir = here::here('data
 	    mutate(sample = sub('_second_pass_out', '', sample)) -> star_meta_tmp
 
 	  meta_out <- merge(star_meta_tmp, salmon_meta_tmp, by = 'sample')
+	  
+	  if (process_aware == T){
 
-	  lst('txi' = data$txi,
-	      'gxi' = data$gxi,
-	      'quant_meta' = meta_out) 
+	    lst('txi' = data$txi, 
+	        'gxi' = data$gxi, 
+	        'gxi.split' = data$gxi.split,
+	        'quant_meta' = meta_out)
+  
+	  } else {
+	    lst('txi' = data$txi,
+	        'gxi' = data$gxi,
+	        'quant_meta' = meta_out) 
+	  }
 	  
 	  }) -> return_lst 
   

@@ -133,7 +133,7 @@ subset.tximeta.se <- function(se, filter_list = qc_fails) {
   import::here(.from = 'tibble', lst)
   
   process_aware = F
-  if(grepl('process.aware', deparse(substitute(se)))) { process_aware = T}
+  if(grepl('process.aware', deparse(substitute(se)))) { process_aware = T }
   
   txi_return <- 
     SummarizedExperiment::subset(se$txi, 
@@ -177,6 +177,9 @@ build.analysis.set <- function(se_list,
   
   import::here(.from = 'SummarizedExperiment', colData)
   
+  process_aware = F
+  if(grepl('process.aware', deparse(substitute(se_list)))) { process_aware = T }
+  
   if(! "SparseSummarizedExperiment" %in% rownames(installed.packages())) { 
     devtools::install_github("PeteHaitch/SparseSummarizedExperiment")
   }
@@ -206,9 +209,22 @@ build.analysis.set <- function(se_list,
       SparseSummarizedExperiment::cbind(se_list[[se_1]]$txi,
                                         se_list[[se_2]]$txi)
     
-    lst('gxi' = gxi_return,
-        'txi' = txi_return,
-        'quant_meta' = quant_meta_return)
+    if (process_aware == T){
+      
+      gxi_split_return <- 
+        SparseSummarizedExperiment::cbind(se_list[[se_1]]$gxi.split,
+                                          se_list[[se_2]]$gxi.split)
+      
+      return(lst('txi' = txi_return, 
+                 'gxi' = gxi_return, 
+                 'gxi.split' = gxi_split_return,
+                 'quant_meta' = quant_meta_return))
+      
+    } else {
+      return(lst('gxi' = gxi_return,
+                 'txi' = txi_return,
+                 'quant_meta' = quant_meta_return))
+    }
     
   } else {
     
@@ -239,9 +255,22 @@ build.analysis.set <- function(se_list,
       SparseSummarizedExperiment::cbind(se_list[[se_1]]$txi,
                                         analysis_set_2[['txi']])
     
-    lst('gxi' = gxi_return,
-        'txi' = txi_return,
-        'quant_meta' = quant_meta_return)
+    if (process_aware == T){
+      
+      gxi_split_return <- 
+        SparseSummarizedExperiment::cbind(se_list[[se_1]]$gxi.split,
+                                          analysis_set_2[['gxi.split']])
+      
+      return(lst('txi' = txi_return, 
+                 'gxi' = gxi_return, 
+                 'gxi.split' = gxi_split_return,
+                 'quant_meta' = quant_meta_return))
+      
+    } else {
+      return(lst('gxi' = gxi_return,
+                 'txi' = txi_return,
+                 'quant_meta' = quant_meta_return))
+    }
     
   }
   
@@ -620,11 +649,11 @@ make.fgsea.ranks <- function(de.seq){
   
 }
 
-generate.unsplice.data <- function(gxi.split) {
+generate.unsplice.data <- function(analysis_set) {
   
   import::here(SummarizedExperiment, assay)
   
-  split.gxi <- process.aware.salmon_quant$pittsburgh_ctrl_process.aware.salmon$gxi.split
+  split.gxi <- analysis_set$gxi.split
   
   assay(split.gxi, 'unspliced') %>% 
     as.data.frame() %>% 

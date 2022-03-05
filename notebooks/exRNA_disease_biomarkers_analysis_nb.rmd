@@ -477,14 +477,6 @@ import::from(.directory = r_code.dir,
 
 process.aware.salmon_quant$analysis_set$ctrl_panc_covid$unsplice_data.df <- 
   generate.unsplice.data(process.aware.salmon_quant$analysis_set$ctrl_panc_covid)
-
-
-process.aware.salmon_quant$analysis_set$ctrl_panc_covid$unsplice_data.df %>% 
-  merge(process.aware.salmon_quant$analysis_set$ctrl_panc_covid$quant_meta, by = 'sample') %>% 
-  mutate(condition = factor(condition, levels = c('panc', 'ctrl', 'covid'))) %>% 
-  ggplot(aes(condition, unsplice_rate)) + 
-  geom_boxplot(fill = NA, outlier.colour = NA) + 
-  geom_point()
 ```
 
 
@@ -1193,4 +1185,18 @@ plt.1 + plt.3 / plt.4 + plt.2
 
 ```
 
+
+
+# Figure_process_aware
+```{r}
+process.aware.salmon_quant$analysis_set$ctrl_panc_covid$unsplice_data.df %>% 
+  merge(process.aware.salmon_quant$analysis_set$ctrl_panc_covid$quant_meta, by = 'sample') %>% 
+  mutate(condition = factor(condition, levels = c('panc', 'ctrl', 'covid'))) %>% 
+  ggplot(aes(condition, unsplice_rate, color = condition)) + 
+  geom_boxplot(fill = NA, outlier.colour = NA) + 
+  geom_point() + 
+  scale_color_manual(values = identity_color_pal)
+
+
+```
 

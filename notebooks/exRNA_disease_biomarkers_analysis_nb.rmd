@@ -469,6 +469,15 @@ salmon_quant$analysis_set$ctrl_panc_covid$deseq$fgsea$covid_v_ctrl <-
 
 ```
 
+## run_process_aware
+```{r}
+import::from(.directory = r_code.dir, 
+             .from = 'helper_analysisFunctions.R', 
+             generate.unsplice.data)
+
+```
+
+
 # Figures
 # Fig_1
 ## Fig_1A

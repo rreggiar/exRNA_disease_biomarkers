@@ -132,6 +132,9 @@ subset.tximeta.se <- function(se, filter_list = qc_fails) {
   import::here(.from = 'SummarizedExperiment', colData)
   import::here(.from = 'tibble', lst)
   
+  process_aware = F
+  if(grepl('process.aware', deparse(substitute(se)))) { process_aware = T}
+  
   txi_return <- 
     SummarizedExperiment::subset(se$txi, 
                                  select = !colData(se$txi)$names %in% filter_list)
@@ -146,6 +149,23 @@ subset.tximeta.se <- function(se, filter_list = qc_fails) {
   lst('txi' = txi_return,
       'gxi' = gxi_return,
       'quant_meta' = quant_meta_return)
+  
+  if (process_aware == T){
+    
+    gxi_split_return <- 
+      SummarizedExperiment::subset(se$gxi.split, 
+                                   select = !colData(se$gxi)$names %in% filter_list)
+    
+    return(lst('txi' = txi_return, 
+               'gxi' = gxi_return, 
+               'gxi.split' = gxi_split_return,
+               'quant_meta' = quant_meta_return))
+    
+  } else {
+    return(lst('txi' = txi_return,
+               'gxi' = gxi_return,
+               'quant_meta' = quant_meta_return))
+  }
   
 }
 
@@ -597,5 +617,30 @@ make.fgsea.ranks <- function(de.seq){
     mutate(pathway = gsub('_', ' ', pathway))
   
   return(de.seq.fgsea.df)
+  
+}
+
+generate.unsplice.data <- function(gxi.split) {
+  
+  import::here(SummarizedExperiment, assay)
+  
+  split.gxi <- process.aware.salmon_quant$pittsburgh_ctrl_process.aware.salmon$gxi.split
+  
+  assay(split.gxi, 'unspliced') %>% 
+    as.data.frame() %>% 
+    rownames_to_column('gene') %>% 
+    gather(sample, count, -gene) %>% 
+    group_by(sample) %>% 
+    summarize(unsplice_count = sum(count)) -> unsplice.df
+  
+  assay(split.gxi, 'spliced') %>% 
+    as.data.frame() %>% 
+    rownames_to_column('gene') %>% 
+    gather(sample, count, -gene) %>% 
+    group_by(sample) %>% 
+    summarize(splice_count = sum(count)) -> splice.df
+  
+  merge(unsplice.df, splice.df, by = 'sample') %>% 
+    mutate(unsplice_rate = unsplice_count / (unsplice_count + splice_count))
   
 }

@@ -479,7 +479,6 @@ process.aware.salmon_quant$analysis_set$ctrl_panc_covid$unsplice_data.df <-
   generate.unsplice.data(process.aware.salmon_quant$analysis_set$ctrl_panc_covid)
 ```
 
-
 # Figures
 # Fig_1
 ## Fig_1A
@@ -1200,10 +1199,13 @@ process.aware.salmon_quant$analysis_set$ctrl_panc_covid$unsplice_data.df %>%
 
 process.aware.salmon_quant$analysis_set$ctrl_panc_covid$unsplice_data.df %>% 
   merge(process.aware.salmon_quant$analysis_set$ctrl_panc_covid$quant_meta, by = 'sample') %>%
+  mutate(condition = factor(condition, levels = c('panc', 'ctrl', 'covid'))) %>% 
   ggplot(aes(unsplice_rate, star_multimapped_percent, color = condition)) + 
   geom_point() + 
   ggforce::facet_col(~condition, scales = 'free_y') + 
-  geom_smooth(method = 'lm', se = F)
+  geom_smooth(method = 'lm', se = F) + 
+  scale_color_manual(values = identity_color_pal)
+
 
 
 ```

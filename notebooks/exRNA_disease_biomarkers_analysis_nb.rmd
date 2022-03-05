@@ -1198,5 +1198,13 @@ process.aware.salmon_quant$analysis_set$ctrl_panc_covid$unsplice_data.df %>%
   scale_color_manual(values = identity_color_pal)
 
 
+process.aware.salmon_quant$analysis_set$ctrl_panc_covid$unsplice_data.df %>% 
+  merge(process.aware.salmon_quant$analysis_set$ctrl_panc_covid$quant_meta, by = 'sample') %>%
+  ggplot(aes(unsplice_rate, star_multimapped_percent, color = condition)) + 
+  geom_point() + 
+  ggforce::facet_col(~condition, scales = 'free_y') + 
+  geom_smooth(method = 'lm', se = F)
+
+
 ```
 

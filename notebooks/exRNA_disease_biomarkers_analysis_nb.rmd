@@ -273,6 +273,17 @@ ucsc.rmsk.salmon_quant$bioIvt_covid_ucsc.rmsk.salmon <-
 process.aware.salmon_quant$bioIvt_covid_process.aware.salmon <- 
   subset.tximeta.se(process.aware.salmon_quant$bioIvt_covid_process.aware.salmon, 
                     filter_list = qc_fails)
+
+##
+
+ucsc.rmsk.salmon_quant$bioIvt_luad_ucsc.rmsk.salmon <- 
+  subset.tximeta.se(ucsc.rmsk.salmon_quant$bioIvt_luad_ucsc.rmsk.salmon, 
+                    filter_list = qc_fails)
+
+process.aware.salmon_quant$bioIvt_luad_ucsc.rmsk.salmon <- 
+  subset.tximeta.se(process.aware.salmon_quant$bioIvt_luad_process.aware.salmon, 
+                    filter_list = qc_fails)
+
 ```
 
 ## construct_analysis_sets
@@ -334,6 +345,23 @@ process.aware.salmon_quant$analysis_set$ctrl_panc_covid <-
                        se_1 = 'bioIvt_panc_process.aware.salmon', 
                        analysis_set_2 = process.aware.salmon_quant$analysis_set$covid_ctrl,
                        sample_meta_in = sample_meta_data$`2022.01.14_combined_meta_data.csv`)
+
+##
+
+luad_v_pitts_meta_for_ip <- read_csv(file.path(meta_data.dir, '2022.03.04_bioIVTLuadAndPitts_meta_data.csv'))
+
+ucsc.rmsk.salmon_quant$analysis_set$luad_ctrl <- 
+    build.analysis.set(se_list = ucsc.rmsk.salmon_quant, 
+                       se_1 = 'bioIvt_luad_ucsc.rmsk.salmon', 
+                       se_2 = 'pittsburgh_ctrl_ucsc.rmsk.salmon',
+                       sample_meta_in = luad_v_pitts_meta_for_ip)
+
+process.aware.salmon_quant$analysis_set$panc_ctrl <- 
+    build.analysis.set(se_list = process.aware.salmon_quant, 
+                       se_1 = 'bioIvt_luad_ucsc.rmsk.salmon', 
+                       se_2 = 'pittsburgh_ctrl_process.aware.salmon',
+                       sample_meta_in = luad_v_pitts_meta_for_ip)
+
 ```
 
 ## save memory
@@ -409,6 +437,14 @@ ucsc.rmsk.salmon_quant$analysis_set$covid_ctrl$deseq <-
                         top_level = 'covid',
                         ref_type = 'ucsc.rmsk',
                         dds_formula = as.formula('~age+condition'))
+
+ucsc.rmsk.salmon_quant$analysis_set$luad_ctrl$deseq <- 
+  run.de.seq.individual(input_se = ucsc.rmsk.salmon_quant$analysis_set$luad_ctrl,
+                        type = 'gxi',
+                        base_level = 'ctrl',
+                        top_level = 'luad',
+                        ref_type = 'ucsc.rmsk',
+                        dds_formula = as.formula('~condition'))
 ```
 
 ## run_pca

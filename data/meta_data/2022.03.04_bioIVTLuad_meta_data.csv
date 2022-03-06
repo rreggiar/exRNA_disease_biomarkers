@@ -1,0 +1,4 @@
+patient,gender,age,mutation,condition
+luad.1.0.30,Male,75,G12C,luad
+luad.2.0.30,Female,74,G12V,luad
+luad.3.0.30,Male,57,G13D,luad

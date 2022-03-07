@@ -1243,7 +1243,7 @@ illumina_biotype_to.plt %>%
   ggplot(aes(abs(read_length), fill = condition)) + 
   geom_histogram(aes(y=stat(density*width)), bins = 50, color = 'white',
                  position = position_dodge()) + 
-  facet_wrap(~biolabel+condition, scales = 'free', nrow = 4)
+  facet_wrap(~biolabel+condition, scales = 'free_y', nrow = 4)
 
 illumina_biotype_to.plt %>% 
   group_by(sample, biolabel, condition) %>% 

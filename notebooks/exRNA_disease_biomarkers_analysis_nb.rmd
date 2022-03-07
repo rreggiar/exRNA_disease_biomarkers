@@ -1118,11 +1118,13 @@ panc.7.1.1_nanopore_tpm <-
 panc.6.1.1_nanopore_tpm <- 
   read_tsv(file.path(output_data.dir, 'nanopore', 'gencode_39_rmsk', 'panc.6.1.1_gene_abundance.tsv'))
 
-panc.7.1.1_read_len <- read_csv(file.path(output_data.dir, 'nanopore', 'panc.7.1.1_biotype_read_lengths.csv')) %>% 
+panc.7.1.1_read_len <- read_csv(file.path(output_data.dir, 'nanopore', 
+                                          'nanopore_read_len', 'panc.7.1.1_biotype_read_lengths.csv')) %>% 
   separate(sample, sep = '[.]', into = c(NA,NA,'biotype',NA)) %>% 
   mutate(biotype = sub('_extraction', '', biotype))
 
-panc.6.1.1_read_len <- read_csv(file.path(output_data.dir, 'nanopore', 'panc.6.1.1_biotype_read_lengths.csv')) %>% 
+panc.6.1.1_read_len <- read_csv(file.path(output_data.dir, 'nanopore', 
+                                          'nanopore_read_len', 'panc.6.1.1_biotype_read_lengths.csv')) %>% 
   separate(sample, sep = '[.]', into = c(NA,NA,'biotype',NA)) %>% 
   mutate(biotype = sub('_extraction', '', biotype))
 
@@ -1176,14 +1178,24 @@ len_compare.df %>%
   ggforce::facet_col(~biolabel, scales = 'free') +
   scale_color_manual(values = RColorBrewer::brewer.pal(3, 'Dark2'))
 
-illumina_read_len <- list.files(file.path(output_data.dir, 'nanopore', 'illumina_read_lengths'), full.names = T)
-names(illumina_read_len) <- gsub(basename(illumina_read_len), pattern = '.csv', replacement = '')
+illumina_read_len <- list.files(file.path(output_data.dir, 'nanopore', 'illumina_read_len'), full.names = T)[1:20]
+names(illumina_read_len) <- gsub(basename(illumina_read_len), pattern = '.csv', replacement = '')[1:20]
+
+name_conversion <- data.frame('in_name' = stringr::str_split_fixed(names(illumina_read_len), '[.]', n = 2)[,1])
+
+name_conversion$out_name <- c('panc.1.2.3', 'panc.2.2.7', 'panc.4.3.9', 'panc.5.4.5', 'panc.6.2.5', 'panc.7.2.5',
+                              'panc.9.2.5', 'panc.7.1.1', 'panc.9.1.1', 'panc.10.1.2', 'ctrl.12.1.1', 'ctrl.5.1.3',
+                              'ctrl.7.1.2', 'ctrl.9.1.2', 'ctrl.13.0.7', 
+                              'ctrl.8.1.2', 'ctrl.10.0.4', 'ctrl.6.1.5', 'ctrl.11.1.1','ctrl.4.1.3')
+
+illumina_roster_names <- read_csv(file.path(output_data.dir, 'nanopore', 'illumina_read_len', 'ROSTER.csv'),
+                                  col_names = c('read', 'sample'))
 
 lapply(illumina_read_len, function(file) { 
   
-  read_len_file <- read_csv(file = file, 
-                            col_names = c('read', 'read_length', 'seq_1', 
-                                          'seq_2', 'originally_multisample', 
+  read_len_file <- read_csv(file = file,
+                            col_names = c('read', 'read_length', 'seq_1',
+                                          'seq_2', 'originally_multisample',
                                           'tx', 'sample'))
   read_len_file %>%
     mutate(tx = ifelse(grepl('^ENST', tx),
@@ -1192,15 +1204,23 @@ lapply(illumina_read_len, function(file) {
     mutate(tx = ifelse(grepl('_range', tx),
             str_split_fixed(tx, pattern = '::', n = 2)[,1],
             tx)) %>%
-    merge(reference_meta_data$total_tx_to_gene.df, by.x = 'tx', by.y = 'enst')
+  mutate(sample = stringr::str_split_fixed(sample, '[.]', n = 2)[,1],
+         sample = gsub(pattern = 'panc_', replacement = 'panc', sample)) %>% 
+    merge(name_conversion, by.x = 'sample', by.y = 'in_name') %>% 
+    merge(reference_meta_data$total_tx_to_gene.df, by.x = 'tx', by.y = 'enst') %>% 
+    dplyr::rename('sample_name' = 'out_name')
   
   
 }) -> illumina_read_len.list
 
-# illumina_read_len.list %>% 
-#   bind_rows(.id = 'sample') %>% 
-illumina_read_len.list[[1]] %>% 
-  group_by(biotype) %>% 
+
+# saveRDS(object = illumina_read_len.list, file = file.path(output_data.dir, 'nanopore', 'illumina_read_len.rds'))
+
+illumina_read_len.list %>%
+  bind_rows(.id = 'sample') %>% 
+  filter(!sample %in% qc_fails) %>% 
+  merge(sample_meta_data$`2022.01.14_bioIVTAndPitts_meta_data.csv`, by.x = 'sample_name', by.y = 'patient') %>% 
+  group_by(condition, biotype) %>% 
   mutate(z_score = scale(abs(read_length))) %>% 
   filter(between(z_score, -2.5, 2.5)) -> illumina_read_len.df
 
@@ -1211,13 +1231,44 @@ table(illumina_read_len.df$biotype) %>%
   mutate(biolabel = c('LINE', 'gencode_lncRNA', 'LTR', 'gencode_coding', 'SINE')) -> illumina_biotype_labels
 
 illumina_read_len.df %>% 
-  filter(biotype %in% nanopore_biotype_labels$biotype) %>% 
+  filter(biotype %in% illumina_biotype_labels$biotype) %>% 
+  filter(biotype != 'lncRNA') %>% 
   group_by(biotype) %>%
-  merge(nanopore_biotype_labels, by = 'biotype') %>% 
-  mutate(biolabel = factor(biolabel, levels = te_aware_annotation_levels)) %>% 
-  ggplot(aes(abs(read_length))) + 
-  geom_histogram(aes(y=stat(density*width)), bins = 100) + 
-  ggforce::facet_col(~biolabel, scales = 'free') 
+  merge(illumina_biotype_labels, by = 'biotype') %>% 
+  mutate(biolabel = factor(biolabel, levels = te_aware_annotation_levels)) -> illumina_biotype_to.plt
+
+illumina_biotype_to.plt %>% 
+  filter(!sample %in% qc_fails) %>% 
+  group_by(biotype, condition) %>% 
+  ggplot(aes(abs(read_length), fill = condition)) + 
+  geom_histogram(aes(y=stat(density*width)), bins = 50, color = 'white',
+                 position = position_dodge()) + 
+  facet_wrap(~biolabel+condition, scales = 'free', nrow = 4)
+
+illumina_biotype_to.plt %>% 
+  group_by(sample, biolabel, condition) %>% 
+  summarize(read_length = mean(abs(read_length))) -> tmp_mean_read_len.df
+
+tmp_mean_read_len.df %>%
+  filter(!sample %in% qc_fails) %>% 
+  # filter(abs(read_length) > 75) %>% 
+  # group_by(biotype, condition) %>% 
+  ggplot(aes(condition, read_length, color = condition)) +
+  geom_boxplot() + 
+  geom_jitter(width = 0.24, alpha = 0.2) +
+  facet_wrap(~biolabel, scales = 'free', nrow = 2, ncol = 2) +
+  scale_color_manual(values = viridis_three_color_pal)
+
+
+illumina_biotype_to.plt %>% 
+  filter(condition == 'ctrl',
+         biotype == 'SINE',
+         abs(read_length) < 50) -> tmp
+
+illumina_biotype_to.plt %>% 
+  filter(condition == 'ctrl',
+         biotype == 'SINE',
+         abs(read_length) > 200) -> tmp_2
 
 
 

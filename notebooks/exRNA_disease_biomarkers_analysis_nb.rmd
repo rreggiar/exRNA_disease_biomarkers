@@ -1548,7 +1548,7 @@ luad_ip <- build_ip_tables(ucsc.rmsk.salmon_quant$analysis_set$luad_ctrl,
                             luad_annotated_rmsk_de,
                             zero_cutoff = 5)
 
-table(luad_ip$gencode_ip_table$gene)
+table(luad_ip$rmsk_ip_table$gene %in% panc_ip$rmsk_ip_table$gene)
 
 imap(panc_ip, function(x, name){
   
@@ -1583,6 +1583,65 @@ filter(panc_annotated_rmsk_de, clade != 'gencode_coding') %>%
   scale_color_manual(values = te_color_pal) + 
   ggrepel::geom_text_repel(aes(label = ifelse(grepl('Alu', gene), gene, '')),
                                show.legend = F, color = 'black', max.overlaps = 1000)
+
+panc_annotated_rmsk_de %>%
+  filter(clade %in% c('gencode_coding', 'gencode_lncRNA')) %>% 
+  ggplot(aes(log2FoldChange, -log10(padj), color = clade)) + 
+  geom_point(size = 2, alpha = 0.6, show.legend = FALSE) + 
+  scale_color_manual(values = te_color_pal) + 
+  xlim(-5,5) +
+  ggrepel::geom_text_repel(aes(label = ifelse(log2FoldChange > 1.5, gene, '')),
+                             show.legend = F, color = 'black', max.overlaps = 10)
+
+luad_annotated_rmsk_de %>%
+  filter(clade %in% c('gencode_coding', 'gencode_lncRNA')) %>% 
+  ggplot(aes(log2FoldChange, -log10(padj), color = clade)) + 
+  geom_point(size = 2, alpha = 0.6, show.legend = FALSE) + 
+  scale_color_manual(values = te_color_pal) + 
+  xlim(-7.5,7.5) +
+  ggrepel::geom_text_repel(aes(label = ifelse(log2FoldChange > 1.5, gene, '')),
+                             show.legend = F, color = 'black', max.overlaps = 50)
+
+
+
+luad_annotated_rmsk_de %>%
+  filter(clade == 'gencode_coding') %>% 
+  ggplot(aes(log2FoldChange, -log10(padj), color = clade)) + 
+  geom_point(size = 2, alpha = 0.6, show.legend = FALSE) -> gencode_layer.plt
+
+gencode_layer.plt + 
+  geom_point(data = filter(luad_annotated_rmsk_de, clade != 'gencode_coding') %>% 
+               mutate(clade = factor(clade, levels = te_aware_annotation_levels)),
+             aes(log2FoldChange, -log10(padj), color = clade), size = 2, alpha = 0.8) +
+  scale_color_manual(values = te_color_pal) + 
+  xlim(-7.5,7.5) +
+  ggrepel::geom_text_repel(data = luad_annotated_rmsk_de %>% 
+               mutate(clade = factor(clade, levels = te_aware_annotation_levels)),
+                      aes(label = ifelse(log2FoldChange > 2, gene, '')), 
+                           show.legend = F, color = 'black', max.overlaps = 10) -> luad_ip.plt
+
+luad_ip.plt
+
+de_compare_list <- list('panc' = ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out,
+                        'luad' = ucsc.rmsk.salmon_quant$analysis_set$luad_ctrl$deseq$de_out)
+
+purrr::imap(de_compare_list, function(de, de_name) {
+  
+  de %>% 
+    filter(padj < 0.05,
+           log2FoldChange > 1) %>% 
+    mutate(id = de_name)
+  
+}) %>% bind_rows() -> de_upset.df
+
+de_upset.df %>% 
+  group_by(gene) %>% 
+  summarize(context = list(id)) %>% 
+  ggplot(aes(context)) + 
+  geom_bar(fill = 'white', color = 'black') + 
+  ggupset::scale_x_upset() +
+  geom_text(stat='count', aes(label=after_stat(count)), nudge_y = -2.25) + 
+  xlab('') + ylab('Enriched gene expression overlap')
 
 
 ```

@@ -284,6 +284,8 @@ process.aware.salmon_quant$bioIvt_luad_ucsc.rmsk.salmon <-
   subset.tximeta.se(process.aware.salmon_quant$bioIvt_luad_process.aware.salmon, 
                     filter_list = qc_fails)
 
+
+
 ```
 
 ## construct_analysis_sets
@@ -348,19 +350,37 @@ process.aware.salmon_quant$analysis_set$ctrl_panc_covid <-
 
 ##
 
-luad_v_pitts_meta_for_ip <- read_csv(file.path(meta_data.dir, '2022.03.04_bioIVTLuadAndPitts_meta_data.csv'))
+luad_v_pitts_meta_for_ip <- read_csv(file.path(meta_data.dir, '2022.03.04_bioIVTLuadAndPitts_meta_data.csv')) %>% 
+  filter(patient %in% c(ucsc.rmsk.salmon_quant$pittsburgh_ctrl_ucsc.rmsk.salmon$quant_meta$sample,
+                        ucsc.rmsk.salmon_quant$bioIvt_luad_ucsc.rmsk.salmon$quant_meta$sample))
+
+luad_v_pitts_meta_for_ip
+
+luad_v_pitts_meta_for_ip %>% 
+  filter(!grepl('luad', patient)) %>% 
+  slice_sample(n = 7) %>% 
+  ungroup()-> luad_v_pitts_meta_for_filter
+
+luad_v_pitts_meta_for_filter
+
+ucsc.rmsk.salmon_quant$sub_sample_ctrl <-   
+  subset.tximeta.se(ucsc.rmsk.salmon_quant$pittsburgh_ctrl_ucsc.rmsk.salmon, 
+                    filter_list = luad_v_pitts_meta_for_filter$patient)
+
+luad_v_pitts_meta_for_ip %>% 
+  filter(!patient %in% luad_v_pitts_meta_for_filter$patient) -> luad_v_pitts_sample_meta_in
 
 ucsc.rmsk.salmon_quant$analysis_set$luad_ctrl <- 
     build.analysis.set(se_list = ucsc.rmsk.salmon_quant, 
                        se_1 = 'bioIvt_luad_ucsc.rmsk.salmon', 
-                       se_2 = 'pittsburgh_ctrl_ucsc.rmsk.salmon',
+                       se_2 = 'sub_sample_ctrl',
                        sample_meta_in = luad_v_pitts_meta_for_ip)
 
-process.aware.salmon_quant$analysis_set$panc_ctrl <- 
-    build.analysis.set(se_list = process.aware.salmon_quant, 
-                       se_1 = 'bioIvt_luad_ucsc.rmsk.salmon', 
-                       se_2 = 'pittsburgh_ctrl_process.aware.salmon',
-                       sample_meta_in = luad_v_pitts_meta_for_ip)
+# process.aware.salmon_quant$analysis_set$panc_ctrl <- 
+#     build.analysis.set(se_list = process.aware.salmon_quant, 
+#                        se_1 = 'bioIvt_luad_ucsc.rmsk.salmon', 
+#                        se_2 = 'pittsburgh_ctrl_process.aware.salmon',
+#                        sample_meta_in = luad_v_pitts_meta_for_ip)
 
 ```
 
@@ -438,11 +458,13 @@ ucsc.rmsk.salmon_quant$analysis_set$covid_ctrl$deseq <-
                         ref_type = 'ucsc.rmsk',
                         dds_formula = as.formula('~age+condition'))
 
+##
+
 ucsc.rmsk.salmon_quant$analysis_set$luad_ctrl$deseq <- 
   run.de.seq.individual(input_se = ucsc.rmsk.salmon_quant$analysis_set$luad_ctrl,
                         type = 'gxi',
-                        base_level = 'ctrl',
-                        top_level = 'luad',
+                        base_level = 'luad',
+                        top_level = 'ctrl',
                         ref_type = 'ucsc.rmsk',
                         dds_formula = as.formula('~condition'))
 ```
@@ -1461,7 +1483,7 @@ build_ip_tables <- function(analysis_set,
     as.data.frame() %>% 
     filter(group_name %in% filter(annotated_de, 
                                   type == 'GENCODE',
-                                  padj < 0.1,
+                                  padj < 0.001,
                                   log2FoldChange > 1)$ensg) %>% 
     merge(annotated_de %>% select(gene, ensg, padj, baseMean, log2FoldChange), 
           by.x = 'group_name', by.y = 'ensg') %>% 
@@ -1473,7 +1495,7 @@ build_ip_tables <- function(analysis_set,
     remove_rownames() %>% 
     filter(gene_id %in% filter(annotated_de, 
                                   type == 'TE',
-                                  padj < 0.1,
+                                  padj < 0.001,
                                   log2FoldChange > 1)$ensg) -> rmsk_enrich_1
   
   assay(analysis_set$txi, 'counts') %>% 
@@ -1504,11 +1526,29 @@ panc_ip <- build_ip_tables(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl,
                            panc_annotated_rmsk_de,
                            zero_cutoff = 5)
 
-# covid_ip <- build_ip_tables(ucsc.rmsk.salmon_quant$analysis_set$covid_ctrl,
-#                             covid_annotated_rmsk_de,
-#                             zero_cutoff = 5)
+ucsc.rmsk.salmon_quant$analysis_set$luad_ctrl$deseq$de_out %>% 
+  merge(reference_meta_data$ucsc_rmsk_insert_info.df, by = 'gene', all.x = T) %>% 
+  mutate(family = ifelse(ensg %in% reference_meta_data$gencode_lncRNA_gene_names.df$ensg,
+                         'gencode_lncRNA', family),
+         family = ifelse(is.na(family), 'gencode_coding', family),
+         clade = ifelse(grepl('gencode', family), family, clade),
+         clade = ifelse(clade %in% c('gencode_coding',
+                                     'gencode_lncRNA',
+                                     'LINE',
+                                     'SINE',
+                                     'LTR',
+                                     'DNA',
+                                     'Simple_repeat'), clade, 'other'),
+         type = ifelse(grepl('gencode',family), 'GENCODE', 'TE'),
+         clade = factor(clade, levels = te_aware_annotation_levels)) %>% 
+  filter(!ensg %in% chrM.filter.list,
+         !grepl('^MT', gene)) -> luad_annotated_rmsk_de
 
-table(panc_ip$rmsk_ip_table$gene)
+luad_ip <- build_ip_tables(ucsc.rmsk.salmon_quant$analysis_set$luad_ctrl,
+                            luad_annotated_rmsk_de,
+                            zero_cutoff = 5)
+
+table(luad_ip$gencode_ip_table$gene)
 
 imap(panc_ip, function(x, name){
   

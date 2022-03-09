@@ -1215,6 +1215,8 @@ lapply(illumina_read_len, function(file) {
 
 
 # saveRDS(object = illumina_read_len.list, file = file.path(output_data.dir, 'nanopore', 'illumina_read_len.rds'))
+illumina_read_len.list <- readRDS(file = file.path(output_data.dir, 'nanopore', 'illumina_read_len.rds'))
+
 
 illumina_read_len.list %>%
   bind_rows(.id = 'sample') %>% 
@@ -1223,6 +1225,8 @@ illumina_read_len.list %>%
   group_by(condition, biotype) %>% 
   mutate(z_score = scale(abs(read_length))) %>% 
   filter(between(z_score, -2.5, 2.5)) -> illumina_read_len.df
+
+rm(illumina_read_len.list)
 
 table(illumina_read_len.df$biotype) %>% 
   as.data.frame() %>% 
@@ -1237,6 +1241,13 @@ illumina_read_len.df %>%
   merge(illumina_biotype_labels, by = 'biotype') %>% 
   mutate(biolabel = factor(biolabel, levels = te_aware_annotation_levels)) -> illumina_biotype_to.plt
 
+illumina_read_len.df %>% 
+  filter(biotype %in% illumina_biotype_labels$biotype) %>% 
+  filter(biotype != 'lncRNA') %>% 
+  group_by(biotype) %>%
+  merge(illumina_biotype_labels, by = 'biotype') %>% 
+  mutate(biolabel = factor(biolabel, levels = te_aware_annotation_levels)) -> illumina_biotype_unfilt_to.plt
+
 illumina_biotype_to.plt %>% 
   filter(!sample %in% qc_fails) %>% 
   group_by(biotype, condition) %>% 
@@ -1249,6 +1260,11 @@ illumina_biotype_to.plt %>%
   group_by(sample, biolabel, condition) %>% 
   summarize(read_length = mean(abs(read_length))) -> tmp_mean_read_len.df
 
+
+illumina_read_len.df %>% 
+  group_by(sample, biotype, condition) %>% 
+  summarize(read_length = mean(abs(read_length))) -> tmp_mean_read_len.df
+
 tmp_mean_read_len.df %>%
   filter(!sample %in% qc_fails) %>% 
   # filter(abs(read_length) > 75) %>% 
@@ -1258,6 +1274,60 @@ tmp_mean_read_len.df %>%
   geom_jitter(width = 0.24, alpha = 0.2) +
   facet_wrap(~biolabel, scales = 'free', nrow = 2, ncol = 2) +
   scale_color_manual(values = viridis_three_color_pal)
+
+
+tmp_mean_read_len.df %>% 
+  pivot_wider(names_from = biotype, values_from = read_length) %>% 
+  select(-condition) %>% 
+  column_to_rownames('sample') -> read_len_pca.tmp
+
+tmp_mean_read_len.df %>% 
+  ggplot(aes(condition, read_length)) + 
+  geom_boxplot(fill = NA, outlier.colour = NA) +
+  geom_point() + 
+  facet_wrap(~biotype) + 
+  ggpubr::stat_compare_means(method = 'wilcox')
+  
+
+  
+pca_tmp_in_sd <- apply(read_len_pca.tmp, 2, sd)
+pca_tmp_in_zero_sd <- read_len_pca.tmp[,pca_tmp_in_sd!=0 & !is.na(pca_tmp_in_sd)]
+non_zero_pca <- prcomp(pca_tmp_in_zero_sd, center = T, scale. = T, rank. = 50)
+
+summary(non_zero_pca)
+pcs.of.interest <- apply(non_zero_pca$x, 2, var)
+pcs.props <-  pcs.of.interest/sum(pcs.of.interest)
+cumsum(pcs.props)[c(1,2)]
+print(as.data.frame(pcs.props) %>% 
+        rownames_to_column('pc') %>% 
+        mutate(pc = as.numeric(sub('PC', '', pc))) %>% 
+        ggplot(aes(pc, pcs.props)) + 
+        geom_col())
+
+pca.out <- as.data.frame(non_zero_pca$x) %>% 
+  rownames_to_column('sample') %>% 
+  merge(tmp_mean_read_len.df %>% select(sample, condition) %>% ungroup() %>% distinct(), by = 'sample') %>% 
+  ungroup() %>% 
+  select(-biotype) %>% 
+  distinct()
+
+pca.out.summary <- 
+  as.data.frame(summary(non_zero_pca)$importance) %>% 
+  rownames_to_column('metric') %>% 
+  gather(pc, value, -metric) %>% 
+  spread(metric, value)
+
+pca.out %>% 
+  ggplot(aes(PC2, PC1,
+             color = condition)) +
+  geom_point(size = rel(2), alpha = 1) + 
+  # scale_shape_manual(values = c(21,25)) +
+  ylab(paste('PC1', round(cumsum(pcs.props)[1], digits = 3), sep = ' ')) +
+  xlab(paste('PC2', round(cumsum(pcs.props)[2] - cumsum(pcs.props)[1], digits = 3), sep = ' ')) +
+  geom_vline(xintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) +
+  geom_hline(yintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) + 
+  scale_color_manual(values = identity_color_pal) + 
+  theme(axis.title.x = element_blank())
 
 
 illumina_biotype_to.plt %>% 
@@ -1463,91 +1533,7 @@ plt.1 + plt.3 / plt.4 + plt.2
 
 
 ```
-# Ip_tables
-```{r}
 
-build_ip_tables <- function(analysis_set,
-                            annotated_de,
-                            zero_cutoff = 5){
-  
-  rowRanges(analysis_set$gxi) %>% 
-    as.data.frame() %>% 
-    filter(group_name %in% filter(annotated_de, 
-                                  type == 'GENCODE',
-                                  padj < 0.1,
-                                  log2FoldChange > 1)$ensg) %>% 
-    merge(annotated_de %>% select(gene, ensg, padj, baseMean, log2FoldChange), 
-          by.x = 'group_name', by.y = 'ensg') %>% 
-    select(gene, chr = seqnames, start, end, width, baseMean, padj, log2FoldChange) %>% 
-    mutate(reference = 'hg38_gencode_v39') -> gencode_ip_table.tmp
-
-  rowRanges(analysis_set$txi) %>% 
-    as.data.frame() %>% 
-    remove_rownames() %>% 
-    filter(gene_id %in% filter(annotated_de, 
-                                  type == 'TE',
-                                  padj < 0.1,
-                                  log2FoldChange > 1)$ensg) -> rmsk_enrich_1
-  
-  assay(analysis_set$txi, 'counts') %>% 
-    as.data.frame() %>% 
-    select(contains('panc')) %>% 
-    rownames_to_column('tx') %>% 
-    filter(tx %in% rmsk_enrich_1$tx_name) -> insert_count
-  
-  insert_count %>% 
-    filter(rowSums(across(where(is.numeric)) == 0) <= zero_cutoff) -> keep_inserts
-  
-  rmsk_enrich_1 %>% 
-    filter(tx_name %in% keep_inserts$tx) %>% 
-    select(gene = gene_id, chr = seqnames, start, end, width, strand, tx_name) %>% 
-    mutate(chr = as.character(chr),
-           gene = as.character(gene)) %>% 
-    merge(annotated_de %>% 
-          select(gene, baseMean, padj, log2FoldChange), by = 'gene') %>% 
-    select(gene, tx_name, chr, start, end, width, baseMean, padj, log2FoldChange) %>% 
-    mutate(reference = 'hg38_ucscGB_rmsk')-> rmsk_ip_table.tmp
-  
-  return(list('gencode_ip_table' = gencode_ip_table.tmp,
-              'rmsk_ip_table' = rmsk_ip_table.tmp))
-  
-}
-
-panc_ip <- build_ip_tables(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl,
-                           panc_annotated_rmsk_de,
-                           zero_cutoff = 5)
-
-# covid_ip <- build_ip_tables(ucsc.rmsk.salmon_quant$analysis_set$covid_ctrl,
-#                             covid_annotated_rmsk_de,
-#                             zero_cutoff = 5)
-
-table(panc_ip$rmsk_ip_table$gene)
-
-imap(panc_ip, function(x, name){
-  
-  write_csv(x, file = file.path(output_data.dir, 'ip_data',
-                                paste0('panc_', name, '.csv')))
-  
-})
-
-# imap(covid_ip, function(x, name){
-#   
-#   write_csv(x, file = file.path(output_data.dir,
-#                                 paste0('covid_', name, '.csv')))
-#   
-# })
-
-
-filter(panc_annotated_rmsk_de, clade != 'gencode_coding') %>% 
-             mutate(clade = factor(clade, levels = te_aware_annotation_levels)) %>% 
-  ggplot(aes(log2FoldChange, -log10(padj), color = clade, label = gene)) + 
-  geom_point(size = 2, alpha = 0.8) +
-  scale_color_manual(values = te_color_pal) + 
-  ggrepel::geom_text_repel(aes(label = ifelse(grepl('Alu', gene), gene, '')),
-                               show.legend = F, color = 'black', max.overlaps = 1000)
-
-
-```
 
 
 

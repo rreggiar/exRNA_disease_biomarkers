@@ -1226,6 +1226,9 @@ illumina_read_len.list %>%
   mutate(z_score = scale(abs(read_length))) %>% 
   filter(between(z_score, -2.5, 2.5)) -> illumina_read_len.df
 
+saveRDS(object = illumina_read_len.df, file = file.path(output_data.dir, 'nanopore',
+                                                           'illumina_read_len.df.rds'))
+
 rm(illumina_read_len.list)
 
 table(illumina_read_len.df$biotype) %>% 
@@ -1241,12 +1244,8 @@ illumina_read_len.df %>%
   merge(illumina_biotype_labels, by = 'biotype') %>% 
   mutate(biolabel = factor(biolabel, levels = te_aware_annotation_levels)) -> illumina_biotype_to.plt
 
-illumina_read_len.df %>% 
-  filter(biotype %in% illumina_biotype_labels$biotype) %>% 
-  filter(biotype != 'lncRNA') %>% 
-  group_by(biotype) %>%
-  merge(illumina_biotype_labels, by = 'biotype') %>% 
-  mutate(biolabel = factor(biolabel, levels = te_aware_annotation_levels)) -> illumina_biotype_unfilt_to.plt
+
+
 
 illumina_biotype_to.plt %>% 
   filter(!sample %in% qc_fails) %>% 

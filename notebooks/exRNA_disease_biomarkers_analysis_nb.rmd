@@ -1214,14 +1214,14 @@ lapply(illumina_read_len, function(file) {
 }) -> illumina_read_len.list
 
 
-# saveRDS(object = illumina_read_len.list, file = file.path(output_data.dir, 'nanopore', 'illumina_read_len.rds'))
+saveRDS(object = illumina_read_len.list, file = file.path(output_data.dir, 'nanopore', 'illumina_read_len.rds'))
 illumina_read_len.list <- readRDS(file = file.path(output_data.dir, 'nanopore', 'illumina_read_len.rds'))
 
 
 illumina_read_len.list %>%
   bind_rows(.id = 'sample') %>% 
   filter(!sample %in% qc_fails) %>% 
-  merge(sample_meta_data$`2022.01.14_bioIVTAndPitts_meta_data.csv`, by.x = 'sample_name', by.y = 'patient') %>% 
+  merge(sample_meta_data$`2022.01.14_combined_meta_data.csv`, by.x = 'sample_name', by.y = 'patient') %>% 
   group_by(condition, biotype) %>% 
   mutate(z_score = scale(abs(read_length))) %>% 
   filter(between(z_score, -2.5, 2.5)) -> illumina_read_len.df
@@ -1239,7 +1239,7 @@ table(illumina_read_len.df$biotype) %>%
 
 illumina_read_len.df %>% 
   filter(biotype %in% illumina_biotype_labels$biotype) %>% 
-  filter(biotype != 'lncRNA') %>% 
+  # filter(biotype != 'lncRNA') %>% 
   group_by(biotype) %>%
   merge(illumina_biotype_labels, by = 'biotype') %>% 
   mutate(biolabel = factor(biolabel, levels = te_aware_annotation_levels)) -> illumina_biotype_to.plt
@@ -1265,14 +1265,14 @@ illumina_read_len.df %>%
   summarize(read_length = mean(abs(read_length))) -> tmp_mean_read_len.df
 
 tmp_mean_read_len.df %>%
-  filter(!sample %in% qc_fails) %>% 
   # filter(abs(read_length) > 75) %>% 
   # group_by(biotype, condition) %>% 
   ggplot(aes(condition, read_length, color = condition)) +
   geom_boxplot() + 
   geom_jitter(width = 0.24, alpha = 0.2) +
-  facet_wrap(~biolabel, scales = 'free', nrow = 2, ncol = 2) +
-  scale_color_manual(values = viridis_three_color_pal)
+  facet_wrap(~biotype, scales = 'free') + #, nrow = 3, ncol = 3) +
+  scale_color_manual(values = viridis_three_color_pal) + 
+  ggpubr::stat_compare_means(method = 'wilcox', comparisons = list(c('covid', 'ctrl'), c('panc', 'ctrl')))
 
 
 tmp_mean_read_len.df %>% 
@@ -1286,8 +1286,6 @@ tmp_mean_read_len.df %>%
   geom_point() + 
   facet_wrap(~biotype) + 
   ggpubr::stat_compare_means(method = 'wilcox')
-  
-
   
 pca_tmp_in_sd <- apply(read_len_pca.tmp, 2, sd)
 pca_tmp_in_zero_sd <- read_len_pca.tmp[,pca_tmp_in_sd!=0 & !is.na(pca_tmp_in_sd)]

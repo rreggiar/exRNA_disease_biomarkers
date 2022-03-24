@@ -1123,10 +1123,17 @@ panc.6.1.1_read_len <- read_csv(file.path(output_data.dir, 'nanopore',
   separate(sample, sep = '[.]', into = c(NA,NA,'biotype',NA)) %>% 
   mutate(biotype = sub('_extraction', '', biotype))
 
+ctrl.6.1.5_read_len <- read_csv(file.path(output_data.dir, 'nanopore', 
+                                          'nanopore_read_len', 'ctrl.6.1.5_biotype_read_lengths.csv')) %>% 
+  separate(sample, sep = '[.]', into = c(NA,NA,'biotype',NA)) %>% 
+  mutate(biotype = sub('_extraction', '', biotype))
+
 panc.7.1.1_read_len %>% 
   mutate(sample = 'panc.7.1.1') %>% 
   rbind(panc.6.1.1_read_len %>%
          mutate(sample = 'panc.6.1.1')) %>% 
+  rbind(ctrl.6.1.5_read_len %>%
+         mutate(sample = 'ctrl.6.1.5')) %>% 
   group_by(biotype) -> panc_nanopore_read_length.df
 
 panc_nanopore_read_length.df %>% 
@@ -1148,7 +1155,7 @@ panc_nanopore_read_length.df %>%
   ggforce::facet_col(~biolabel, scales = 'free')  +
   scale_fill_manual(values = RColorBrewer::brewer.pal(3, 'Dark2')) +
   ylab('proportion') + xlab('fragment length') +
-  theme(legend.position = c(0.99,0.17)) -> plt_NA.plt
+  theme(legend.position = c(0.99,0.17)) #-> plt_NA.plt
 
 panc_nanopore_read_length.df %>% 
   ungroup() %>% 
@@ -1162,19 +1169,44 @@ panc_nanopore_read_length.df %>%
   mutate(len = as.numeric(len)) -> len_compare.df
 
 
-len_compare.df %>% 
-  filter(biotype.x == 'SINE') %>% 
-  group_by(tx, len, biotype.x, sample) %>% 
+len_compare.df %>%
+  mutate(condition = ifelse(grepl('ctrl', sample), 'ctrl', 'panc')) %>% 
+  group_by(biotype.x, condition, sample) %>% 
   summarize(read_length = mean(read_length)) %>% 
   merge(nanopore_biotype_labels, by.x = 'biotype.x', by.y = 'biotype') %>% 
   mutate(biolabel = factor(biolabel, levels = te_aware_annotation_levels)) %>% 
+  # filter(abs(read_length) > 75) %>% 
+  group_by(biolabel, condition) %>%
+  filter(! biolabel %in% c('polymorphic_pseudogene', 'TR_C_gene', 'TR_V_gene', 'IG_V_gene', 'IG_C_gene')) %>% 
+  ggplot(aes(condition, read_length, color = condition)) +
+  geom_boxplot(outlier.colour = NA) + 
+  geom_jitter(width = 0.24, alpha = 0.2) +
+  facet_wrap(~biolabel, scales = 'free') + #, nrow = 3, ncol = 3) +
+  scale_color_manual(values = viridis_three_color_pal, guide = 'none') + 
+  ggpubr::stat_compare_means(method = 'wilcox', comparisons = list(c('panc', 'ctrl'))) +
+  coord_cartesian(clip = 'off') + 
+  xlab('') + ylab('fragment length') +
+  theme(legend.position = c(0.99, 0.2), legend.direction = 'horizontal')
+
+
+len_compare.df %>% 
+  filter(biotype.x == 'L1') %>% 
+  group_by(tx, len, biotype.x, sample) %>% 
+  summarize(read_length = mean(read_length)) %>% 
+  merge(nanopore_biotype_labels, by.x = 'biotype.x', by.y = 'biotype') %>% 
+  mutate(biolabel = factor(biolabel, levels = te_aware_annotation_levels),
+         condition = ifelse(grepl('ctrl', sample), 'ctrl', 'panc')) %>% 
   # mutate(gene = str_split_fixed(tx, pattern = '_', n = 4)[,1])
-  ggplot(aes(read_length, len, color = sample)) + 
-  geom_point(alpha = 0.05) + 
+  ggplot(aes(read_length, len, fill = log1p(..count..))) + 
+  # geom_point(alpha = 0.2) + 
+  geom_hex(bins = 120) +
+  # ylim(0, 500) + xlim(0,400) +
   xlab('avg. observed fragment length') + ylab('expected insertion length') +
-  ggforce::facet_col(~biolabel, scales = 'free') +
-  scale_color_manual(values = RColorBrewer::brewer.pal(3, 'Dark2')) + 
-  theme(legend.position = c(0.99,0.38)) -> plt_NB.plt
+  ggforce::facet_col(~sample) +
+  # scale_color_manual(values = RColorBrewer::brewer.pal(3, 'Dark2')) +
+  scale_fill_viridis_c(option = 'magma', direction = -1) +
+  # scale_fill_manual(values = RColorBrewer::brewer.pal(3, 'Dark2')) + 
+  theme(legend.position = c(0.95,0.10), legend.direction = 'horizontal')# -> plt_NB.plt
 
 illumina_read_len <- list.files(file.path(output_data.dir, 'nanopore', 'illumina_read_len'), full.names = T)[1:30]
 names(illumina_read_len) <- gsub(basename(illumina_read_len), pattern = '.csv', replacement = '')[1:30]
@@ -1240,6 +1272,9 @@ illumina_read_len.df$seq_2 <- NULL
 
 # vroom::vroom_write(illumina_read_len.df, file = file.path(output_data.dir, 'nanopore','illumina_read_len_no_seq.tsv.gz'))
 
+illumina_read_len.df <- 
+  vroom::vroom(file = file.path(output_data.dir,'nanopore','illumina_read_len_no_seq.tsv.gz'), num_threads = 16)
+
 table(illumina_read_len.df$biotype) %>% 
   as.data.frame() %>% 
   select(biotype = Var1) %>% 
@@ -1247,14 +1282,10 @@ table(illumina_read_len.df$biotype) %>%
   mutate(biolabel = c('LINE', 'gencode_lncRNA', 'LTR', 'gencode_coding', 'SINE')) -> illumina_biotype_labels
 
 illumina_read_len.df %>% 
-  filter(biotype %in% illumina_biotype_labels$biotype) %>% 
-  # filter(biotype != 'lncRNA') %>% 
+  filter(biotype %in% illumina_biotype_labels$biotype) -> illumina_biotype_to.plt #%>% 
   group_by(biotype) %>%
-  merge(illumina_biotype_labels, by = 'biotype') %>% 
+  merge(illumina_biotype_labels, by = 'biotype') %>%
   mutate(biolabel = factor(biolabel, levels = te_aware_annotation_levels)) -> illumina_biotype_to.plt
-
-
-
 
 illumina_biotype_to.plt %>% 
   filter(!sample %in% qc_fails) %>% 
@@ -1286,6 +1317,30 @@ tmp_mean_read_len.df %>%
   coord_cartesian(clip = 'off') + 
   xlab('') + ylab('fragment length') +
   theme(legend.position = c(0.99, 0.2), legend.direction = 'horizontal') -> plt_NC.plt
+
+illumina_biotype_to.plt %>% 
+  filter(biotype == 'SINE') %>% 
+  group_by(tx, len, biotype, condition) %>% 
+  mutate(len = as.numeric(len)) %>% 
+  summarize(read_length = mean(abs(read_length))) -> tmp
+  
+
+tmp %>% 
+  ggplot(aes(read_length, len, color = condition, fill = ..count..)) + 
+    geom_bin_2d(bins = 100) +
+    ylim(0, 500) + xlim(0,400) +
+    xlab('avg. observed fragment length') + ylab('expected TE insertion length') +
+    ggforce::facet_col(~condition) +
+    scale_fill_viridis_c(option = 'magma', direction = -1) 
+
+tmp %>% 
+  ggplot(aes(read_length, len, fill = log1p(..count..))) + 
+  geom_hex(bins = 120) +
+  ylim(0, 500) + xlim(0,400) +
+  xlab('avg. observed fragment length') + ylab('expected insertion length') +
+  ggforce::facet_col(~condition) +
+  scale_fill_viridis_c(option = 'magma', direction = -1) +
+  theme(legend.position = c(0.95,0.10), legend.direction = 'horizontal')
 
 
 tmp_mean_read_len.df %>% 

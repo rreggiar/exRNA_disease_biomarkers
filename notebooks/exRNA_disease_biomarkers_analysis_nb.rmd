@@ -1323,42 +1323,6 @@ panc_nanopore_read_length.df %>%
 ## Fig_ND
 ```{r}
 illumina_biotype_to.plt %>% 
-  filter(biotype == 'SINE') %>% 
-  group_by(tx, len, biotype, condition) %>% 
-  mutate(len = as.numeric(len)) %>% 
-  summarize(read_length = mean(abs(read_length))) -> tmp
-
-tmp %>% 
-  filter(condition == 'ctrl') -> ctrl_hex_to.plt
-
-ctrl_hex_to.plt %>% 
-  ggplot(aes(read_length, len, fill = scale(..count../(sum(..count..) * 1e6)))) + 
-  geom_hex(bins = 120) +
-  geom_vline(xintercept = median(ctrl_hex_to.plt$read_length), color = 'grey', linetype = 'dashed') +
-  xlab('avg. observed fragment length') + ylab('expected insertion length') +
-  # ggforce::facet_col(~condition) +
-  scale_fill_viridis_c(option = 'viridis', direction = 1, name = 'scaled cpm') +
-  scale_y_continuous(breaks = c(50,100,150,200,300,400)) + 
-  scale_x_continuous(breaks = c(median(ctrl_hex_to.plt$read_length), 50,100,150,200,300,400)) + 
-  theme(legend.position = c(0.95,0.125), legend.direction = 'horizontal', legend.key.width = unit(5, 'mm'))
-
-
-tmp %>% 
-  filter(condition == 'panc') -> panc_hex_to.plt
-
-panc_hex_to.plt %>% 
-  ggplot(aes(read_length, len, fill = scale(..count../(sum(..count..) * 1e6)))) + 
-  geom_hex(bins = 120) +
-  geom_vline(xintercept = median(panc_hex_to.plt$read_length), color = 'grey', linetype = 'dashed') +
-  xlab('avg. observed fragment length') + ylab('expected insertion length') +
-  # ggforce::facet_col(~condition) +
-  scale_fill_viridis_c(option = 'viridis', direction = 1, name = 'scaled cpm') +
-  scale_y_continuous(breaks = c(50, 100,150,200,300,400)) + 
-  scale_x_continuous(breaks = c(median(panc_hex_to.plt$read_length),50,100,150,200,300,400)) + 
-  theme(legend.position = c(0.95,0.125), legend.direction = 'horizontal', legend.key.width = unit(5, 'mm'))
-
-
-illumina_biotype_to.plt %>% 
   filter(biotype == 'SINE',
          sample_name %in% c('panc.7.1.1', 'panc.9.1.1', 'ctrl.6.1.5')) %>% 
   group_by(tx, len, biotype, sample_name) %>% 
@@ -1557,6 +1521,43 @@ save.manuscript.panel(figure = 3,
                       height = figure_depth,
                       plot.in = fig.N.patchwork)
 ```
+# Fig_supp_nanopore
+## Fig_SNA
+```{r}
+illumina_biotype_to.plt %>% 
+  filter(biotype == 'SINE') %>% 
+  group_by(tx, len, biotype, condition) %>% 
+  mutate(len = as.numeric(len)) %>% 
+  summarize(read_length = mean(abs(read_length))) -> tmp
+
+tmp %>% 
+  filter(condition == 'ctrl') -> ctrl_hex_to.plt
+
+ctrl_hex_to.plt %>% 
+  ggplot(aes(read_length, len, fill = scale(..count../(sum(..count..) * 1e6)))) + 
+  geom_hex(bins = 120) +
+  geom_vline(xintercept = median(ctrl_hex_to.plt$read_length), color = 'grey', linetype = 'dashed') +
+  xlab('avg. observed fragment length') + ylab('expected insertion length') +
+  # ggforce::facet_col(~condition) +
+  scale_fill_viridis_c(option = 'viridis', direction = 1, name = 'scaled cpm') +
+  theme(legend.position = c(0.95,0.125), legend.direction = 'horizontal') -> plt_SNA.plt
+```
+## Fig_SNB
+```{r}
+tmp %>% 
+  filter(condition == 'panc') -> panc_hex_to.plt
+
+panc_hex_to.plt %>% 
+  ggplot(aes(read_length, len, fill = scale(..count../(sum(..count..) * 1e6)))) + 
+  geom_hex(bins = 120) +
+  geom_vline(xintercept = median(panc_hex_to.plt$read_length), color = 'grey', linetype = 'dashed') +
+  xlab('avg. observed fragment length') + ylab('expected insertion length') +
+  # ggforce::facet_col(~condition) +
+  scale_fill_viridis_c(option = 'viridis', direction = 1, name = 'scaled cpm') +
+  theme(legend.position = c(0.95,0.125), legend.direction = 'horizontal') -> plt_SNB.plt
+```
+
+
 
 ```{r}
 panc.7.1.1_nanopore_tpm <- 

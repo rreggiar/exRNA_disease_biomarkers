@@ -1138,15 +1138,15 @@ panc.7.1.1_read_len %>%
          mutate(sample = 'ctrl.6.1.5')) %>% 
   group_by(biotype) -> panc_nanopore_read_length.df
 
-illumina_read_len <- list.files(file.path(output_data.dir, 'nanopore', 'illumina_read_len'), full.names = T)[1:30]
-names(illumina_read_len) <- gsub(basename(illumina_read_len), pattern = '.csv', replacement = '')[1:30]
+illumina_read_len <- list.files(file.path(output_data.dir, 'nanopore', 'illumina_read_len'), full.names = T)[1:31]
+names(illumina_read_len) <- gsub(basename(illumina_read_len), pattern = '.csv', replacement = '')[1:31]
 
 name_conversion <- data.frame('in_name' = stringr::str_split_fixed(names(illumina_read_len), '[.]', n = 2)[,1])
 
 name_conversion$out_name <- c('panc.1.2.3', 'panc.2.2.7', 'panc.4.3.9', 
                               'panc.5.4.5', 'panc.6.2.5', 'panc.7.2.5',
                               'panc.9.2.5', 'panc.7.1.1', 'panc.9.1.1', 
-                              'panc.10.1.2', 'covid.400.0.56', 'covid.381.0.80',
+                              'panc.10.1.2', 'panc.6.1.1', 'covid.400.0.56', 'covid.381.0.80',
                               'covid.396.0.68', 'covid.411.0.75', 'covid.412.0.64',
                               'covid.426.0.80', 'covid.432.0.58', 'covid.441.0.64',
                               'covid.442.0.61', 'covid.450.0.84', 'ctrl.12.1.1', 
@@ -1156,8 +1156,8 @@ name_conversion$out_name <- c('panc.1.2.3', 'panc.2.2.7', 'panc.4.3.9',
 illumina_roster_names <- read_csv(file.path(output_data.dir, 'nanopore', 'illumina_read_len', 'ROSTER.csv'),
                                   col_names = c('read', 'sample'))
 
-# lapply(illumina_read_len, function(file) { 
-#   
+# lapply(illumina_read_len, function(file) {
+# 
 #   read_len_file <- read_csv(file = file,
 #                             col_names = c('read', 'read_length', 'seq_1',
 #                                           'seq_2', 'originally_multisample',
@@ -1170,12 +1170,12 @@ illumina_roster_names <- read_csv(file.path(output_data.dir, 'nanopore', 'illumi
 #             str_split_fixed(tx, pattern = '::', n = 2)[,1],
 #             tx)) %>%
 #   mutate(sample = stringr::str_split_fixed(sample, '[.]', n = 2)[,1],
-#          sample = gsub(pattern = 'panc_', replacement = 'panc', sample)) %>% 
-#     merge(name_conversion, by.x = 'sample', by.y = 'in_name') %>% 
-#     merge(reference_meta_data$total_tx_to_gene.df, by.x = 'tx', by.y = 'enst') %>% 
+#          sample = gsub(pattern = 'panc_', replacement = 'panc', sample)) %>%
+#     merge(name_conversion, by.x = 'sample', by.y = 'in_name') %>%
+#     merge(reference_meta_data$total_tx_to_gene.df, by.x = 'tx', by.y = 'enst') %>%
 #     dplyr::rename('sample_name' = 'out_name')
-#   
-#   
+# 
+# 
 # }) -> illumina_read_len.list
 # 
 # 
@@ -1183,29 +1183,29 @@ illumina_roster_names <- read_csv(file.path(output_data.dir, 'nanopore', 'illumi
 # illumina_read_len.list <- readRDS(file = file.path(output_data.dir, 'nanopore', 'illumina_read_len.rds'))
 
 # illumina_read_len.list %>%
-#   bind_rows(.id = 'sample') %>% 
-#   filter(!sample %in% qc_fails) %>% 
-#   merge(sample_meta_data$`2022.01.14_combined_meta_data.csv`, by.x = 'sample_name', by.y = 'patient') %>% 
-#   group_by(condition, biotype) %>% 
-#   mutate(z_score = scale(abs(read_length))) %>% 
+#   bind_rows(.id = 'sample') %>%
+#   filter(!sample %in% qc_fails) %>%
+#   merge(sample_meta_data$`2022.01.14_combined_meta_data.csv`, by.x = 'sample_name', by.y = 'patient') %>%
+#   group_by(condition, biotype) %>%
+#   mutate(z_score = scale(abs(read_length))) %>%
 #   filter(between(z_score, -2.5, 2.5)) -> illumina_read_len.df
 # 
 # saveRDS(object = illumina_read_len.df, file = file.path(output_data.dir, 'nanopore',
 #                                                            'illumina_read_len.df.rds'))
 # rm(illumina_read_len.list)
 
-illumina_read_len.df <- readRDS(file = file.path(output_data.dir, 'nanopore',
-                                                           'illumina_read_len.df.rds'))
-
-illumina_read_len.df$seq_1 <- NULL
-illumina_read_len.df$seq_2 <- NULL
-
+# illumina_read_len.df <- readRDS(file = file.path(output_data.dir, 'nanopore',
+#                                                            'illumina_read_len.df.rds'))
+# 
+# illumina_read_len.df$seq_1 <- NULL
+# illumina_read_len.df$seq_2 <- NULL
+# 
 # vroom::vroom_write(illumina_read_len.df, file = file.path(output_data.dir, 'nanopore','illumina_read_len_no_seq.tsv.gz'))
 ```
 ## Fig_NA
 ```{r}
-# illumina_read_len.df <- 
-#   vroom::vroom(file = file.path(output_data.dir,'nanopore','illumina_read_len_no_seq.tsv.gz'), num_threads = 16)
+illumina_read_len.df <-
+  vroom::vroom(file = file.path(output_data.dir,'nanopore','illumina_read_len_no_seq.tsv.gz'), num_threads = 16)
 
 table(illumina_read_len.df$biotype) %>% 
   as.data.frame() %>% 
@@ -1215,28 +1215,16 @@ table(illumina_read_len.df$biotype) %>%
 
 illumina_read_len.df %>% 
   filter(biotype %in% illumina_biotype_labels$biotype,
-         ! sample %in% qc_fails) -> illumina_biotype_to.plt #%>% 
-  group_by(biotype) %>%
-  merge(illumina_biotype_labels, by = 'biotype') %>%
-  mutate(biolabel = factor(biolabel, levels = te_aware_annotation_levels)) -> illumina_biotype_to.plt
-
-# illumina_biotype_to.plt %>% 
-#   filter(!sample %in% qc_fails) %>% 
-#   group_by(biotype, condition) %>% 
-#   ggplot(aes(abs(read_length), fill = condition)) + 
-#   geom_histogram(aes(y=stat(density*width)), bins = 50, color = 'white',
-#                  position = position_dodge()) + 
-#   facet_wrap(~biolabel+condition, scales = 'free_y', nrow = 4)
-
+         ! sample %in% qc_fails) -> illumina_biotype_to.plt
 
 illumina_read_len.df %>% 
+  filter(! sample %in% qc_fails) %>% 
   group_by(sample, biotype, condition) %>% 
   summarize(read_length = median(abs(read_length))) -> tmp_mean_read_len.df
 
 tmp_mean_read_len.df %>%
-  # filter(abs(read_length) > 75) %>% 
   group_by(biotype, condition) %>%
-  filter(n() > 8, ! biotype %in% c('polymorphic_pseudogene', 'TR_C_gene', 'TR_V_gene', 'IG_V_gene', 'IG_C_gene',
+  filter(n() == 10, ! biotype %in% c('polymorphic_pseudogene', 'TR_C_gene', 'TR_V_gene', 'IG_V_gene', 'IG_C_gene',
                                    'protein_coding', 'non_stop_decay', 'nonsense_mediated_decay'),
          condition != 'covid') %>% 
   ggplot(aes(condition, read_length, color = condition)) +
@@ -1329,7 +1317,7 @@ illumina_biotype_to.plt %>%
          sample_name %in% c('panc.7.1.1', 'panc.9.1.1', 'ctrl.6.1.5')) %>% 
   group_by(tx, len, biotype, sample_name) %>% 
   mutate(len = as.numeric(len)) %>% 
-  summarize(read_length = mean(abs(read_length))) -> tmp
+  summarize(read_length = median(abs(read_length))) -> tmp
 
 tmp %>% 
   filter(sample_name == 'ctrl.6.1.5') -> ctrl_hex_to.plt
@@ -1345,7 +1333,7 @@ ctrl_hex_to.plt %>%
   scale_fill_viridis_c(option = 'viridis', direction = 1, name = 'scaled cpm', breaks = c(0,1), guide = 'none') -> plt_ND_1.plt
 
 tmp %>% 
-  filter(sample_name == 'panc.9.1.1') -> panc.7.1.1_hex_to.plt
+  filter(sample_name == 'panc.6.1.1') -> panc.6.1.1_hex_to.plt
 
 panc.7.1.1_hex_to.plt %>% 
   ggplot(aes(read_length, len, fill = scales::rescale((..count../(sum(..count..) * 1e6))))) + 
@@ -1361,14 +1349,14 @@ panc.7.1.1_hex_to.plt %>%
 
 
 tmp %>%
-  filter(sample_name == 'panc.7.1.1') -> panc.6.1.1_hex_to.plt
+  filter(sample_name == 'panc.7.1.1') -> panc.7.1.1_hex_to.plt
 
 panc.6.1.1_hex_to.plt %>% 
   ggplot(aes(read_length, len, fill = scales::rescale((..count../(sum(..count..) * 1e6))))) + 
   geom_hex(bins = 120) +
   annotate(geom = 'text', x = 250, y = 150, label = 'panc 2') +
   geom_vline(xintercept = median(panc.6.1.1_hex_to.plt$read_length), color = 'grey', linetype = 'dashed') +
-  xlab('avg. observed fragment length') + ylab('expected insertion length') +
+  xlab('median observed SINE fragment length') + ylab('expected insertion length') +
   scale_y_continuous(breaks = c(50,100,200,300,400), limits = c(0,400)) +
   scale_x_continuous(breaks = c(50,100,200,300,400), limits = c(0,400)) +
   scale_fill_viridis_c(option = 'viridis', direction = 1, name = 'scaled cpm', breaks = c(0,1), guide = 'none') -> plt_ND_3.plt
@@ -1389,7 +1377,6 @@ wrap_plots(plt_ND_1.plt + xlab(''),
            plt_ND_2.plt + xlab('') + ylab(''),
            plt_ND_3.plt + xlab('') + ylab(''),
            p4,
-           # guides = 'collect',
            heights = c(1,1,1, 0.1),
            design = panel_ND_layout) -> panel.ND.patchwork
 
@@ -1529,8 +1516,8 @@ save.manuscript.panel(figure = 3,
 illumina_biotype_to.plt %>% 
   filter(biotype == 'SINE') %>% 
   group_by(tx, len, biotype, condition) %>% 
-  mutate(len = as.numeric(len)) %>% 
-  summarize(read_length = mean(abs(read_length))) -> tmp
+  mutate(len = as.numeric(len)) %>% head()
+  summarize(read_length = median(abs(read_length))) -> tmp
 
 tmp %>% 
   filter(condition == 'ctrl') -> ctrl_hex_to.plt
@@ -1540,7 +1527,7 @@ ctrl_hex_to.plt %>%
   geom_hex(bins = 120) +
   geom_vline(xintercept = median(ctrl_hex_to.plt$read_length), color = 'grey', linetype = 'dashed') +
   annotate(geom = 'text', x = 275, y = 175, label = 'ctrl') +
-  xlab('avg. observed fragment length') + ylab('expected insertion length') +
+  xlab('median observed SINE fragment length') + ylab('expected insertion length') +
   # ggforce::facet_col(~sample) +
   scale_fill_viridis_c(option = 'viridis', direction = 1, name = 'scaled cpm', breaks = c(0,1), guide = 'none') +
   scale_y_continuous(breaks = c(50,100,200,300,400, 500), limits = c(0,500)) +
@@ -1577,7 +1564,7 @@ covid_hex_to.plt %>%
   scale_x_continuous(breaks = c(50,100,200,300,400, 500), limits = c(0,350)) -> plt_SNA_3.plt
 
 p4 <- ggplot(data.frame(l = plt_SNA_1.plt$labels$x, x = 1, y = 1)) +
-      geom_text(aes(x, y, label = l), angle = 0) + 
+      geom_text(aes(x, y, label = l), angle = 0, size = txt.mm_to_pts(0.95)) + 
       theme_void() +
       coord_cartesian(clip = "off")
   
@@ -1590,17 +1577,16 @@ wrap_plots(plt_SNA_1.plt + xlab(''),
            plt_SNA_2.plt + xlab('') + ylab(''),
            plt_SNA_3.plt + xlab('') + ylab(''),
            p4,
-           heights = c(1,0.1),
+           heights = c(1,0.05),
            design = panel_SNA_layout) -> panel.SNA.patchwork
 ```
 ## Fig_SNB
 ```{r}
 tmp_mean_read_len.df %>%
-  # filter(abs(read_length) > 75) %>% 
   group_by(biotype, condition) %>%
-  filter(n() > 8, ! biotype %in% c('polymorphic_pseudogene', 'TR_C_gene', 'TR_V_gene', 'IG_V_gene', 'IG_C_gene',
+  filter(n() == 10, ! biotype %in% c('polymorphic_pseudogene', 'TR_C_gene', 'TR_V_gene', 'IG_V_gene', 'IG_C_gene',
                                    'protein_coding', 'non_stop_decay', 'nonsense_mediated_decay'),
-         condition != 'panc') %>% 
+         condition != 'panc') %>% head()
   ggplot(aes(condition, read_length, color = condition)) +
   geom_boxplot(outlier.colour = NA) + 
   geom_jitter(width = 0.24, alpha = 0.2) +
@@ -1657,7 +1643,7 @@ pca.out %>%
   geom_vline(xintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) +
   geom_hline(yintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) + 
   scale_color_manual(values = identity_color_pal[c(1,3)]) + 
-  theme(legend.position = c(0.95,1), legend.direction = 'horizontal') -> plt_SNC.plt
+  theme(legend.position ='top', legend.direction = 'horizontal') -> plt_SNC.plt
 ```
 ### Fig_SNanopore_patchwork
 ```{r}
@@ -1674,8 +1660,7 @@ wrap_plots(wrap_elements(full = panel.SNA.patchwork),
            plt_SNB.plt,
            plt_SNC.plt,
            design = fig_SN_layout) +
-  plot_annotation(tag_levels = 'A') &
-  theme(legend.justification = 'center', legend.position = 'bottom') -> fig.SN.patchwork
+  plot_annotation(tag_levels = 'A') -> fig.SN.patchwork
 
 
 # fig.N.patchwork
@@ -1687,8 +1672,8 @@ save.manuscript.panel(figure = 's3',
                       height = figure_depth,
                       plot.in = fig.SN.patchwork)
 ```
-
-
+# Fig_supp_nanopore_2
+## Fig_SN2A
 ```{r}
 panc.7.1.1_nanopore_tpm <- 
   read_tsv(file.path(output_data.dir, 'nanopore', 'gencode_39_rmsk', 'panc.7.1.1_gene_abundance.tsv'))

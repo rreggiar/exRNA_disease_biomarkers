@@ -1676,58 +1676,18 @@ save.manuscript.panel(figure = 's3',
 ## Fig_SN2A
 ```{r}
 panc.7.1.1_nanopore_tpm <- 
-  read_tsv(file.path(output_data.dir, 'nanopore', 'gencode_39_rmsk', 'panc.7.1.1_gene_abundance.tsv'))
+  read_tsv(file.path(output_data.dir, 'nanopore', 'gencode_39_rmsk_nanopore_abundance', 'panc.7.1.1_gene_abundance.tsv'))
 
 panc.6.1.1_nanopore_tpm <- 
-  read_tsv(file.path(output_data.dir, 'nanopore', 'gencode_39_rmsk', 'panc.6.1.1_gene_abundance.tsv'))
-
-
-
-
-illumina_biotype_to.plt %>% 
-  filter(condition == 'ctrl',
-         biotype == 'SINE',
-         abs(read_length) < 50) -> tmp
-
-illumina_biotype_to.plt %>% 
-  filter(condition == 'ctrl',
-         biotype == 'SINE',
-         abs(read_length) > 200) -> tmp_2
-
-
-
-len_compare.df %>% 
-  filter(biotype.x == 'SINE') %>% 
-  select(tx, sequence = reference_name) -> alu_len.df
-
-library(BSgenome.Hsapiens.UCSC.hg38)
-library(BSgenome)
-library(ggtree)
-
-
-alu_len.lst <- as.list(alu_len.df$sequence)
-names(alu_len.lst) <- alu_len.df$tx
-
-alu_read.string <- Biostrings::AAStringSet(unlist(alu_len.lst))
-
-alu_aln <- DECIPHER::AlignSeqs(alu_read.string, processors = 5)
-
-
-
-panc_nanopore_read_length.df
+  read_tsv(file.path(output_data.dir, 'nanopore', 'gencode_39_rmsk_nanopore_abundance', 'panc.6.1.1_gene_abundance.tsv'))
 
 import::from(.from = 'SummarizedExperiment', assay)
-
-
-panc.7.1.1_nanopore_tpm %<>% 
-  group_by(`Gene ID`) %>% 
-  summarize(nanopore_tpm = sum(TPM))
 
 as.data.frame(as.matrix(assay(ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$gxi, 
                               'counts')[, 'panc.7.1.1', drop = F])) %>% 
   rownames_to_column('Gene ID') %>% 
   merge(panc.7.1.1_nanopore_tpm, by = 'Gene ID') %>% 
-  dplyr::rename('ensg' = 'Gene ID') %>% 
+  dplyr::rename('ensg' = 'Gene ID', 'nanopore_tpm' = 'TPM') %>% 
   mutate(illumina_tpm = panc.7.1.1*1e6/(sum(panc.7.1.1))) -> panc.7.1.1_seq_compare.df
 
 panc.7.1.1_seq_compare.df %<>%
@@ -1752,10 +1712,7 @@ panc.7.1.1_seq_compare.df %>%
   geom_point() +
   scale_color_manual(values = te_color_pal) + 
   ggforce::facet_col(~clade, scales = 'free') +
-  geom_smooth(method = 'lm', show.legend = F) + 
-  ggrepel::geom_text_repel(aes(label = ifelse(ensg %in% filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
-                                                               padj < 0.01 & log2FoldChange > 0)$ensg, ensg, '')), 
-                           show.legend = F)
+  geom_smooth(method = 'lm', show.legend = F)
 
 
 panc.6.1.1_nanopore_tpm %<>% 
@@ -1790,10 +1747,7 @@ panc.6.1.1_seq_compare.df %>%
   geom_point() +
   scale_color_manual(values = te_color_pal) + 
   ggforce::facet_col(~clade, scales = 'free') +
-  geom_smooth(method = 'lm', show.legend = F) #+ 
-  ggrepel::geom_text_repel(aes(label = ifelse(ensg %in% filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
-                                                               padj < 0.01 & log2FoldChange > 0)$ensg, ensg, '')), 
-                           show.legend = F)
+  geom_smooth(method = 'lm', show.legend = F)
 
 
 
@@ -1802,7 +1756,6 @@ panc.6.1.1_seq_compare.df %>%
 
 
 panc.7.1.1_seq_compare.df %>% 
-  
   filter(nanopore_tpm < 50000 & illumina_tpm < 50000) %>% 
   ggplot(aes(nanopore_tpm, illumina_tpm, color = clade)) + 
   geom_point() + 
@@ -1843,8 +1796,9 @@ input_set_dds_norm_counts.df[, 'panc.6.1.1', drop = F] %>% rownames_to_column('G
 
 
 panc.7.1.1_seq_compare.df %>% 
-  filter(illumina_tpm > 1 & nanopore_tpm > 1) %>% 
-  ggplot(aes(log2(illumina_tpm + 1), log2(nanopore_tpm + 1), label = `Gene ID`)) + 
+  filter(illumina_tpm > 1 & nanopore_tpm > 1) %>%
+  # ggplot(aes(illumina_tpm, nanopore_tpm)) +
+  ggplot(aes(log2(illumina_tpm + 1), log2(nanopore_tpm + 1))) +
   geom_point(alpha = 0.4)
 
 panc.6.1.1_seq_compare.df %>% 
@@ -1852,15 +1806,24 @@ panc.6.1.1_seq_compare.df %>%
   ggplot(aes(log2(illumina_tpm + 1), log2(nanopore_tpm + 1), label = `Gene ID`)) + 
   geom_point(alpha = 0.4) 
 
+count_matrix.df <- as.data.frame(as.matrix(assay(ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$gxi, 'counts')))
 
 count_matrix.df[, 'panc.7.1.1', drop = F] %>% rownames_to_column('Gene ID') %>% 
   mutate(panc.7.1.1_tpm = panc.7.1.1*1e6/(sum(panc.7.1.1))) %>% 
   merge(panc.7.1.1_nanopore_tpm %>% select(`Gene ID`, TPM), by = 'Gene ID') %>% 
-  dplyr::rename('panc.7.1.1_nanopore_tpm' = TPM) %>% 
-  merge(count_matrix.df[, 'panc.6.1.1', drop = F] %>% rownames_to_column('Gene ID') %>% 
-        mutate(panc.6.1.1_tpm = panc.6.1.1 *1e6/(sum(panc.6.1.1))) %>% 
-            merge(panc.6.1.1_nanopore_tpm %>% select(`Gene ID`, TPM), by = 'Gene ID') %>% 
-            dplyr::rename('panc.6.1.1_nanopore_tpm' = TPM), by = 'Gene ID') -> panc_compare.df
+  dplyr::rename('panc.7.1.1_nanopore_tpm' = TPM) %>%
+  group_by(`Gene ID`) %>% 
+  summarize(panc.7.1.1_tpm = mean(panc.7.1.1_tpm),
+            panc.7.1.1_nanopore_tpm = mean(panc.7.1.1_nanopore_tpm)) %>% 
+  distinct() -> panc_7.1.1_tpm
+
+count_matrix.df[, 'panc.6.1.1', drop = F] %>% rownames_to_column('Gene ID') %>% 
+  mutate(panc.6.1.1_tpm = panc.6.1.1 *1e6/(sum(panc.6.1.1))) %>% 
+  merge(panc.6.1.1_nanopore_tpm %>% select(`Gene ID`, TPM), by = 'Gene ID') %>% 
+  dplyr::rename('panc.6.1.1_nanopore_tpm' = TPM) %>% 
+  summarize(panc.6.1.1_tpm = mean(panc.6.1.1_tpm),
+            panc.6.1.1_nanopore_tpm = mean(panc.6.1.1_nanopore_tpm)) %>% 
+  distinct() -> panc_6.1.1_tpm
 
 panc_compare.df %>% 
   # filter_if(is.numeric, ~. > 1) %>% 

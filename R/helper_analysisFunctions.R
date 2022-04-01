@@ -23,7 +23,7 @@ save.manuscript.panel <- function(figure,
 	       width = width, 
 	       height = height, 
 	       units = 'mm', 
-	       plot = plot.in)
+	       plot = plot.in, device = cairo_pdf)
 }
 
 load.tximeta.object.list <- function(reference, output_data.dir = here::here('data/output_data')) {

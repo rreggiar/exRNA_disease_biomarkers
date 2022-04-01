@@ -1530,7 +1530,7 @@ save.manuscript.panel(figure = 3,
 illumina_biotype_to.plt %>% 
   filter(biotype == 'SINE') %>% 
   group_by(tx, len, biotype, condition) %>% 
-  mutate(len = as.numeric(len)) %>% head()
+  mutate(len = as.numeric(len)) %>%
   summarize(read_length = median(abs(read_length))) -> tmp
 
 tmp %>% 
@@ -1539,7 +1539,7 @@ tmp %>%
 ctrl_hex_to.plt %>% 
   ggplot(aes(read_length, len, fill = scales::rescale((..count../(sum(..count..) * 1e6))))) + 
   geom_hex(bins = 120) +
-  geom_vline(xintercept = median(ctrl_hex_to.plt$read_length), color = 'grey', linetype = 'dashed') +
+  # geom_vline(xintercept = median(ctrl_hex_to.plt$read_length), color = 'grey', linetype = 'dashed') +
   annotate(geom = 'text', x = 275, y = 175, label = 'ctrl') +
   xlab('median observed SINE fragment length') + ylab('expected insertion length') +
   # ggforce::facet_col(~sample) +
@@ -1553,7 +1553,7 @@ tmp %>%
 panc_hex_to.plt %>% 
   ggplot(aes(read_length, len, fill = scales::rescale((..count../(sum(..count..) * 1e6))))) + 
   geom_hex(bins = 120) +
-  geom_vline(xintercept = median(panc_hex_to.plt$read_length), color = 'grey', linetype = 'dashed') +
+  # geom_vline(xintercept = median(panc_hex_to.plt$read_length), color = 'grey', linetype = 'dashed') +
   annotate(geom = 'text', x = 275, y = 175, label = 'panc') +
   xlab('avg. observed fragment length') + ylab('expected insertion length') +
   # ggforce::facet_col(~sample) +
@@ -1569,7 +1569,7 @@ tmp %>%
 covid_hex_to.plt %>% 
   ggplot(aes(read_length, len, fill = scales::rescale((..count../(sum(..count..) * 1e6))))) + 
   geom_hex(bins = 120) +
-  geom_vline(xintercept = median(covid_hex_to.plt$read_length), color = 'grey', linetype = 'dashed') +
+  # geom_vline(xintercept = median(covid_hex_to.plt$read_length), color = 'grey', linetype = 'dashed') +
   annotate(geom = 'text', x = 275, y = 175, label = 'covid') +
   xlab('avg. observed fragment length') + ylab('expected insertion length') +
   # ggforce::facet_col(~sample) +
@@ -1591,7 +1591,7 @@ wrap_plots(plt_SNA_1.plt + xlab(''),
            plt_SNA_2.plt + xlab('') + ylab(''),
            plt_SNA_3.plt + xlab('') + ylab(''),
            p4,
-           heights = c(1,0.05),
+           heights = c(1,0.06),
            design = panel_SNA_layout) -> panel.SNA.patchwork
 ```
 ## Fig_SNB
@@ -1600,16 +1600,18 @@ tmp_mean_read_len.df %>%
   group_by(biotype, condition) %>%
   filter(n() == 10, ! biotype %in% c('polymorphic_pseudogene', 'TR_C_gene', 'TR_V_gene', 'IG_V_gene', 'IG_C_gene',
                                    'protein_coding', 'non_stop_decay', 'nonsense_mediated_decay'),
-         condition != 'panc') %>% head()
+         condition != 'panc') %>% 
+  mutate(biotype = ifelse(biotype == 'lncRNA', 'gencode_lncRNA', biotype)) %>% 
+  mutate(biotype = factor(biotype, levels = c('SINE', 'LINE', 'LTR', 'gencode_lncRNA', 'retained_intron', 'TEC'))) %>% 
   ggplot(aes(condition, read_length, color = condition)) +
   geom_boxplot(outlier.colour = NA) + 
   geom_jitter(width = 0.24, alpha = 0.2) +
   facet_wrap(~biotype, scales = 'free', ncol = 3, strip.position = 'bottom') +
   scale_color_manual(values = identity_color_pal, guide = 'none') + 
-  ggpubr::stat_compare_means(method = 'wilcox', comparisons = list(c('covid', 'ctrl')), size = txt.mm_to_pts(0.8)) +
+  ggpubr::stat_compare_means(method = 'wilcox', comparisons = list(c('panc', 'ctrl')), size = txt.mm_to_pts(0.8)) +
   coord_cartesian(clip = 'off') + 
   theme(strip.placement = 'inside') +
-  xlab('') + ylab('median insert length') -> plt_SNB.plt
+  xlab('') + ylab('median fragment length') -> plt_SNB.plt
 ```
 ## Fig_SNC
 ```{r}
@@ -1676,9 +1678,6 @@ wrap_plots(wrap_elements(full = panel.SNA.patchwork),
            design = fig_SN_layout) +
   plot_annotation(tag_levels = 'A') -> fig.SN.patchwork
 
-
-# fig.N.patchwork
-
 save.manuscript.panel(figure = 's3',
                       figure.dir = figure.dir,
                       name = 'patchwork_full_fig_S3',
@@ -1687,7 +1686,7 @@ save.manuscript.panel(figure = 's3',
                       plot.in = fig.SN.patchwork)
 ```
 # Fig_supp_nanopore_2
-## Fig_SN2A
+## Fig_SN2_patchwork
 ```{r}
 panc.7.1.1_nanopore_tpm <- 
   read_tsv(file.path(output_data.dir, 'nanopore', 'gencode_39_rmsk_nanopore_abundance', 'panc.7.1.1_gene_abundance.tsv'))

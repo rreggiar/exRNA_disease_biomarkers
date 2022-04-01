@@ -1,0 +1,204 @@
+---
+title: "R01 power calculations"
+output: html_notebook
+author: Roman E. Reggiardo
+date: 08/05/2020
+editor_options: 
+  chunk_output_type: console
+---
+```{r echo=FALSE}
+library(ggthemes)
+theme_set(theme_foundation(base_size = 7,
+                           base_family = 'Helvetica') + 
+            theme(plot.title = element_blank(),
+                panel.background = element_rect(colour = NA),
+                plot.background = element_rect(colour = NA),
+                panel.border = element_rect(colour = NA),
+                axis.title = element_text(face = "bold",size = rel(1)),
+                axis.title.y = element_text(angle=90,vjust =2),
+                axis.title.x = element_text(vjust = -0.2),
+                axis.text = element_text(size = rel(1)), 
+                axis.line = element_blank(),
+                strip.text = element_text(size = rel(2), face = 'bold'),
+                strip.background = element_blank(),
+                legend.key.size= unit(0.08, "in"),
+                legend.spacing = unit(0, "in"),
+                legend.key = element_rect(colour = NA),
+                legend.title = element_text(face="italic"),
+                legend.text = element_text(face = 'bold'),
+                plot.margin=margin(0.04,
+                                   0.04,
+                                   0.04,
+                                   0.04,
+                                   unit = "in"),
+                legend.margin = margin(-0.04,
+                                   -0.02,
+                                   0.08,
+                                   0.02,
+                                   unit = "in"),
+                legend.box.spacing = unit(-0.02, 'in'),
+                panel.grid.major = element_blank(),
+                panel.grid.minor = element_blank()
+          ))
+
+
+```
+
+
+We want to get a sense of the number of patients needed in a prospective study of biomarker predictive accuracy. For this approach, I'm going to treat the potential biomarker(s) as binary about some threshold; if we are detecting abundance of transcript X, we'll have some threshold above which the tx is predictive of disease (1) and below which it is not (0). The measurement could just as well be log2FC, z score, etc.  
+
+Some key parameters we will be interested in are:  
+
+  1. **Sensitivity** = True Positives / (True Positives + False Negatives)  
+    ex. we probably want something with sens. >= 0.9  
+  2. **Specifiticy** = True Negatives / (True Negatives + False Positives)  
+    ex. we want to minimize false positives, but they aren't as costly as false negatives  
+  3. **Effect Size** = desired magnitude of our observed phenomenon  
+  4. **Power** = the prob. of observing an effect == 1 - P(Type II Error)  
+  
+Now, if we move on with the goal of sens. >= 0.9, with the goal of calculating *n* of our study such that we have a ~90% chance of detecting that sens. at a signifigance of 0.05, we can do the following:
+```{r}
+## pwr package has power calculation formulas handled for us
+library(pwr)
+library(splitstackshape)
+## calculate the 'Effect Size' which is the final parameter for the power calc.
+## ES.h(marker performance, power)
+for (alt.p in c(0.75, 0.8, 0.85, 0.9, 0.95)){
+  eff.size <- ES.h(alt.p, 0.5)
+  #eff.size <- cohen.ES(test = 'p', size = 'medium')$size
+  ## feed arguments into function that will run the power calculation  
+  ## n = NULL as this is the unknown we'd like to solve for
+  p.out <- pwr.p.test(h = eff.size, n = NULL, 
+             sig.level = 0.05, power = 0.9,
+             alternative = 'greater')
+  p.out
+  plot(p.out)
+  
+  # for (goal.p in seq(0.55, 0.95, 0.05)){
+  #   print(goal.p)
+  #   eff.size <- ES.h(goal.p, 0.5)
+  #   print(pwr.p.test(h = eff.size, n = NULL, 
+  #            sig.level = 0.05, power = 0.9,
+  #            alternative = 'greater')$n)
+  # }
+}
+```
+
+The above approach works well for simple comparison of means tests, but the more complex multiple logistic regression requires a simulation approach. Here, I am generating two different distributions for biomarkers depending on outcome [0,1]:
+```{r}
+
+n = 300
+
+v = 6
+
+prior.df <- data.frame(outcome = c(0,1),
+                       mean = c(0, 1.58), 
+                       sd = c(0.5, 0.75))
+
+prior.df %>% map2_dfr(c(4, 5), ~ slice_sample(.x, n = .y))
+  `is.na<-`(c(as.character(seq(1:v)))) %>% 
+   mutate_at(c(as.character(seq(1:v))), funs(rnorm(n, mean, sd))) %>%
+   select(-mean, -sd) -> test.df
+
+test.df %>% 
+  gather(rep, mean,  -outcome) %>% 
+  ggplot(aes(mean, fill = as.factor(outcome))) + geom_histogram(bins = 62) + facet_wrap(~rep)
+  
+```
+
+Those recreate the 'best' features from our Panc TCGA/GTEx model. The scale is arbitrary in the x axis, we're just looking for distributions of normalized features that don't overlap too much (i.e., the sign of a good marker).
+
+These simulations are evaluated in 2 ways:  
+
+  1. Any signifigance == Any of the markers contribute significantly to the model  
+  2. All == all markers contribute signifigantly
+```{r}
+## output data frame
+power.calc.df <-
+  data.frame(n = numeric(), v = numeric(), all = numeric(), any = numeric())
+
+```
+  
+
+```{r}
+library(foreach)
+set.seed(123)
+doMC::registerDoMC(5)
+
+repetitions = 250
+
+lapply(c(20,40,80,100,150,180), function(n) {
+  lapply(c(5,10,15,30,45), function(v) {
+    
+    mean = runif(n, 0, 1.53)
+    sd = runif(n, 0.25, 0.5)
+    
+    prior.df <- data.frame(outcome = c(rep(0, 200), rep(1, n)),
+                           this_mean = c(rep(0,200), mean),
+                           this_sd = c(rep(1,200), sd))
+    
+    actual.n = nrow(prior.df)
+    
+    lapply(c(1:repetitions), function(i) {
+    # foreach::foreach(i=c(1:repetitions)) %dopar% {
+      
+      power.calc.df <-
+        data.frame(n = numeric(), v = numeric(), coef = numeric())
+      
+      prior.df %>% 
+        `is.na<-`(c(as.character(seq(1:v)))) %>% 
+         mutate_at(c(as.character(seq(1:v))), funs(rnorm(actual.n, this_mean, this_sd))) %>%
+         select(-this_mean, -this_sd) -> input.df
+      
+      comp_formula <- 
+        as.formula(paste('outcome~', paste(paste0('`',
+                                                 colnames(input.df %>% select(-outcome)),
+                                                 '`'),
+                                               collapse = '+')))
+      
+      suppressWarnings(model <- glm(formula = comp_formula,data=input.df, family=binomial))
+      
+      power.calc.df[1, 'n'] <- n
+      power.calc.df[1, 'v'] <- v
+      power.calc.df[1, 'coef'] <- sum((summary(model)$coefficients[1:v+1, 4]<0.5))
+      
+      power.calc.df
+    
+    }) %>% bind_rows()
+  }) %>% bind_rows()
+}) %>% bind_rows() -> power.calc.df
+
+
+```
+
+```{r}
+library(ggsci)
+library(ggforce)
+
+power.calc.df %>% 
+  group_by(n,v) %>% 
+    summarise(ci = list(mean_cl_normal(coef))) %>% 
+  unnest(cols = c(ci)) %>% 
+  mutate(y = y/v,
+         ymin = ymin/v,
+         ymax = ymax/v) %>% 
+  ggplot(aes(x = n, y = y, ymin = ymin, ymax = ymax, color = as.factor(v), fill = as.factor(v))) + 
+  geom_ribbon() +
+  geom_line() +
+  geom_hline(yintercept = c(0.75,0.85), alpha = c(1, 0.6), linetype = 'dashed') +
+  scale_fill_viridis_d(alpha = 0.4, name = '# features', option = 'magma') +
+  scale_color_viridis_d(name = '# features', option = 'magma') + 
+  scale_x_continuous(breaks = c(20,40,60,80,100,120,140,160,180)) +
+  xlab('# PAAD samples (200 CTRL)') + ylab('Power (99% CI)') + 
+  theme(text = element_text(size = 6))
+
+ggsave(height = 2.5, width = 3, units = 'in', filename = 'power_calc_acs.pdf')
+
+
+
+ggsave('~/Desktop/logit.power.only.any.2.5x2.5.pdf',
+       width = 3.45, 
+       height = 2.13, 
+       units = 'in')
+```
+

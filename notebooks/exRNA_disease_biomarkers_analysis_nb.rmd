@@ -603,6 +603,7 @@ save.manuscript.panel(figure = 1,
 
 
 ```
+
 # Fig_S1
 ## Fig_S1A
 ```{r S1A}
@@ -710,6 +711,7 @@ save.manuscript.panel(figure = 's1',
 
 
 ```
+
 # Fig_2
 ## Fig_2A
 ```{r}

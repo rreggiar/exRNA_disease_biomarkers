@@ -1227,7 +1227,8 @@ tmp_mean_read_len.df %>%
   filter(n() == 10, ! biotype %in% c('polymorphic_pseudogene', 'TR_C_gene', 'TR_V_gene', 'IG_V_gene', 'IG_C_gene',
                                    'protein_coding', 'non_stop_decay', 'nonsense_mediated_decay'),
          condition != 'covid') %>% 
-  mutate(biotype = factor(biotype, levels = c('SINE', 'LINE', 'LTR', 'lncRNA', 'retained_intron', 'TEC'))) %>% 
+  mutate(biotype = ifelse(biotype == 'lncRNA', 'gencode_lncRNA', biotype)) %>% 
+  mutate(biotype = factor(biotype, levels = c('SINE', 'LINE', 'LTR', 'gencode_lncRNA', 'retained_intron', 'TEC'))) %>% 
   ggplot(aes(condition, read_length, color = condition)) +
   geom_boxplot(outlier.colour = NA) + 
   geom_jitter(width = 0.24, alpha = 0.2) +

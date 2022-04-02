@@ -439,6 +439,8 @@ run.de.seq.individual <- function(type = 'gxi', base_level = 'ctrl',
     
   }
   
+  ### if 'process.aware' .... 
+  
   count_matrix.df <- 
     assay(input_se[[type]], 'counts') %>% 
     as.data.frame() %>% 

@@ -411,6 +411,46 @@ ucsc.rmsk.salmon_quant$analysis_set$covid_ctrl$deseq <-
                         top_level = 'covid',
                         ref_type = 'ucsc.rmsk',
                         dds_formula = as.formula('~age+condition'))
+
+
+SummarizedExperiment::assay(process.aware.salmon_quant$analysis_set$panc_ctrl$gxi.split, 'unspliced')
+
+reference_meta_data$process_aware_tx_to_gene <-   
+  SummarizedExperiment::rowRanges(process.aware.salmon_quant$analysis_set$panc_ctrl$gxi) %>% 
+    as.data.frame() %>% 
+    select(gene_id) %>% 
+    separate(gene_id, sep = '-', into = c('gene_id', 'intron')) %>% 
+    mutate(intron = ifelse(is.na(intron), 'E', intron)) %>% 
+    merge(reference_meta_data$gencode_tx_to_gene.df, by.x = 'gene_id', by.y = 'ensg') %>% 
+    mutate(gene_id = ifelse(intron == 'I', paste0(gene_id, '-I'), gene_id)) %>% 
+    select(-intron) %>% 
+    dplyr::rename('ensg' = 'gene_id') %>% 
+    distinct()
+
+
+process.aware.salmon_quant$analysis_set$panc_ctrl$deseq <- 
+  run.de.seq.individual(input_se = process.aware.salmon_quant$analysis_set$panc_ctrl, 
+                        reference_meta_in = reference_meta_data$process_aware_tx_to_gene,
+                        type = 'gxi',
+                        base_level = 'panc',
+                        top_level = 'ctrl',
+                        ref_type = 'process.aware',
+                        dds_formula = as.formula('~age+diabetes+condition'))
+
+process.aware.salmon_quant$analysis_set$covid_ctrl$deseq <- 
+  run.de.seq.individual(input_se = process.aware.salmon_quant$analysis_set$covid_ctrl,
+                        reference_meta_in = reference_meta_data$process_aware_tx_to_gene,
+                        type = 'gxi',
+                        base_level = 'ctrl',
+                        top_level = 'covid',
+                        ref_type = 'process.aware',
+                        dds_formula = as.formula('~age+condition'))
+
+
+
+
+process.aware.salmon_quant$analysis_set$panc_ctrl$deseq$de_out %>% 
+  filter(grepl('-I', ensg))
 ```
 
 ## run_pca
@@ -1845,16 +1885,72 @@ save.manuscript.panel(figure = 's3',
 
 
 
+
 # Figure_process_aware
+## Fig_4A
+```{r}
+
+```
+## Fig_4B
+```{r}
+SummarizedExperiment::assay(process.aware.salmon_quant$analysis_set$ctrl_panc_covid$gxi.split,
+                            'unspliced') %>% as.data.frame() -> unsplice_counts_pca.df
+
+unsplice_counts_pca.df %>% 
+  select(!contains(qc_fails)) %>% 
+  t() %>% 
+  as.data.frame() -> unsplice_counts_pca.tmp
+  
+pca_tmp_in_sd <- apply(unsplice_counts_pca.tmp, 2, sd)
+pca_tmp_in_zero_sd <- unsplice_counts_pca.tmp[,pca_tmp_in_sd!=0 & !is.na(pca_tmp_in_sd)]
+non_zero_pca <- prcomp(pca_tmp_in_zero_sd, center = T, scale. = T, rank. = 50)
+
+summary(non_zero_pca)
+pcs.of.interest <- apply(non_zero_pca$x, 2, var)
+pcs.props <-  pcs.of.interest/sum(pcs.of.interest)
+cumsum(pcs.props)[c(1,2)]
+print(as.data.frame(pcs.props) %>% 
+        rownames_to_column('pc') %>% 
+        mutate(pc = as.numeric(sub('PC', '', pc))) %>% 
+        ggplot(aes(pc, pcs.props)) + 
+        geom_col())
+
+pca.out <- as.data.frame(non_zero_pca$x) %>% 
+  rownames_to_column('sample') %>% 
+  merge(process.aware.salmon_quant$analysis_set$ctrl_panc_covid$quant_meta %>% 
+          select(sample, condition) %>% 
+          ungroup() %>% distinct(), by = 'sample')
+
+pca.out.summary <- 
+  as.data.frame(summary(non_zero_pca)$importance) %>% 
+  rownames_to_column('metric') %>% 
+  gather(pc, value, -metric) %>% 
+  spread(metric, value)
+
+pca.out %>% 
+  ggplot(aes(PC1, PC2,
+             color = condition)) +
+  geom_point(size = rel(2), alpha = 1) + 
+  # scale_shape_manual(values = c(21,25)) +
+  xlab(paste('PC1', round(cumsum(pcs.props)[1], digits = 3), sep = ' ')) +
+  ylab(paste('PC2', round(cumsum(pcs.props)[2] - cumsum(pcs.props)[1], digits = 3), sep = ' ')) +
+  geom_vline(xintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) +
+  geom_hline(yintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) + 
+  scale_color_manual(values = identity_color_pal) + 
+  theme(legend.position = c(0.95,1), legend.direction = 'horizontal')
+```
+
+
 ```{r}
 process.aware.salmon_quant$analysis_set$ctrl_panc_covid$unsplice_data.df %>% 
   merge(process.aware.salmon_quant$analysis_set$ctrl_panc_covid$quant_meta, by = 'sample') %>% 
-  filter(condition != 'covid') %>% 
+  # filter(condition != 'covid') %>% 
   mutate(condition = factor(condition, levels = c('panc', 'ctrl', 'covid'))) %>% 
   ggplot(aes(condition, unsplice_rate, color = condition)) + 
   geom_boxplot(fill = NA, outlier.colour = NA) + 
   geom_point() + 
-  scale_color_manual(values = identity_color_pal)
+  scale_color_manual(values = identity_color_pal) + 
+  theme(legend.position = c(0.99,0.99))
 
 
 process.aware.salmon_quant$analysis_set$ctrl_panc_covid$unsplice_data.df %>% 
@@ -1862,11 +1958,21 @@ process.aware.salmon_quant$analysis_set$ctrl_panc_covid$unsplice_data.df %>%
   mutate(condition = factor(condition, levels = c('panc', 'ctrl', 'covid'))) %>% 
   ggplot(aes(unsplice_rate, star_multimapped_percent, color = condition)) + 
   geom_point() + 
-  ggforce::facet_col(~condition, scales = 'free_y') + 
+  ggforce::facet_col(~condition) + 
   geom_smooth(method = 'lm', se = F) + 
-  scale_color_manual(values = identity_color_pal)
+  scale_color_manual(values = identity_color_pal, guide = 'none')
+
+SummarizedExperiment::assay(process.aware.salmon_quant$analysis_set$panc_ctrl$gxi, 'counts')  %>% 
+  as.data.frame() %>% 
+  rownames_to_column('ensg') %>% 
+  filter(ensg == 'ENSG00000230021.10-I')
+  
 
 
+process.aware.salmon_quant$analysis_set$panc_ctrl$deseq$de_out %>% 
+  filter(grepl('-I', ensg)) %>% View()
+  ggplot(aes(log2FoldChange, -log10(padj))) +
+  geom_point()
 
 ```
 

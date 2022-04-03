@@ -415,6 +415,8 @@ ucsc.rmsk.salmon_quant$analysis_set$covid_ctrl$deseq <-
 
 SummarizedExperiment::assay(process.aware.salmon_quant$analysis_set$panc_ctrl$gxi.split, 'unspliced')
 
+SummarizedExperiment::rowRanges(process.aware.salmon_quant$analysis_set$panc_ctrl$gxi)
+
 reference_meta_data$process_aware_tx_to_gene <-   
   SummarizedExperiment::rowRanges(process.aware.salmon_quant$analysis_set$panc_ctrl$gxi) %>% 
     as.data.frame() %>% 
@@ -430,8 +432,7 @@ reference_meta_data$process_aware_tx_to_gene <-
 
 process.aware.salmon_quant$analysis_set$panc_ctrl$deseq <- 
   run.de.seq.individual(input_se = process.aware.salmon_quant$analysis_set$panc_ctrl, 
-                        reference_meta_in = reference_meta_data$process_aware_tx_to_gene,
-                        type = 'gxi',
+                        type = 'gxi.split',
                         base_level = 'panc',
                         top_level = 'ctrl',
                         ref_type = 'process.aware',
@@ -1965,7 +1966,11 @@ process.aware.salmon_quant$analysis_set$ctrl_panc_covid$unsplice_data.df %>%
 SummarizedExperiment::assay(process.aware.salmon_quant$analysis_set$panc_ctrl$gxi, 'counts')  %>% 
   as.data.frame() %>% 
   rownames_to_column('ensg') %>% 
-  filter(ensg == 'ENSG00000230021.10-I')
+  filter(ensg == 'ENSG00000230021.10-I') %>% 
+  gather(sample, count, -ensg) %>% 
+  mutate(condition = ifelse(grepl('panc', sample), 'panc', 'ctrl')) %>% 
+  ggplot(aes(condition, count)) + 
+  geom_boxplot()
   
 
 

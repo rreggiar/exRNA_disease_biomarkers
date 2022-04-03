@@ -432,6 +432,12 @@ run.de.seq.individual <- function(type = 'gxi', base_level = 'ctrl',
       filter(seqnames %in% c('chrY'),
              grepl('ENSG', group_name))
     
+  } else if (ref_type == 'process.aware') {
+    
+    gencode_sex_filter.df <-
+      rowRanges(input_se[['gxi']]) %>% as.data.frame() %>% 
+      filter(seqnames %in% c('chrY'))
+    
   } else {
     gencode_sex_filter.df <-
       rowRanges(input_se[[type]]) %>% as.data.frame() %>% 
@@ -439,14 +445,25 @@ run.de.seq.individual <- function(type = 'gxi', base_level = 'ctrl',
     
   }
   
-  ### if 'process.aware' .... 
+  if (ref_type == 'process.aware') {
+    
+    count_matrix.df <- 
+      assay(input_se[[type]], 'unspliced') %>% 
+      as.data.frame() %>% 
+      rownames_to_column('gene') %>% 
+      mutate_if(is.numeric, round) %>% 
+      column_to_rownames('gene')
+    
+  } else {
   
-  count_matrix.df <- 
-    assay(input_se[[type]], 'counts') %>% 
-    as.data.frame() %>% 
-    rownames_to_column('gene') %>% 
-    mutate_if(is.numeric, round) %>% 
-    column_to_rownames('gene')
+    count_matrix.df <- 
+      assay(input_se[[type]], 'counts') %>% 
+      as.data.frame() %>% 
+      rownames_to_column('gene') %>% 
+      mutate_if(is.numeric, round) %>% 
+      column_to_rownames('gene')
+    
+  }
   
   input_set_dds <- DESeqDataSetFromMatrix(countData = count_matrix.df, 
                                           colData = scaled_quant_meta_for_de.df, 
@@ -481,7 +498,9 @@ run.de.seq.individual <- function(type = 'gxi', base_level = 'ctrl',
   
   print(coef_list[[1]])
   
-  if (ref_type != 'ucsc.rmsk') { 
+  if (ref_type == 'salmon') { 
+    
+    message('gencode')
     
     de_out <- 
       lfcShrink(input_set_dds, coef = coef_list[[1]]) %>% 
@@ -494,7 +513,23 @@ run.de.seq.individual <- function(type = 'gxi', base_level = 'ctrl',
       merge(rowRanges(input_se[[type]]) %>% as.data.frame(), by.x = 'ensg', by.y = 'gene_id') %>%
       merge(reference_meta_in %>% select(ensg, gene) %>% distinct(), by = 'ensg')
     
+  } else if (ref_type == 'process.aware') {
+    
+    message('process.aware')
+    
+    de_out <- 
+      lfcShrink(input_set_dds, coef = coef_list[[1]]) %>% 
+      as.data.frame() %>% 
+      # indiv comparisons return flipped values ?
+      # mutate(log2FoldChange = -log2FoldChange) %>%
+      rownames_to_column('ensg') %>%
+      # filter(!ensg %in% c(condition_aware_age_cor_filter[, c(base_level, top_level)]$ensg,
+      #                     gencode_sex_filter.df$gene_id)) %>%
+      merge(reference_meta_in %>% select(ensg, gene) %>% distinct(), by = 'ensg')
+    
   } else { 
+    
+    message('ucsc.rmsk')
     
     de_out <- 
       lfcShrink(input_set_dds, coef = coef_list[[1]]) %>% 

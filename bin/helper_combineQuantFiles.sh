@@ -1,0 +1,23 @@
+#!/bin/bash
+
+
+inputPath='/public/groups/kimlab/seqData/PANC_TCGA_TE-AWARE_COUNTS/roman-panc/TCGA_PAAD_ControlledAccess_V1-0_DATA_edu_ucsc_kim_lab/quant.sf'
+
+tempQuant="$inputPath"/PAAD-Z5-AAPL-TP.quant.sf.gz
+
+cut -f 1 <(gzip -cd "$tempQuant") > quant_tmp.txt
+
+for quantFile in "$inputPath"/*; do
+
+	thisQuant=$(basename -s .quant.sf.gz "$quantFile")
+
+	echo "$thisQuant"
+
+	paste <(cat quant_tmp.txt) \
+		<(gzip -cd "$quantFile" \
+		| cut -f4 \
+		| sed  "1s/.*/"$thisQuant"/") > tmp && mv tmp quant_tmp.txt
+
+done
+
+rm tmp

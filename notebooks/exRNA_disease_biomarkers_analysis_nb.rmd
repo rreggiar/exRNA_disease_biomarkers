@@ -440,8 +440,7 @@ process.aware.salmon_quant$analysis_set$panc_ctrl$deseq <-
 
 process.aware.salmon_quant$analysis_set$covid_ctrl$deseq <- 
   run.de.seq.individual(input_se = process.aware.salmon_quant$analysis_set$covid_ctrl,
-                        reference_meta_in = reference_meta_data$process_aware_tx_to_gene,
-                        type = 'gxi',
+                        type = 'gxi.split',
                         base_level = 'ctrl',
                         top_level = 'covid',
                         ref_type = 'process.aware',
@@ -1890,7 +1889,19 @@ save.manuscript.panel(figure = 's3',
 # Figure_process_aware
 ## Fig_4A
 ```{r}
-
+process.aware.salmon_quant$analysis_set$ctrl_panc_covid$unsplice_data.df %>% 
+  merge(process.aware.salmon_quant$analysis_set$ctrl_panc_covid$quant_meta, by = 'sample') %>% 
+  # filter(condition != 'covid') %>% 
+  mutate(condition = factor(condition, levels = c('panc', 'ctrl', 'covid'))) %>% 
+  ggplot(aes(condition, unsplice_rate, color = condition)) + 
+  geom_boxplot(fill = NA, outlier.colour = NA) + 
+  geom_point() + 
+  scale_color_manual(values = identity_color_pal, guide = 'none') + 
+  theme(legend.position = c(0.99,0.99)) + 
+  coord_cartesian(clip = 'off') +
+  ggpubr::stat_compare_means(method = 'wilcox', 
+                             comparisons = list(c('panc', 'ctrl'), c('covid', 'ctrl'),  c('panc', 'covid'))) + 
+  xlab('') + ylab('unsplice rate') -> plt_4A.plt
 ```
 ## Fig_4B
 ```{r}
@@ -1938,29 +1949,41 @@ pca.out %>%
   geom_vline(xintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) +
   geom_hline(yintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) + 
   scale_color_manual(values = identity_color_pal) + 
-  theme(legend.position = c(0.95,1), legend.direction = 'horizontal')
+  theme(legend.position = c(0.95,1), legend.direction = 'horizontal') -> plt_4B.plt
+```
+### Fig_4_patchwork
+```{r}
+import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer, wrap_elements)
+
+
+fig_4_layout <- "
+AABB
+CCCC
+CCCC
+"
+
+wrap_plots(plt_4A.plt,
+           plt_4B.plt,
+           plot_spacer(),
+           design = fig_4_layout) +
+  plot_annotation(tag_levels = 'A') -> fig.4.patchwork
+
+save.manuscript.panel(figure = 4,
+                      figure.dir = figure.dir,
+                      name = 'patchwork_full_fig_4',
+                      width = figure_double_column_width,
+                      height = figure_depth,
+                      plot.in = fig.4.patchwork)
 ```
 
-
 ```{r}
-process.aware.salmon_quant$analysis_set$ctrl_panc_covid$unsplice_data.df %>% 
-  merge(process.aware.salmon_quant$analysis_set$ctrl_panc_covid$quant_meta, by = 'sample') %>% 
-  # filter(condition != 'covid') %>% 
-  mutate(condition = factor(condition, levels = c('panc', 'ctrl', 'covid'))) %>% 
-  ggplot(aes(condition, unsplice_rate, color = condition)) + 
-  geom_boxplot(fill = NA, outlier.colour = NA) + 
-  geom_point() + 
-  scale_color_manual(values = identity_color_pal) + 
-  theme(legend.position = c(0.99,0.99))
-
-
 process.aware.salmon_quant$analysis_set$ctrl_panc_covid$unsplice_data.df %>% 
   merge(process.aware.salmon_quant$analysis_set$ctrl_panc_covid$quant_meta, by = 'sample') %>%
   mutate(condition = factor(condition, levels = c('panc', 'ctrl', 'covid'))) %>% 
   ggplot(aes(unsplice_rate, star_multimapped_percent, color = condition)) + 
   geom_point() + 
   ggforce::facet_col(~condition) + 
-  geom_smooth(method = 'lm', se = F) + 
+  geom_smooth(method = 'lm', se = F, linetype = 'dashed') + 
   scale_color_manual(values = identity_color_pal, guide = 'none')
 
 SummarizedExperiment::assay(process.aware.salmon_quant$analysis_set$panc_ctrl$gxi, 'counts')  %>% 
@@ -1974,10 +1997,18 @@ SummarizedExperiment::assay(process.aware.salmon_quant$analysis_set$panc_ctrl$gx
   
 
 
-process.aware.salmon_quant$analysis_set$panc_ctrl$deseq$de_out %>% 
-  filter(grepl('-I', ensg)) %>% View()
-  ggplot(aes(log2FoldChange, -log10(padj))) +
-  geom_point()
+process.aware.salmon_quant$analysis_set$covid_ctrl$deseq$de_out %>% 
+  merge(salmon_quant$analysis_set$covid_ctrl$deseq$de_out, by = 'gene') %>% 
+  # filter(grepl('-I', ensg)) %>% View()
+  ggplot(aes(log2FoldChange.x, log2FoldChange.y, label = gene)) +
+  geom_point() + 
+  ggrepel::geom_text_repel() + 
+  geom_hline(yintercept = 0, linetype = 'dashed') +
+  geom_vline(xintercept = 0, linetype = 'dashed')
+
+unsplice_counts_pca.df %>% 
+  rownames_to_column('ensg') %>% 
+  merge(reference_meta_data$gencode_tx_to_gene.df %>% select(ensg, gene) %>% distinct(), by = 'ensg')
 
 ```
 

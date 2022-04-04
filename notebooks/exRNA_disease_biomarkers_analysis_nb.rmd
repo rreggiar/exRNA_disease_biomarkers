@@ -1144,7 +1144,7 @@ EF
 "
 
 wrap_plots(patchwork::wrap_elements(fig.S2A.fgsea_table.grob, ignore_tag = F),
-           fig.S2B.plt,
+           patchwork::wrap_elements(full = fig.S2B.plt),
            fig.S2B_2.plt,
            guide_area(),
            fig.S2C.plt,

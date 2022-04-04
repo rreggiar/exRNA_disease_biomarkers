@@ -523,6 +523,12 @@ process.aware.salmon_quant$analysis_set$ctrl_panc_covid$unsplice_data.df <-
 
 # Figures
 # Fig_1
+## Fig_flowchart
+```{r}
+flow_chart.plt <- magick::image_read_pdf(path = file.path(figure.dir, 'fig.1', 'ip_flowchart.pdf'))
+
+```
+
 ## Fig_1A
 ```{r 1A}
 # save.manuscript.panel(figure = 1,
@@ -563,7 +569,7 @@ tidy_quant_meta.df %>%
   ggpubr::stat_compare_means(comparisons = list(c('panc', 'covid'),
                                                 c('ctrl', 'covid'), 
                                                 c('ctrl', 'panc')), 
-                             method = 'wilcox', size = 2.5) -> mapping_rate_dist.plt
+                             method = 'wilcox', size = 2.5, method.args = list(exact =T)) -> mapping_rate_dist.plt
 
 # save.manuscript.panel(figure = 1,
 #                       figure.dir = figure.dir,
@@ -590,16 +596,18 @@ ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$quant_meta %>%
 
 mapping_rate_compare.df %>% 
   gather(var, value, -sample, -context, -sex, -condition, -var) %>% 
+  # filter(condition == 'panc') %>% 
   ggplot(aes(var, value, color = condition)) + 
   geom_boxplot(fill = NA, outlier.colour = NA, show.legend = F) + 
   geom_point(size = rel(2), alpha = 1) +
   geom_line(aes(group = sample), alpha = 0.2, show.legend = F) +
   # scale_shape_manual(values = c(21,25)) +
-  ylab('salmon % mapped') + xlab('') + 
-  ggforce::facet_row(~condition, scales = 'free_y') +
+  ylab('% mapped') + xlab('') + 
+  ggforce::facet_row(~condition, strip.position = 'bottom') +
   scale_color_manual(values = identity_color_pal) + 
   ggpubr::stat_compare_means(comparisons = list(c('gencode', 'TE-aware')), 
-                             method = 'wilcox', paired = T, size = 2.5) -> mapping_rate_compare.plt
+                             method = 'wilcox', size = 2.5, 
+                             method.args = list(exact = TRUE, paired = T)) -> mapping_rate_compare.plt
 
 fig.1C.plt <- mapping_rate_compare.plt + labs(tag = 'D')
 
@@ -617,22 +625,20 @@ DD
 EE
 "
 
-wrap_plots(fig.1A_1.plt,
-           fig.1A_2.plt,
-           fig.1B.plt,
+wrap_plots(fig.1A_1.plt + coord_cartesian(clip = 'off'),
+           fig.1A_2.plt + coord_cartesian(clip = 'off'),
+           fig.1B.plt + coord_cartesian(clip = 'off'),
            guide_area(),
-           fig.1C.plt,
-           plot_spacer(),
+           fig.1C.plt + coord_cartesian(clip = 'off'),
+           wrap_elements(full = magick::image_ggplot(flow_chart.plt)) + labs(tag = 'A'),
            design = fig_1_layout, 
            guides = 'collect',
-           heights = c(1,1,1,0.0625,1)) & 
+           heights = c(1.5,0.65,0.65,0.0625,0.45)) & 
   theme(plot.tag.position = c(0.01, 0.99), 
         legend.position = 'bottom',
         legend.title = element_text(vjust = 1.25),
         legend.justification = c(0.5, 0.5)) -> fig.1.patchwork
 
-
-fig.1.patchwork
 
 save.manuscript.panel(figure = 1,
                       figure.dir = figure.dir,

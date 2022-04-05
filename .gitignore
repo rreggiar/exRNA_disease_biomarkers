@@ -55,7 +55,10 @@ data/meta_data/deprecated/
 data/meta_data/reference_meta_data_df.rds
 # ip data
 data/output_data/ip_data
+# tcga gtex output data
+data/output_data/tcga_gtex
 
 # deprecated code
 R/deprecated/
 bin/deprecated/
+

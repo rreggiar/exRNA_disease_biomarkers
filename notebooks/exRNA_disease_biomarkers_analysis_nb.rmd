@@ -1259,12 +1259,12 @@ illumina_roster_names <- read_csv(file.path(output_data.dir, 'nanopore', 'illumi
 # illumina_read_len.df$seq_2 <- NULL
 # 
 # vroom::vroom_write(illumina_read_len.df, file = file.path(output_data.dir, 'nanopore','illumina_read_len_no_seq.tsv.gz'))
+
+illumina_read_len.df <-
+  vroom::vroom(file = file.path(output_data.dir,'nanopore','illumina_read_len_no_seq.tsv.gz'), num_threads = 16)
 ```
 ## Fig_NA
 ```{r}
-illumina_read_len.df <-
-  vroom::vroom(file = file.path(output_data.dir,'nanopore','illumina_read_len_no_seq.tsv.gz'), num_threads = 16)
-
 table(illumina_read_len.df$biotype) %>% 
   as.data.frame() %>% 
   select(biotype = Var1) %>% 
@@ -1283,10 +1283,11 @@ illumina_read_len.df %>%
 tmp_mean_read_len.df %>%
   group_by(biotype, condition) %>%
   filter(n() == 10, ! biotype %in% c('polymorphic_pseudogene', 'TR_C_gene', 'TR_V_gene', 'IG_V_gene', 'IG_C_gene',
-                                   'protein_coding', 'non_stop_decay', 'nonsense_mediated_decay'),
+                                   'TEC', 'non_stop_decay', 'nonsense_mediated_decay'),
          condition != 'covid') %>% 
-  mutate(biotype = ifelse(biotype == 'lncRNA', 'gencode_lncRNA', biotype)) %>% 
-  mutate(biotype = factor(biotype, levels = c('SINE', 'LINE', 'LTR', 'gencode_lncRNA', 'retained_intron', 'TEC'))) %>% 
+  mutate(biotype = ifelse(biotype == 'lncRNA', 'gencode_lncRNA', biotype),
+         biotype = ifelse(biotype == 'protein_coding', 'gencode_coding', biotype)) %>% 
+  mutate(biotype = factor(biotype, levels = c('SINE', 'LINE', 'LTR', 'gencode_lncRNA', 'retained_intron', 'gencode_coding'))) %>% 
   ggplot(aes(condition, read_length, color = condition)) +
   geom_boxplot(outlier.colour = NA) + 
   geom_jitter(width = 0.24, alpha = 0.2) +
@@ -1657,16 +1658,17 @@ wrap_plots(plt_SNA_1.plt + xlab(''),
 tmp_mean_read_len.df %>%
   group_by(biotype, condition) %>%
   filter(n() == 10, ! biotype %in% c('polymorphic_pseudogene', 'TR_C_gene', 'TR_V_gene', 'IG_V_gene', 'IG_C_gene',
-                                   'protein_coding', 'non_stop_decay', 'nonsense_mediated_decay'),
+                                   'TEC', 'non_stop_decay', 'nonsense_mediated_decay'),
          condition != 'panc') %>% 
-  mutate(biotype = ifelse(biotype == 'lncRNA', 'gencode_lncRNA', biotype)) %>% 
-  mutate(biotype = factor(biotype, levels = c('SINE', 'LINE', 'LTR', 'gencode_lncRNA', 'retained_intron', 'TEC'))) %>% 
+  mutate(biotype = ifelse(biotype == 'lncRNA', 'gencode_lncRNA', biotype),
+         biotype = ifelse(biotype == 'protein_coding', 'gencode_coding', biotype)) %>% 
+  mutate(biotype = factor(biotype, levels = c('SINE', 'LINE', 'LTR', 'gencode_lncRNA', 'retained_intron', 'gencode_coding'))) %>% 
   ggplot(aes(condition, read_length, color = condition)) +
   geom_boxplot(outlier.colour = NA) + 
   geom_jitter(width = 0.24, alpha = 0.2) +
   facet_wrap(~biotype, scales = 'free', ncol = 3, strip.position = 'bottom') +
   scale_color_manual(values = identity_color_pal, guide = 'none') + 
-  ggpubr::stat_compare_means(method = 'wilcox', comparisons = list(c('panc', 'ctrl')), size = txt.mm_to_pts(0.8)) +
+  ggpubr::stat_compare_means(method = 'wilcox', comparisons = list(c('covid', 'ctrl')), size = txt.mm_to_pts(0.8)) +
   coord_cartesian(clip = 'off') + 
   theme(strip.placement = 'inside') +
   xlab('') + ylab('median fragment length') -> plt_SNB.plt

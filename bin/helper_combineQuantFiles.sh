@@ -1,9 +1,13 @@
 #!/bin/bash
 
 
-inputPath='/public/groups/kimlab/seqData/PANC_TCGA_TE-AWARE_COUNTS/roman-panc/TCGA_PAAD_ControlledAccess_V1-0_DATA_edu_ucsc_kim_lab/quant.sf'
+#inputPath='/public/groups/kimlab/seqData/PANC_TCGA_TE-AWARE_COUNTS/roman-panc/TCGA_PAAD_ControlledAccess_V1-0_DATA_edu_ucsc_kim_lab/quant.sf'
 
-tempQuant="$inputPath"/PAAD-Z5-AAPL-TP.quant.sf.gz
+inputPath=$1
+inputQuant=$2
+outputPath=$3
+
+tempQuant="$inputPath"/"$inputQuant"
 
 cut -f 1 <(gzip -cd "$tempQuant") > quant_tmp.txt
 
@@ -21,3 +25,5 @@ for quantFile in "$inputPath"/*; do
 done
 
 rm tmp
+
+mv quant_tmp.txt "$outputPath"

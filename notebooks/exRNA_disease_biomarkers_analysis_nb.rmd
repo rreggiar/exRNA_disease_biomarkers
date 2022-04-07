@@ -793,7 +793,14 @@ ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out %>%
          !grepl('^MT', gene)) -> panc_annotated_rmsk_de
 
 panc_label_list <- panc_annotated_rmsk_de %>% 
-  top_n(3, wt = log2FoldChange)
+  filter(grepl('LTR|Alu', gene)) %>% 
+  top_n(6, wt = log2FoldChange)
+
+panc_label_list_dn <- panc_annotated_rmsk_de %>% 
+  filter(grepl('LTR|Alu', gene)) %>% 
+  top_n(3, wt = -log2FoldChange)
+
+panc_label_list <- rbind(panc_label_list, panc_label_list_dn)
 
 panc_annotated_rmsk_de %>%
   filter(clade == 'gencode_coding') %>% 
@@ -804,11 +811,12 @@ gencode_layer.plt +
   geom_point(data = filter(panc_annotated_rmsk_de, clade != 'gencode_coding') %>% 
                mutate(clade = factor(clade, levels = te_aware_annotation_levels)),
              aes(log2FoldChange, -log10(padj), color = clade), size = 2, alpha = 0.8) +
-  scale_color_manual(values = te_color_pal) + 
+  scale_color_manual(values = te_color_pal, name = 'biotype/clade') + 
   ggrepel::geom_text_repel(data = panc_annotated_rmsk_de %>% 
                mutate(clade = factor(clade, levels = te_aware_annotation_levels)),
                       aes(label = ifelse(gene %in% panc_label_list$gene, gene, '')), 
-                           show.legend = F, color = 'black', max.overlaps = 1000) -> fig.2A.plt
+                           show.legend = F, color = 'black', 
+               max.overlaps = 100, box.padding = unit(4.5, 'mm'), segment.colour = 'grey') -> fig.2A.plt
 
 fig.2A.plt
 
@@ -846,7 +854,7 @@ gencode_layer.plt +
   geom_point(data = filter(covid_annotated_rmsk_de, clade != 'gencode_coding') %>% 
                mutate(clade = factor(clade, levels = te_aware_annotation_levels)),
              aes(log2FoldChange, -log10(padj), color = clade), size = 2, alpha = 0.8) +
-  scale_color_manual(values = te_color_pal) + 
+  scale_color_manual(values = te_color_pal, name = 'biotype/clade') + 
   ggrepel::geom_text_repel(data = covid_annotated_rmsk_de %>% 
              mutate(clade = factor(clade, levels = te_aware_annotation_levels)),
                     aes(label = ifelse(gene %in% covid_label_list$gene, gene, '')), 
@@ -887,10 +895,10 @@ tidy_total_annotated_rmsk_counts %>%
          condition = factor(condition, levels = c('panc', 'ctrl', 'covid'))) %>% 
   ggplot(aes(sample, clade_frac, fill = clade)) + 
   geom_col(color = 'white', show.legend = F) + 
-  scale_fill_manual(values = te_color_pal) + 
+  scale_fill_manual(values = te_color_pal, name = 'biotype/clade') + 
   ggforce::facet_row(~condition, scales = 'free_x') +
-  # theme(axis.text.x = element_blank()) + 
-  xlab('sample') + ylab('norm. count fraction') #-> fig.2C.plt
+  theme(axis.text.x = element_blank()) +
+  xlab('sample') + ylab('library count fraction') -> fig.2C.plt
 
 
 ```
@@ -955,8 +963,8 @@ import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_
 
 fig_2_layout <- "
 AA
-BC
 DD
+BC
 EE
 "
 
@@ -968,7 +976,7 @@ wrap_plots(fig.2C.plt,
                                                                 width = figure_double_column_width)),
            design = fig_2_layout, 
            guides = 'collect',
-           heights = c(0.75,0.75,0.0937,1)) + plot_annotation(tag_levels = 'A') & 
+           heights = c(0.75,0.0937,0.75,1)) + plot_annotation(tag_levels = 'A') & 
   theme(plot.tag.position = c(0.01, 0.99), 
         legend.position = 'bottom',
         legend.title = element_text(vjust = 0.5),

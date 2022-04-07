@@ -885,8 +885,8 @@ tidy_total_annotated_rmsk_counts %>%
   geom_col(color = 'white', show.legend = F) + 
   scale_fill_manual(values = te_color_pal) + 
   ggforce::facet_row(~condition, scales = 'free_x') +
-  theme(axis.text.x = element_blank()) + 
-  xlab('sample') + ylab('norm. count fraction') -> fig.2C.plt
+  # theme(axis.text.x = element_blank()) + 
+  xlab('sample') + ylab('norm. count fraction') #-> fig.2C.plt
 
 
 ```
@@ -1183,17 +1183,17 @@ panc.6.1.1_read_len <- read_csv(file.path(output_data.dir, 'nanopore',
   separate(sample, sep = '[.]', into = c(NA,NA,'biotype',NA)) %>% 
   mutate(biotype = sub('_extraction', '', biotype))
 
-# ctrl.6.1.5_read_len <- read_csv(file.path(output_data.dir, 'nanopore', 
-#                                           'nanopore_read_len', 'ctrl.6.1.5_biotype_read_lengths.csv')) %>% 
-#   separate(sample, sep = '[.]', into = c(NA,NA,'biotype',NA)) %>% 
-#   mutate(biotype = sub('_extraction', '', biotype))
+ctrl.6.1.5_read_len <- read_csv(file.path(output_data.dir, 'nanopore',
+                                          'nanopore_read_len', 'ctrl.6.1.5_biotype_read_lengths.csv')) %>%
+  separate(sample, sep = '[.]', into = c(NA,NA,'biotype',NA)) %>%
+  mutate(biotype = sub('_extraction', '', biotype))
 
 panc.7.1.1_read_len %>% 
   mutate(sample = 'panc.7.1.1') %>% 
   rbind(panc.6.1.1_read_len %>%
          mutate(sample = 'panc.6.1.1')) %>% 
-  # rbind(ctrl.6.1.5_read_len %>%
-  #        mutate(sample = 'ctrl.6.1.5')) %>% 
+  rbind(ctrl.6.1.5_read_len %>%
+         mutate(sample = 'ctrl.6.1.5')) %>%
   group_by(biotype) -> panc_nanopore_read_length.df
 
 illumina_read_len <- list.files(file.path(output_data.dir, 'nanopore', 'illumina_read_len'), full.names = T)[1:31]
@@ -1279,6 +1279,7 @@ illumina_read_len.df %>%
   filter(! sample %in% qc_fails) %>% 
   group_by(sample, biotype, condition) %>% 
   summarize(read_length = median(abs(read_length))) -> tmp_mean_read_len.df
+  
 
 tmp_mean_read_len.df %>%
   group_by(biotype, condition) %>%
@@ -1350,6 +1351,7 @@ pca.out %>%
 ```{r}
 panc_nanopore_read_length.df %>% 
   group_by(biotype) %>% 
+  filter(!grepl('ctrl', sample)) %>% 
   mutate(z_score = scale(abs(read_length))) %>% 
   filter(between(z_score, -2.5, 2.5))-> panc_nanopore_read_length.df
 
@@ -1374,93 +1376,6 @@ panc_nanopore_read_length.df %>%
 ```
 ## Fig_ND
 ```{r}
-illumina_biotype_to.plt %>% 
-  filter(biotype == 'SINE',
-         sample_name %in% c('panc.6.1.1', 'panc.7.1.1')) %>% 
-  group_by(tx, len, biotype, sample_name) %>% 
-  mutate(len = as.numeric(len)) %>% 
-  summarize(read_length = median(abs(read_length))) -> tmp
-
-# tmp %>% 
-#   filter(sample_name == 'ctrl.6.1.5') -> ctrl_hex_to.plt
-# 
-# ctrl_hex_to.plt %>% 
-#   ggplot(aes(read_length, len, fill = scales::rescale((..count../(sum(..count..) * 1e6))))) + 
-#   geom_hex(bins = 120) +
-#   annotate(geom = 'text', x = 250, y = 150, label = 'ctrl 1') +
-#   geom_vline(xintercept = median(ctrl_hex_to.plt$read_length), color = 'grey', linetype = 'dashed') +
-#   xlab('avg. observed fragment length') + ylab('expected insertion length') +
-#   scale_y_continuous(breaks = c(50,100,200,300,400), limits = c(0,400)) +
-#   scale_x_continuous(breaks = c(50,100,200,300,400), limits = c(0,400)) +
-#   scale_fill_viridis_c(option = 'viridis', direction = 1, name = 'scaled cpm', breaks = c(0,1), guide = 'none') -> plt_ND_1.plt
-
-illumina_read_len.df %>% 
-  filter(biotype == 'SINE') %>% 
-  mutate(bin = ifelse(read_length > 180, 'large', 'small')) %>%
-  group_by(sample, biotype, bin, condition) %>%
-  summarize(total = n()) %>% 
-  pivot_wider(names_from = 'bin', values_from = 'total') %>% 
-  ggplot(aes(condition, large/small)) + 
-  geom_boxplot(outlier.colour = NA) + 
-  geom_jitter(width = 0.24, alpha = 0.2) +
-  facet_wrap(~biotype, scales = 'free', ncol = 3, strip.position = 'bottom') +
-  scale_color_manual(values = identity_color_pal, guide = 'none') + 
-  ggpubr::stat_compare_means(method = 'wilcox', comparisons = list(c('panc', 'ctrl')), size = txt.mm_to_pts(0.8)) +
-  coord_cartesian(clip = 'off') + 
-  theme(strip.placement = 'inside')
-  
-
-tmp %>% 
-  filter(sample_name == 'panc.6.1.1') -> panc.6.1.1_hex_to.plt
-
-panc.6.1.1_hex_to.plt %>% 
-  mutate(bin = ifelse(read_length > 180, 'large', 'small')) %>% 
-  group_by(tx) %>%
-  ggplot(aes(read_length, len, fill = scales::rescale((..count../(sum(..count..) * 1e6))))) + 
-  geom_hex(bins = 120) +
-  annotate(geom = 'text', x = 250, y = 150, label = 'panc 6') +
-  geom_vline(xintercept = median(panc.6.1.1_hex_to.plt$read_length), color = 'grey', linetype = 'dashed') +
-  xlab('avg. observed fragment length') + ylab('expected insertion length') +
-  scale_y_continuous(breaks = c(50,100,200,300,400), limits = c(0,400)) +
-  scale_x_continuous(breaks = c(50,100,200,300,400), limits = c(0,400)) +
-  scale_fill_viridis_c(option = 'viridis', direction = 1, name = 'scaled cpm', breaks = c(0,1)) +
-  theme(legend.position = c(0.95,0.25), legend.direction = 'horizontal', legend.key.width = unit(1, 'mm')) +
-  guides(fill = guide_colorbar(title.position = 'left', title.vjust = 1)) -> plt_ND_2.plt
-
-
-tmp %>%
-  filter(sample_name == 'panc.7.1.1') -> panc.7.1.1_hex_to.plt
-
-panc.7.1.1_hex_to.plt %>% 
-  ggplot(aes(read_length, len, fill = scales::rescale((..count../(sum(..count..) * 1e6))))) + 
-  geom_hex(bins = 120) +
-  annotate(geom = 'text', x = 250, y = 150, label = 'panc 7') +
-  geom_vline(xintercept = median(panc.7.1.1_hex_to.plt$read_length), color = 'grey', linetype = 'dashed') +
-  xlab('median observed SINE fragment length') + ylab('expected insertion length') +
-  scale_y_continuous(breaks = c(50,100,200,300,400), limits = c(0,400)) +
-  scale_x_continuous(breaks = c(50,100,200,300,400), limits = c(0,400)) +
-  scale_fill_viridis_c(option = 'viridis', direction = 1, name = 'scaled cpm', breaks = c(0,1), guide = 'none') -> plt_ND_3.plt
-
-p4 <- ggplot(data.frame(l = plt_ND_3.plt$labels$x, x = 1, y = 1)) +
-      geom_text(aes(x, y, label = l), angle = 0) + 
-      theme_void() +
-      coord_cartesian(clip = "off")
-  
-panel_ND_layout <- "
-AB
-DD
-"
-
-wrap_plots(plt_ND_2.plt + xlab(''),
-           plt_ND_3.plt + xlab('') + ylab(''),
-           p4,
-           heights = c(1, 0.1),
-           design = panel_ND_layout) -> panel.ND.patchwork
-
-```
-## Fig_NE
-```{r}
-import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer)
 
 panc_nanopore_read_length.df %>% 
   ungroup() %>% 
@@ -1473,81 +1388,83 @@ panc_nanopore_read_length.df %>%
   merge(reference_meta_data$total_tx_to_gene.df, by.x = 'originally_multisample', by.y = 'enst') %>% 
   mutate(len = as.numeric(len)) -> len_compare.df
 
-# len_compare.df %>% 
-#   filter(biotype.x == 'SINE', sample == 'ctrl.6.1.5') -> ctrl.6.1.5_nanopore_hex_to.plt
-# 
-# ctrl.6.1.5_nanopore_hex_to.plt %>% 
-#   group_by(tx, len, biotype.x, sample) %>% 
-#   summarize(read_length = mean(read_length)) %>% 
-#   merge(nanopore_biotype_labels, by.x = 'biotype.x', by.y = 'biotype') %>% 
-#   mutate(biolabel = factor(biolabel, levels = te_aware_annotation_levels),
-#          condition = ifelse(grepl('ctrl', sample), 'ctrl', 'panc')) %>% 
-#   ggplot(aes(read_length, len, fill = scales::rescale((..count../(sum(..count..) * 1e6))))) + 
-#   geom_hex(bins = 120) +
-#   annotate(geom = 'text', x = 275, y = 175, label = 'ctrl 1') +
-#   geom_vline(xintercept = median(ctrl.6.1.5_nanopore_hex_to.plt$read_length), color = 'grey', linetype = 'dashed') +
-#   xlab('avg. observed fragment length') + ylab('expected insertion length') +
-#   # ggforce::facet_col(~sample) +
-#   scale_fill_viridis_c(option = 'viridis', direction = 1, name = 'scaled cpm', guide = 'none') +
-#   scale_y_continuous(breaks = c(50,100,200,300,400), limits = c(0,400)) +
-#   scale_x_continuous(breaks = c(50,100,200,300,400), limits = c(0,400)) -> plt_NE_1.plt
+len_compare.df %>%
+  filter(biotype.x == 'SINE', sample == 'ctrl.6.1.5') -> ctrl.6.1.5_nanopore_hex_to.plt
 
 len_compare.df %>% 
   filter(biotype.x == 'SINE', sample == 'panc.6.1.1') -> panc.6.1.1_nanopore_hex_to.plt
 
-panc.6.1.1_nanopore_hex_to.plt %>% 
-  group_by(tx, len, biotype.x, sample) %>% 
-  summarize(read_length = mean(read_length)) %>% 
-  merge(nanopore_biotype_labels, by.x = 'biotype.x', by.y = 'biotype') %>% 
-  mutate(biolabel = factor(biolabel, levels = te_aware_annotation_levels),
-         condition = ifelse(grepl('ctrl', sample), 'ctrl', 'panc')) %>% 
-  # ggplot(aes(read_length, len, fill = scale(..count../(sum(..count..) * 1e6)))) + 
-  ggplot(aes(read_length, len, fill = scales::rescale((..count../(sum(..count..) * 1e6))))) + 
-  geom_hex(bins = 120) +
-  # geom_vline(xintercept = median(panc.6.1.1_nanopore_hex_to.plt$read_length), color = 'grey', linetype = 'dashed') +
-  annotate(geom = 'text', x = 275, y = 420, label = 'panc 6') +
-  xlab('avg. observed fragment length') + ylab('exp. insertion length') +
-  # ggforce::facet_col(~sample) +
-  scale_fill_viridis_c(option = 'viridis', direction = 1, name = 'scaled cpm', breaks = c(0,1)) +
-  scale_y_continuous(breaks = c(100,200,300,400), limits = c(75,450)) +
-  scale_x_continuous(breaks = c(100,200,300,400), limits = c(75,450)) +
-  theme(legend.position = c(0.98,0.35), legend.direction = 'horizontal', legend.key.width = unit(1, 'mm')) +
-  guides(fill = guide_colorbar(title.position = 'left', title.vjust = 1)) -> plt_NE_2.plt
-
 len_compare.df %>% 
   filter(biotype.x == 'SINE', sample == 'panc.7.1.1') -> panc.7.1.1_nanopore_hex_to.plt
 
-panc.7.1.1_nanopore_hex_to.plt %>% 
-  group_by(tx, len, biotype.x, sample) %>% 
-  summarize(read_length = mean(read_length)) %>% 
-  merge(nanopore_biotype_labels, by.x = 'biotype.x', by.y = 'biotype') %>% 
-  mutate(biolabel = factor(biolabel, levels = te_aware_annotation_levels),
-         condition = ifelse(grepl('ctrl', sample), 'ctrl', 'panc')) %>% 
-  ggplot(aes(read_length, len, fill = scales::rescale((..count../(sum(..count..) * 1e6))))) + 
-  geom_hex(bins = 120) +
-  # geom_vline(xintercept = median(panc.7.1.1_nanopore_hex_to.plt$read_length), color = 'grey', linetype = 'dashed') +
-  annotate(geom = 'text', x = 275, y = 420, label = 'panc 7') +
-  xlab('avg. observed fragment length') + ylab('expected insertion length') +
-  # ggforce::facet_col(~sample) +
-  scale_fill_viridis_c(option = 'viridis', direction = 1, name = 'scaled cpm', guide = 'none') +
-  scale_y_continuous(breaks = c(100,200,300,400), limits = c(75,450)) +
-  scale_x_continuous(breaks = c(100,200,300,400), limits = c(75,450)) -> plt_NE_3.plt
+illumina_read_len.df %>% 
+  filter(! sample %in% qc_fails,
+         abs(read_length) <= 1000,
+         condition != 'covid') %>% 
+  mutate(read_length = abs(read_length)) %>% 
+  group_by(condition) %>% 
+  select(sample_name, biotype, read_length, condition) -> read_len_cdf_tmp
 
-p4 <- ggplot(data.frame(l = plt_NE_3.plt$labels$y, x = 1, y = 1)) +
+read_len_cdf_tmp %>% 
+  filter(sample_name == 'ctrl.6.1.5', biotype == 'SINE') %>% 
+  pull(read_length) %>% 
+  AnalystHelper::ecdf_fun(CI = T, CI.interval = 0.99) %>% 
+  mutate(sample = 'ctrl 6') %>% 
+  rbind(read_len_cdf_tmp %>% 
+    filter(sample_name == 'panc.6.1.1', biotype == 'SINE') %>% 
+    pull(read_length) %>% 
+    AnalystHelper::ecdf_fun(CI = T, CI.interval = 0.99) %>% 
+    mutate(sample = 'panc 6')) %>% 
+  rbind(read_len_cdf_tmp %>% 
+    filter(sample_name == 'panc.7.1.1', biotype == 'SINE') %>% 
+    pull(read_length) %>% 
+    AnalystHelper::ecdf_fun(CI = T, CI.interval = 0.99) %>% 
+    mutate(sample = 'panc 7')) %>% 
+  ggplot(aes(x = value, y = proportion, min = lwr.CI, ymax = upr.CI, color = sample)) + 
+  geom_ribbon(alpha = 0.05) + 
+  geom_step() +
+  # xlim(130,315) +
+  scale_color_manual(values = c(three_color_pal[3], three_color_pal[1], three_color_pal[2])) + 
+  ylab('cumulative proportion (99% CI)') + 
+  xlab('read length') + 
+  theme(legend.position = c(0.25, 0.99)) -> plt_ND_1.plt
+
+ctrl.6.1.5_nanopore_hex_to.plt %>% 
+  pull(read_length) %>% 
+  AnalystHelper::ecdf_fun(CI = T, CI.interval = 0.99) %>% 
+  mutate(sample = 'ctrl 6') %>% 
+  rbind(panc.6.1.1_nanopore_hex_to.plt %>% 
+        pull(read_length) %>% 
+        AnalystHelper::ecdf_fun(CI = T, CI.interval = 0.99) %>% 
+          mutate(sample = 'panc 6')) %>% 
+  rbind(panc.7.1.1_nanopore_hex_to.plt %>% 
+        pull(read_length) %>% 
+        AnalystHelper::ecdf_fun(CI = T, CI.interval = 0.99) %>% 
+          mutate(sample = 'panc 7')) %>% 
+  ggplot(aes(x = value, y = proportion, min = lwr.CI, ymax = upr.CI, color = sample)) + 
+  geom_ribbon(alpha = 0.05) + 
+  geom_step() +
+  xlim(130,315) +
+  scale_color_manual(values = c(three_color_pal[3], three_color_pal[1], three_color_pal[2])) + 
+  ylab('cumulative proportion (99% CI)') + 
+  xlab('read length') + 
+  theme(legend.position = c(0.25, 0.99)) -> plt_ND_2.plt
+
+p4 <- ggplot(data.frame(l = plt_ND_2.plt$labels$y, x = 1, y = 1)) +
       geom_text(aes(x, y, label = l), angle = 90) + 
       theme_void() +
       coord_cartesian(clip = "off")
-  
-panel_NE_layout <- "
+
+panel_ND_layout <- "
 CA
 CB
 "
 
-wrap_plots(plt_NE_2.plt + ylab('') + xlab(''),
-           plt_NE_3.plt + ylab(''),
+wrap_plots(plt_ND_1.plt + ylab('') + xlab(''),
+           plt_ND_2.plt + ylab(''),
            p4,
            widths = c(0.02,1),
-           design = panel_NE_layout) -> panel.NE.patchwork
+           design = panel_ND_layout) -> panel.ND.patchwork
 ```
 ### Fig_Nanopore_patchwork
 ```{r}
@@ -1566,7 +1483,7 @@ wrap_plots(plt_NA.plt,
            guide_area(),
            plt_NB.plt,
            plt_NC.plt,
-           wrap_elements(full = panel.NE.patchwork),
+           wrap_elements(full = panel.ND.patchwork),
            design = fig_N_layout, 
            guides = 'collect',
            heights = c(1.2,0.025,0.5,1,1)) +
@@ -1585,6 +1502,76 @@ save.manuscript.panel(figure = 3,
 ```
 # Fig_supp_nanopore
 ## Fig_SNA
+```{r}
+import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer)
+
+ctrl.6.1.5_nanopore_hex_to.plt %>%
+  group_by(tx, len, biotype.x, sample) %>%
+  summarize(read_length = mean(read_length)) %>%
+  merge(nanopore_biotype_labels, by.x = 'biotype.x', by.y = 'biotype') %>%
+  mutate(biolabel = factor(biolabel, levels = te_aware_annotation_levels),
+         condition = ifelse(grepl('ctrl', sample), 'ctrl', 'panc')) %>%
+  ggplot(aes(read_length, len, fill = scales::rescale((..count../(sum(..count..) * 1e6))))) +
+  geom_hex(bins = 120) +
+  annotate(geom = 'text', x = 275, y = 150, label = 'ctrl 6') +
+  # geom_vline(xintercept = median(ctrl.6.1.5_nanopore_hex_to.plt$read_length), 
+  #            color = 'grey', linetype = 'dashed') +
+  xlab('avg. observed fragment length') + ylab('expected insertion length') +
+  # ggforce::facet_col(~sample) +
+  scale_fill_viridis_c(option = 'viridis', direction = 1, name = 'scaled cpm', guide = 'none') +
+  scale_y_continuous(breaks = c(50,100,200,300,400), limits = c(0,400)) +
+  scale_x_continuous(breaks = c(50,100,200,300,400), limits = c(0,400)) -> plt_SNA_1.plt
+
+panc.6.1.1_nanopore_hex_to.plt %>% 
+  group_by(tx, len, biotype.x, sample) %>% 
+  summarize(read_length = mean(read_length)) %>% 
+  merge(nanopore_biotype_labels, by.x = 'biotype.x', by.y = 'biotype') %>% 
+  mutate(biolabel = factor(biolabel, levels = te_aware_annotation_levels),
+         condition = ifelse(grepl('ctrl', sample), 'ctrl', 'panc')) %>% 
+  # ggplot(aes(read_length, len, fill = scale(..count../(sum(..count..) * 1e6)))) + 
+  ggplot(aes(read_length, len, fill = scales::rescale((..count../(sum(..count..) * 1e6))))) + 
+  geom_hex(bins = 120) +
+  # geom_vline(xintercept = median(panc.6.1.1_nanopore_hex_to.plt$read_length), color = 'grey', linetype = 'dashed') +
+  annotate(geom = 'text', x = 275, y = 150, label = 'panc 6') +
+  xlab('avg. observed fragment length') + ylab('expected insertion length') +
+  # ggforce::facet_col(~sample) +
+  scale_fill_viridis_c(option = 'viridis', direction = 1, name = 'scaled cpm', breaks = c(0,1)) +
+  scale_y_continuous(breaks = c(100,200,300,400), limits = c(75,450)) +
+  scale_x_continuous(breaks = c(100,200,300,400), limits = c(75,450)) +
+  theme(legend.position = c(0.98,0.35), legend.direction = 'horizontal', legend.key.width = unit(1, 'mm')) +
+  guides(fill = guide_colorbar(title.position = 'left', title.vjust = 1)) -> plt_SNA_2.plt
+
+panc.7.1.1_nanopore_hex_to.plt %>% 
+  group_by(tx, len, biotype.x, sample) %>% 
+  summarize(read_length = mean(read_length)) %>% 
+  merge(nanopore_biotype_labels, by.x = 'biotype.x', by.y = 'biotype') %>% 
+  mutate(biolabel = factor(biolabel, levels = te_aware_annotation_levels),
+         condition = ifelse(grepl('ctrl', sample), 'ctrl', 'panc')) %>% 
+  ggplot(aes(read_length, len, fill = scales::rescale((..count../(sum(..count..) * 1e6))))) + 
+  geom_hex(bins = 120) +
+  # geom_vline(xintercept = median(panc.7.1.1_nanopore_hex_to.plt$read_length), color = 'grey', linetype = 'dashed') +
+  annotate(geom = 'text', x = 275, y = 150, label = 'panc 7') +
+  xlab('avg. observed fragment length') + ylab('expected insertion length') +
+  # ggforce::facet_col(~sample) +
+  scale_fill_viridis_c(option = 'viridis', direction = 1, name = 'scaled cpm', guide = 'none') +
+  scale_y_continuous(breaks = c(100,200,300,400), limits = c(75,450)) +
+  scale_x_continuous(breaks = c(100,200,300,400), limits = c(75,450)) -> plt_SNA_3.plt
+
+p4 <- ggplot(data.frame(l = plt_NE_3.plt$labels$y, x = 1, y = 1)) +
+      geom_text(aes(x, y, label = l), angle = 90) + 
+      theme_void() +
+      coord_cartesian(clip = "off")
+  
+panel_SNA_layout <- "
+ABC
+"
+
+wrap_plots(plt_SNA_1.plt + xlab(''),
+           plt_SNA_2.plt + ylab('') + xlab(''),
+           plt_SNA_3.plt + ylab('') + xlab(''),
+           design = panel_SNA_layout) -> panel.SNA.patchwork
+```
+## Fig_SNA_dep
 ```{r}
 illumina_biotype_to.plt %>% 
   filter(biotype == 'SINE') %>% 
@@ -1643,17 +1630,87 @@ p4 <- ggplot(data.frame(l = plt_SNA_1.plt$labels$x, x = 1, y = 1)) +
   
 panel_SNA_layout <- "
 ABC
-DDD
 "
 
 wrap_plots(plt_SNA_1.plt + xlab(''),
            plt_SNA_2.plt + xlab('') + ylab(''),
            plt_SNA_3.plt + xlab('') + ylab(''),
-           p4,
-           heights = c(1,0.06),
+           heights = c(1),
            design = panel_SNA_layout) -> panel.SNA.patchwork
 ```
 ## Fig_SNB
+```{r}
+illumina_biotype_to.plt %>% 
+  filter(biotype == 'SINE',
+         sample_name %in% c('panc.6.1.1', 'panc.7.1.1', 'ctrl.6.1.5')) %>% 
+  group_by(tx, len, biotype, sample_name) %>% 
+  mutate(len = as.numeric(len)) %>% 
+  summarize(read_length = median(abs(read_length))) -> tmp
+
+tmp %>%
+  filter(sample_name == 'ctrl.6.1.5') -> ctrl_hex_to.plt
+
+ctrl_hex_to.plt %>%
+  ggplot(aes(read_length, len, fill = scales::rescale((..count../(sum(..count..) * 1e6))))) +
+  geom_hex(bins = 120) +
+  annotate(geom = 'text', x = 250, y = 150, label = 'ctrl 6') +
+  # geom_vline(xintercept = median(ctrl_hex_to.plt$read_length), color = 'grey', linetype = 'dashed') +
+  xlab('avg. observed fragment length') + ylab('expected insertion length') +
+  scale_y_continuous(breaks = c(50,100,200,300,400), limits = c(0,400)) +
+  scale_x_continuous(breaks = c(50,100,200,300,400), limits = c(0,400)) +
+  scale_fill_viridis_c(option = 'viridis', direction = 1, name = 'scaled cpm', breaks = c(0,1), guide = 'none') -> plt_SNB_1.plt
+  
+
+tmp %>% 
+  filter(sample_name == 'panc.6.1.1') -> panc.6.1.1_hex_to.plt
+
+panc.6.1.1_hex_to.plt %>% 
+  mutate(bin = ifelse(read_length > 180, 'large', 'small')) %>% 
+  group_by(tx) %>%
+  ggplot(aes(read_length, len, fill = scales::rescale((..count../(sum(..count..) * 1e6))))) + 
+  geom_hex(bins = 120) +
+  annotate(geom = 'text', x = 250, y = 150, label = 'panc 6') +
+  # geom_vline(xintercept = median(panc.6.1.1_hex_to.plt$read_length), color = 'grey', linetype = 'dashed') +
+  xlab('avg. observed fragment length') + ylab('expected insertion length') +
+  scale_y_continuous(breaks = c(50,100,200,300,400), limits = c(0,400)) +
+  scale_x_continuous(breaks = c(50,100,200,300,400), limits = c(0,400)) +
+  scale_fill_viridis_c(option = 'viridis', direction = 1, name = 'scaled cpm', breaks = c(0,1)) +
+  theme(legend.position = c(0.95,0.25), legend.direction = 'horizontal', legend.key.width = unit(1, 'mm')) +
+  guides(fill = guide_colorbar(title.position = 'left', title.vjust = 1)) -> plt_SNB_2.plt
+
+
+tmp %>%
+  filter(sample_name == 'panc.7.1.1') -> panc.7.1.1_hex_to.plt
+
+panc.7.1.1_hex_to.plt %>% 
+  ggplot(aes(read_length, len, fill = scales::rescale((..count../(sum(..count..) * 1e6))))) + 
+  geom_hex(bins = 120) +
+  annotate(geom = 'text', x = 250, y = 150, label = 'panc 7') +
+  # geom_vline(xintercept = median(panc.7.1.1_hex_to.plt$read_length), color = 'grey', linetype = 'dashed') +
+  xlab('median observed SINE fragment length') + ylab('expected insertion length') +
+  scale_y_continuous(breaks = c(50,100,200,300,400), limits = c(0,400)) +
+  scale_x_continuous(breaks = c(50,100,200,300,400), limits = c(0,400)) +
+  scale_fill_viridis_c(option = 'viridis', direction = 1, name = 'scaled cpm', breaks = c(0,1), guide = 'none') -> plt_SNB_3.plt
+
+p4 <- ggplot(data.frame(l = plt_ND_3.plt$labels$x, x = 1, y = 1)) +
+      geom_text(aes(x, y, label = l), angle = 0, size = txt.mm_to_pts(0.95)) + 
+      theme_void() +
+      coord_cartesian(clip = "off")
+  
+panel_SNB_layout <- "
+ABC
+DDD
+"
+
+wrap_plots(plt_SNB_1.plt + xlab(''),
+           plt_SNB_2.plt + xlab('') + ylab(''),
+           plt_SNB_3.plt + xlab('') + ylab(''),
+           p4,
+           heights = c(1,0.06),
+           design = panel_SNB_layout) -> panel.SNB.patchwork
+
+```
+## Fig_SNC
 ```{r}
 tmp_mean_read_len.df %>%
   group_by(biotype, condition) %>%
@@ -1671,9 +1728,9 @@ tmp_mean_read_len.df %>%
   ggpubr::stat_compare_means(method = 'wilcox', comparisons = list(c('covid', 'ctrl')), size = txt.mm_to_pts(0.8)) +
   coord_cartesian(clip = 'off') + 
   theme(strip.placement = 'inside') +
-  xlab('') + ylab('median fragment length') -> plt_SNB.plt
+  xlab('') + ylab('median fragment length') -> plt_SNC.plt
 ```
-## Fig_SNC
+## Fig_SND
 ```{r}
 tmp_mean_read_len.df %>% 
   filter(condition != 'panc',
@@ -1719,7 +1776,7 @@ pca.out %>%
   geom_vline(xintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) +
   geom_hline(yintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) + 
   scale_color_manual(values = identity_color_pal[c(1,3)]) + 
-  theme(legend.position ='top', legend.direction = 'horizontal') -> plt_SNC.plt
+  theme(legend.position ='top', legend.direction = 'horizontal') -> plt_SND.plt
 ```
 ### Fig_SNanopore_patchwork
 ```{r}
@@ -1729,12 +1786,15 @@ import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_
 fig_SN_layout <- "
 AA
 BB
-C#
+CC
+DD
 "
 
 wrap_plots(wrap_elements(full = panel.SNA.patchwork),
-           plt_SNB.plt,
+           wrap_elements(full = panel.SNB.patchwork),
            plt_SNC.plt,
+           plt_SND.plt,
+           heights = c(1.25,1.25,1,0.5),
            design = fig_SN_layout) +
   plot_annotation(tag_levels = 'A') -> fig.SN.patchwork
 
@@ -1890,9 +1950,6 @@ save.manuscript.panel(figure = 's3',
 
 
 ```
-
-
-
 
 # Figure_process_aware
 ## Fig_4A

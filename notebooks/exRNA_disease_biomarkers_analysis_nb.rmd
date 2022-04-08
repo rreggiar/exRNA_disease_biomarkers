@@ -1975,7 +1975,7 @@ process.aware.salmon_quant$analysis_set$ctrl_panc_covid$unsplice_data.df %>%
   coord_cartesian(clip = 'off') +
   ggpubr::stat_compare_means(method = 'wilcox', 
                              comparisons = list(c('panc', 'ctrl'), c('covid', 'ctrl'),  c('panc', 'covid'))) + 
-  xlab('') + ylab('rate of unspliced quantification') -> plt_4A.plt
+  xlab('') + ylab('detection rate of un-spliced genes') -> plt_4A.plt
 ```
 ## Fig_4B
 ```{r}

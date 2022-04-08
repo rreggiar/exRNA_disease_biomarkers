@@ -1832,8 +1832,8 @@ count_matrix.df[, 'panc.7.1.1', drop = F] %>% rownames_to_column('Gene ID') %>%
   merge(panc.7.1.1_nanopore_tpm %>% select(`Gene ID`, TPM), by = 'Gene ID') %>% 
   dplyr::rename('panc.7.1.1_nanopore_tpm' = TPM) %>%
   group_by(`Gene ID`) %>% 
-  summarize(panc.7.1.1_tpm = mean(panc.7.1.1_tpm),
-            panc.7.1.1_nanopore_tpm = mean(panc.7.1.1_nanopore_tpm)) %>% 
+  summarize(panc_7_tpm = mean(panc.7.1.1_tpm),
+            panc_7_nanopore_tpm = mean(panc.7.1.1_nanopore_tpm)) %>% 
   distinct() -> panc_7.1.1_tpm
 
 count_matrix.df[, 'panc.6.1.1', drop = F] %>% rownames_to_column('Gene ID') %>%
@@ -1841,8 +1841,8 @@ count_matrix.df[, 'panc.6.1.1', drop = F] %>% rownames_to_column('Gene ID') %>%
   merge(panc.6.1.1_nanopore_tpm %>% select(`Gene ID`, TPM), by = 'Gene ID') %>% 
   dplyr::rename('panc.6.1.1_nanopore_tpm' = TPM) %>% 
   group_by(`Gene ID`) %>% 
-  summarize(panc.6.1.1_tpm = mean(panc.6.1.1_tpm),
-            panc.6.1.1_nanopore_tpm = mean(panc.6.1.1_nanopore_tpm)) %>% 
+  summarize(panc_6_tpm = mean(panc.6.1.1_tpm),
+            panc_6_nanopore_tpm = mean(panc.6.1.1_nanopore_tpm)) %>% 
   distinct() -> panc_6.1.1_tpm
 
 
@@ -1865,7 +1865,7 @@ panc_compare.df %>%
          type = ifelse(grepl('gencode',family), 'GENCODE', 'TE'),
          clade = factor(clade, levels = te_aware_annotation_levels)) -> panc_compare_annotated.df
 
-lm(panc.6.1.1_tpm ~ panc.7.1.1_tpm, data = panc_compare_annotated.df) %>% 
+lm(panc_6_tpm ~ panc_7_tpm, data = panc_compare_annotated.df) %>% 
   summary() -> panc_lm_out
 
 b <- round(panc_lm_out$coefficients[1,1], 2)
@@ -1873,7 +1873,7 @@ m <- round(panc_lm_out$coefficients[2,1], 2)
 r2 <- round(panc_lm_out$adj.r.squared, 2)
 
 panc_compare_annotated.df %>% 
-  ggplot(aes(log2(panc.6.1.1_tpm + 1), log2(panc.7.1.1_tpm + 1), color = clade, fill = clade)) + 
+  ggplot(aes(log2(panc_6_tpm + 1), log2(panc_7_tpm + 1), color = clade, fill = clade)) + 
   geom_hex(alpha = 0.4, bins = 250) +
   annotate(geom = 'text', x = 3, y = 15, fontface = 'italic',
            label = paste0('y', ' ', ' = ',b,' + ',m,'x; adj. R2 = ', r2), 
@@ -1881,7 +1881,7 @@ panc_compare_annotated.df %>%
   scale_color_manual(values = te_color_pal) + 
   scale_fill_manual(values = te_color_pal) -> plt_SN2A.plt
 
-lm(panc.7.1.1_nanopore_tpm ~ panc.7.1.1_tpm, data = panc_compare_annotated.df) %>% 
+lm(panc_7_nanopore_tpm ~ panc_7_tpm, data = panc_compare_annotated.df) %>% 
   summary() -> panc_lm_out
 
 b <- round(panc_lm_out$coefficients[1,1], 2)
@@ -1889,7 +1889,7 @@ m <- round(panc_lm_out$coefficients[2,1], 2)
 r2 <- round(panc_lm_out$adj.r.squared, 2)
 
 panc_compare_annotated.df %>% 
-  ggplot(aes(log2(panc.7.1.1_nanopore_tpm + 1), log2(panc.7.1.1_tpm + 1), color = clade, fill = clade)) + 
+  ggplot(aes(log2(panc_7_nanopore_tpm + 1), log2(panc_7_tpm + 1), color = clade, fill = clade)) + 
   geom_hex(alpha = 0.4, bins = 250) +
   annotate(geom = 'text', x = 6, y = 16, fontface = 'italic',
          label = paste0('y', ' ', ' = ',b,' + ',m,'x; adj. R2 = ', r2), 
@@ -1897,7 +1897,7 @@ panc_compare_annotated.df %>%
   scale_color_manual(values = te_color_pal) + 
   scale_fill_manual(values = te_color_pal)-> plt_SN2B.plt
 
-lm(panc.6.1.1_nanopore_tpm ~ panc.6.1.1_tpm, data = panc_compare_annotated.df) %>% 
+lm(panc_6_nanopore_tpm ~ panc_6_tpm, data = panc_compare_annotated.df) %>% 
   summary() -> panc_lm_out
 
 b <- round(panc_lm_out$coefficients[1,1], 2)
@@ -1905,7 +1905,7 @@ m <- round(panc_lm_out$coefficients[2,1], 2)
 r2 <- round(panc_lm_out$adj.r.squared, 2)
 
 panc_compare_annotated.df %>% 
-  ggplot(aes(log2(panc.6.1.1_nanopore_tpm + 1), log2(panc.6.1.1_tpm + 1), color = clade, fill = clade)) + 
+  ggplot(aes(log2(panc_6_nanopore_tpm + 1), log2(panc_6_tpm + 1), color = clade, fill = clade)) + 
   geom_hex(alpha = 0.4, bins = 250) +
   annotate(geom = 'text', x = 6, y = 16, fontface = 'italic',
          label = paste0('y', ' ', ' = ',b,' + ',m,'x; adj. R2 = ', r2), 
@@ -1913,7 +1913,7 @@ panc_compare_annotated.df %>%
   scale_color_manual(values = te_color_pal) + 
   scale_fill_manual(values = te_color_pal) -> plt_SN2C.plt
 
-lm(panc.6.1.1_nanopore_tpm ~ panc.7.1.1_nanopore_tpm, data = panc_compare_annotated.df) %>% 
+lm(panc_6_nanopore_tpm ~ panc_7_nanopore_tpm, data = panc_compare_annotated.df) %>% 
   summary() -> panc_lm_out
 
 b <- round(panc_lm_out$coefficients[1,1], 2)
@@ -1921,7 +1921,7 @@ m <- round(panc_lm_out$coefficients[2,1], 2)
 r2 <- round(panc_lm_out$adj.r.squared, 2)
 
 panc_compare_annotated.df %>% 
-  ggplot(aes(log2(panc.6.1.1_nanopore_tpm + 1), log2(panc.7.1.1_nanopore_tpm + 1), color = clade, fill = clade)) + 
+  ggplot(aes(log2(panc_6_nanopore_tpm + 1), log2(panc_7_nanopore_tpm + 1), color = clade, fill = clade)) + 
   geom_hex(alpha = 0.4, bins = 250) +
   annotate(geom = 'text', x = 3, y = 15, fontface = 'italic',
          label = paste0('y', ' ', ' = ',b,' + ',m,'x; adj. R2 = ', r2), 
@@ -1975,7 +1975,7 @@ process.aware.salmon_quant$analysis_set$ctrl_panc_covid$unsplice_data.df %>%
   coord_cartesian(clip = 'off') +
   ggpubr::stat_compare_means(method = 'wilcox', 
                              comparisons = list(c('panc', 'ctrl'), c('covid', 'ctrl'),  c('panc', 'covid'))) + 
-  xlab('') + ylab('unsplice rate') -> plt_4A.plt
+  xlab('') + ylab('rate of unspliced quantification') -> plt_4A.plt
 ```
 ## Fig_4B
 ```{r}

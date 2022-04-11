@@ -600,7 +600,7 @@ run.pca <- function(input_de,
     geom_vline(xintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) +
     geom_hline(yintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) + 
     scale_color_manual(values = identity_color_pal) + 
-    theme(axis.title.x = element_blank()) +
+    # theme(axis.title.x = element_blank()) +
     ylim(-200,200) -> pca_1v2.plt
   
   pca.out %>% 

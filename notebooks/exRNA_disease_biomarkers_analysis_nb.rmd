@@ -1307,7 +1307,8 @@ tmp_mean_read_len.df %>%
          condition != 'covid') %>% 
   mutate(biotype = ifelse(biotype == 'lncRNA', 'gencode_lncRNA', biotype),
          biotype = ifelse(biotype == 'protein_coding', 'gencode_coding', biotype)) %>% 
-  mutate(biotype = factor(biotype, levels = c('SINE', 'LINE', 'LTR', 'gencode_lncRNA', 'retained_intron', 'gencode_coding'))) %>% 
+  mutate(biotype = factor(biotype, levels = c('SINE', 'LINE', 'LTR', 'gencode_lncRNA', 
+                                              'retained_intron', 'gencode_coding'))) %>% 
   ggplot(aes(condition, read_length, color = condition)) +
   geom_boxplot(outlier.colour = NA) + 
   geom_jitter(width = 0.24, alpha = 0.2) +
@@ -1316,7 +1317,7 @@ tmp_mean_read_len.df %>%
   ggpubr::stat_compare_means(method = 'wilcox', comparisons = list(c('panc', 'ctrl')), size = txt.mm_to_pts(0.8)) +
   coord_cartesian(clip = 'off') + 
   theme(strip.placement = 'inside') +
-  xlab('') + ylab('median fragment length') -> plt_NA.plt
+  xlab('') + ylab('median fragment size (bp)') -> plt_NA.plt
 ```
 ## Fig_NB
 ```{r}
@@ -1364,6 +1365,7 @@ pca.out %>%
   geom_vline(xintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) +
   geom_hline(yintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) + 
   scale_color_manual(values = identity_color_pal[1:2]) + 
+  annotate(geom = 'text', x = -3.75, y = -3.25, label = 'intron-aware', size = txt.mm_to_pts(1)) +
   theme(legend.position = c(0.95,1), legend.direction = 'horizontal') -> plt_NB.plt
 ```
 ## Fig_NC
@@ -1390,7 +1392,7 @@ panc_nanopore_read_length.df %>%
   scale_y_continuous(labels = scales::number_format(accuracy = 0.01)) +
   ggforce::facet_col(~biolabel, scales = 'free') +
   scale_fill_manual(values = viridisLite::plasma(20)[c(8,10)]) +
-  ylab('proportion of nanopore biotype/clade fragment lengths') + xlab('nanopore fragment length') +
+  ylab('proportion of nanopore biotype/clade fragment lengths') + xlab('nanopore fragment size (bp)') +
   theme(legend.position = c(0.55,0.99), legend.direction = 'horizontal') -> plt_NC.plt
 ```
 ## Fig_ND
@@ -1465,7 +1467,7 @@ ctrl.6.1.5_nanopore_hex_to.plt %>%
   xlim(130,315) +
   scale_color_manual(values = viridisLite::plasma(20)[c(1,8,10)]) +
   ylab('cumulative prop. (99% CI)') + 
-  xlab('nanopore SINE fragment length') + 
+  xlab('nanopore SINE fragment size (bp)') + 
   theme(legend.position = c(0.25, 0.99)) -> plt_ND_2.plt
 
 # p4 <- ggplot(data.frame(l = plt_ND_2.plt$labels$y, x = 1, y = 1)) +
@@ -1497,7 +1499,7 @@ panc.6.1.1_nanopore_hex_to.plt %>%
   geom_hex(bins = 120) +
   # geom_vline(xintercept = median(panc.6.1.1_nanopore_hex_to.plt$read_length), color = 'grey', linetype = 'dashed') +
   annotate(geom = 'text', x = 215, y = 120, label = 'panc 6') +
-  xlab('avg. observed SINE fragment length') + ylab('expected insert len') +
+  xlab('avg. observed SINE fragment size (bp)') + ylab('expected size (bp)') +
   # ggforce::facet_col(~sample) +
   scale_fill_viridis_c(option = 'viridis', direction = 1, name = 'scaled cpm', breaks = c(0,1)) +
   scale_y_continuous(breaks = c(100,200,300,400), limits = c(75,425)) +

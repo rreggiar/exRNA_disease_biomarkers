@@ -800,7 +800,12 @@ panc_label_list_dn <- panc_annotated_rmsk_de %>%
   filter(grepl('LTR|Alu', gene)) %>% 
   top_n(3, wt = -log2FoldChange)
 
-panc_label_list <- rbind(panc_label_list, panc_label_list_dn)
+panc_label_lnc_list_dn <- panc_annotated_rmsk_de %>% 
+  filter(clade == 'gencode_lncRNA',
+         !grepl('^ENSG', gene)) %>% 
+  top_n(3, wt = -log2FoldChange)
+
+panc_label_list <- rbind(panc_label_list, panc_label_list_dn, panc_label_lnc_list_dn)
 
 panc_annotated_rmsk_de %>%
   filter(clade == 'gencode_coding') %>% 
@@ -844,6 +849,13 @@ ucsc.rmsk.salmon_quant$analysis_set$covid_ctrl$deseq$de_out %>%
 
 covid_label_list <- covid_annotated_rmsk_de %>% 
   top_n(3, wt = log2FoldChange)
+
+covid_label_lnc_list_dn <- covid_annotated_rmsk_de %>% 
+  filter(clade == 'gencode_lncRNA',
+         !grepl('^ENSG', gene)) %>% 
+  top_n(3, wt = -log2FoldChange)
+
+covid_label_list <- rbind(covid_label_list, covid_label_lnc_list_dn)
 
 covid_annotated_rmsk_de %>%
   filter(clade == 'gencode_coding') %>% 
@@ -898,7 +910,7 @@ tidy_total_annotated_rmsk_counts %>%
   scale_fill_manual(values = te_color_pal, name = 'biotype/clade') + 
   ggforce::facet_row(~condition, scales = 'free_x') +
   theme(axis.text.x = element_blank()) +
-  xlab('sample') + ylab('library count fraction') -> fig.2C.plt
+  xlab('sample') + ylab('normalized count fraction') -> fig.2C.plt
 
 
 ```
@@ -981,9 +993,6 @@ wrap_plots(fig.2C.plt,
         legend.position = 'bottom',
         legend.title = element_text(vjust = 0.5),
         legend.justification = c(0.5, 0.5)) -> fig.2.patchwork
-
-
-# fig.2.patchwork
 
 save.manuscript.panel(figure = 2,
                       figure.dir = figure.dir,

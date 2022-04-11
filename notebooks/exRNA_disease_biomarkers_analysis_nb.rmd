@@ -530,21 +530,22 @@ flow_chart.plt <- magick::image_read_pdf(path = file.path(figure.dir, 'fig.1', '
 ```
 ## Fig_1A
 ```{r 1A}
-# save.manuscript.panel(figure = 1,
-#                       figure.dir = figure.dir,
-#                       name = 'pca_total_1A',
-#                       width = figure_single_column_width,
-#                       height = figure_depth/2,
-#                       plot.in = salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_total.plt)
+
+
 
 fig.1A_1.plt <- 
-  salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_1v2.plt + 
-  labs(tag = 'B') + 
-  annotate(geom = 'text', x = -105, y = -200, label = 'TE-aware', size = txt.mm_to_pts(1.5))
-
+  salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_1v2.plt +
+  annotate(geom = 'text', x = -175, y = -100, label = 'TE-aware', size = txt.mm_to_pts(1.25)) +
+  labs(tag = 'B') + coord_flip() 
+  
 fig.1A_2.plt <- 
-  salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_2v3.plt + 
-  annotate(geom = 'text', x = -105, y = -200, label = 'TE-aware', size = txt.mm_to_pts(1.5))
+  salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_2v3.plt +
+  xlim(layer_scales(fig.1A_1.plt)$y$range$range) 
+
+
+
+# + 
+#   annotate(geom = 'text', x = -105, y = -200, label = 'TE-aware', size = txt.mm_to_pts(1.5))
 
 ```
 ## Fig_1B
@@ -568,7 +569,7 @@ tidy_quant_meta.df %>%
   geom_point(position = position_jitter(width = 0.2), size = rel(2), alpha = 1) +
   # scale_shape_manual(values = c(21,25)) +
   ylab('percent mapped') + xlab('') +
-  ggforce::facet_col(~var, scales = 'free_y') + 
+  ggforce::facet_row(~var, scales = 'free_y') + 
   scale_color_manual(values = identity_color_pal) + 
   theme(legend.position = 'right', legend.justification = 'center') +
   ggpubr::stat_compare_means(comparisons = list(c('panc', 'covid'),
@@ -623,22 +624,22 @@ import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_
 
 
 fig_1_layout <- "
-FC
-DC
-AC
-BC
+FA
+FB
+DD
+CC
 EE
 "
 
-wrap_plots(fig.1A_1.plt + coord_cartesian(clip = 'off'),
-           fig.1A_2.plt + coord_cartesian(clip = 'off'),
+wrap_plots(fig.1A_1.plt + theme(axis.title.x = element_blank()),
+           fig.1A_2.plt,
            fig.1B.plt + coord_cartesian(clip = 'off'),
            guide_area(),
            fig.1C.plt + coord_cartesian(clip = 'off'),
            wrap_elements(full = magick::image_ggplot(flow_chart.plt)) + labs(tag = 'A'),
            design = fig_1_layout, 
            guides = 'collect',
-           heights = c(0.75,0.0825,1,1,0.45)) & 
+           heights = c(0.75,0.75,0.0825,1,1)) & 
   theme(plot.tag.position = c(0.01, 0.99), 
         legend.position = 'bottom',
         legend.title = element_text(vjust = 1.25),

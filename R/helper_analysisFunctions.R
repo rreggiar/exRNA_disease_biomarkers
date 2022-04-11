@@ -591,17 +591,17 @@ run.pca <- function(input_de,
     spread(metric, value)
   
   pca.out %>% 
-    ggplot(aes(PC2, PC1,
+    ggplot(aes(PC1, PC2,
                color = condition)) +
     geom_point(size = rel(2), alpha = 1) + 
     # scale_shape_manual(values = c(21,25)) +
-    ylab(paste('PC1', round(cumsum(pcs.props)[1], digits = 3), sep = ' ')) +
-    xlab(paste('PC2', round(cumsum(pcs.props)[2] - cumsum(pcs.props)[1], digits = 3), sep = ' ')) +
+    xlab(paste('PC1', round(cumsum(pcs.props)[1], digits = 3), sep = ' ')) +
+    ylab(paste('PC2', round(cumsum(pcs.props)[2] - cumsum(pcs.props)[1], digits = 3), sep = ' ')) +
     geom_vline(xintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) +
     geom_hline(yintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) + 
     scale_color_manual(values = identity_color_pal) + 
     # theme(axis.title.x = element_blank()) +
-    ylim(-200,200) -> pca_1v2.plt
+    xlim(-200,200) -> pca_1v2.plt
   
   pca.out %>% 
     ggplot(aes(PC2, PC3,

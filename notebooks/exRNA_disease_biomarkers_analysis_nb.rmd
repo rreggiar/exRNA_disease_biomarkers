@@ -525,10 +525,9 @@ process.aware.salmon_quant$analysis_set$ctrl_panc_covid$unsplice_data.df <-
 # Fig_1
 ## Fig_flowchart
 ```{r}
-flow_chart.plt <- magick::image_read_pdf(path = file.path(figure.dir, 'fig.1', 'ip_flowchart.pdf'))
+flow_chart.plt <- magick::image_read_pdf(path = file.path(figure.dir, 'fig.1', 'ip_flowchart_tiny.pdf'))
 
 ```
-
 ## Fig_1A
 ```{r 1A}
 # save.manuscript.panel(figure = 1,
@@ -541,11 +540,11 @@ flow_chart.plt <- magick::image_read_pdf(path = file.path(figure.dir, 'fig.1', '
 fig.1A_1.plt <- 
   salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_1v2.plt + 
   labs(tag = 'B') + 
-  annotate(geom = 'text', x = -100, y = -100, label = 'TE-aware', size = txt.mm_to_pts(0.8))
+  annotate(geom = 'text', x = -105, y = -200, label = 'TE-aware', size = txt.mm_to_pts(1.5))
 
 fig.1A_2.plt <- 
   salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_2v3.plt + 
-  annotate(geom = 'text', x = -100, y = -100, label = 'TE-aware', size = txt.mm_to_pts(0.8))
+  annotate(geom = 'text', x = -105, y = -200, label = 'TE-aware', size = txt.mm_to_pts(1.5))
 
 ```
 ## Fig_1B
@@ -624,8 +623,8 @@ import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_
 
 
 fig_1_layout <- "
-FF
-DD
+FC
+DC
 AC
 BC
 EE
@@ -639,7 +638,7 @@ wrap_plots(fig.1A_1.plt + coord_cartesian(clip = 'off'),
            wrap_elements(full = magick::image_ggplot(flow_chart.plt)) + labs(tag = 'A'),
            design = fig_1_layout, 
            guides = 'collect',
-           heights = c(1.35,0.0825,0.65,0.65,0.45)) & 
+           heights = c(0.75,0.0825,1,1,0.45)) & 
   theme(plot.tag.position = c(0.01, 0.99), 
         legend.position = 'bottom',
         legend.title = element_text(vjust = 1.25),

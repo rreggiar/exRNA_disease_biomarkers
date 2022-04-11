@@ -684,14 +684,14 @@ ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_corr_out.df %>
 salmon_pca_corr_top_7.df %>% 
   merge(ucsc.rmsk.salmon_pca_corr_compare.df, by = c('pc', 'var')) %>% 
   gather(reference, cor, -pc, -var) %>% 
-  ggplot(aes(reorder(var, -abs(cor)), abs(cor), fill = reference)) + 
+  ggplot(aes(reorder(var, -abs(cor)),cor, fill = reference)) + 
   geom_col(color = 'white', position = position_dodge()) +
-  coord_flip() + 
-  ggforce::facet_row(~pc) + 
-  xlab('') + ylab('pearson coeff.') + 
-  geom_hline(yintercept = c(0.5), linetype = 'dashed', alpha = 0.4) + 
-  theme(legend.position = 'bottom', legend.justification = 'center') + 
-  scale_fill_manual(values =RColorBrewer::brewer.pal(n = 8, 'Dark2')[8:3]) -> pca_correlation_top7.plt
+  # coord_flip() + 
+  ggforce::facet_col(~pc) + 
+  xlab('') + ylab('correlation between metric and PC (pearson)') + 
+  geom_hline(yintercept = c(-0.5, 0.5), linetype = 'dashed', alpha = 0.4) + 
+  theme(legend.position = 'top', legend.justification = 'center', axis.text.x = element_text(angle = 60, hjust = 1)) + 
+  scale_fill_manual(values = c('black', 'grey')) -> pca_correlation_top7.plt
   
   
   
@@ -731,8 +731,12 @@ salmon_quant$analysis_set$ctrl_panc_covid$quant_meta %>%
   filter(var %in% c('age', 'input_vol')) %>% 
   spread(var, value) %>% 
   filter(! sample %in% qc_fails) %>% 
+  select(-context, -input_vol) %>% 
+  mutate(num = str_split_fixed(string = sample, pattern = '[.]', n = 4)[, 2],
+         sample = paste0(condition, ' ', num)) %>% 
+  select(-num) %>% 
   gridExtra::tableGrob(theme = gridExtra::ttheme_minimal(base_size = 8,
-                                                         core = list(padding=unit(c(1, 1.25), "mm"))), 
+                                                         core = list(padding=unit(c(1, 5.5), "mm"))), 
                        rows = NULL) ->
   fig.S1C.meta_table.grob
 
@@ -743,12 +747,12 @@ import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_
 
 
 fig_S1_layout <- "
-AA
-BB
+AB
+AB
 "
 
 wrap_plots(fig.S1B.plt,
-           patchwork::wrap_elements(fig.S1C.meta_table.grob, ignore_tag = F),
+           patchwork::wrap_elements(full = fig.S1C.meta_table.grob, ignore_tag = F),
            design = fig_S1_layout, 
            widths = c(1,1)) + plot_annotation(tag_levels = 'A') -> fig.S1.patchwork
 
@@ -1009,9 +1013,10 @@ save.manuscript.panel(figure = 2,
 bind_rows(list('panc' = salmon_quant$analysis_set$ctrl_panc_covid$deseq$fgsea$panc_v_ctrl,
           'covid' = salmon_quant$analysis_set$ctrl_panc_covid$deseq$fgsea$covid_v_ctrl),
           .id = 'condition') %>% 
-  select(condition, pathway, padj, NES) %>% 
+  select(condition, 'enriched pathway' = pathway, padj, NES) %>% 
   mutate(padj = round(padj, 10),
          NES = round(NES, 3)) %>% 
+  dplyr::rename('GSEA padj' = padj, 'GSEA NES' = NES) %>% 
   gridExtra::tableGrob(theme = gridExtra::ttheme_minimal(), rows = NULL) -> fig.S2A.fgsea_table.grob
 
 ```
@@ -1037,7 +1042,7 @@ de_upset.df %>%
   geom_bar(fill = 'white', color = 'black') + 
   ggupset::scale_x_upset() +
   geom_text(stat='count', aes(label=after_stat(count)), nudge_y = -2) + 
-  xlab('') + ylab('MYC Target V1 genes') -> fig.S2B.plt
+  xlab('') + ylab('shared DE MYC Target V1 genes') -> fig.S2B.plt
 
 
 de_upset.df %>% 
@@ -1057,7 +1062,7 @@ de_upset.df %>%
   geom_point() + 
   geom_hline(yintercept = 0, linetype = 'dashed', alpha = 0.6) +
   geom_vline(xintercept = 0, linetype = 'dashed', alpha = 0.6) + 
-  xlab('covid log2FoldChange') + ylab('panc log2FoldChange') +
+  xlab('covid MYC Targets V1 log2FoldChange') + ylab('panc MYC Targets V1 log2FoldChange') +
   ggrepel::geom_text_repel() -> fig.S2B_2.plt
 
 ```
@@ -1108,7 +1113,7 @@ gencode_layer.plt +
                     aes(label = ifelse(gene %in% mt_panc_label_list$gene, gene, '')), 
                          show.legend = F, color = 'black', max.overlaps = 1000) + 
   xlim(-8.5,8.5) + 
-  ggtitle('chrM panc') -> fig.S2C.plt
+  ggtitle('chrM panc DE') -> fig.S2C.plt
 
 fig.S2C.plt
 ```
@@ -1149,7 +1154,7 @@ gencode_layer.plt +
                     aes(label = ifelse(gene %in% mt_covid_label_list$gene, gene, '')), 
                          show.legend = F, color = 'black', max.overlaps = 1000) + 
   xlim(-7.5,7.5) + 
-  ggtitle('chrM covid') -> fig.S2D.plt
+  ggtitle('chrM covid DE') -> fig.S2D.plt
 
 fig.S2D.plt
 ```

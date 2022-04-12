@@ -1802,6 +1802,7 @@ pca.out %>%
   geom_vline(xintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) +
   geom_hline(yintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) + 
   scale_color_manual(values = identity_color_pal[c(1,3)]) + 
+  annotate(geom = 'text', x = -5.5, y = 2.25, label = 'size-aware', size = txt.mm_to_pts(1)) +
   theme(legend.position ='top', legend.direction = 'horizontal') -> plt_SND.plt
 ```
 ### Fig_SNanopore_patchwork

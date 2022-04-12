@@ -1564,9 +1564,12 @@ ctrl.6.1.5_nanopore_hex_to.plt %>%
   annotate(geom = 'text', x = 275, y = 150, label = 'ctrl 6') +
   # geom_vline(xintercept = median(ctrl.6.1.5_nanopore_hex_to.plt$read_length), 
   #            color = 'grey', linetype = 'dashed') +
-  xlab('avg. observed fragment length') + ylab('expected insertion length') +
+  xlab('avg. observed fragment size (bp)') + ylab('expected size (bp)') +
   # ggforce::facet_col(~sample) +
-  scale_fill_viridis_c(option = 'viridis', direction = 1, name = 'scaled cpm', guide = 'none') +
+  ggtitle('nanopore exp. vs obs. size') + 
+  scale_fill_viridis_c(option = 'viridis', direction = 1, name = 'scaled cpm', breaks = c(0,1)) +
+  theme(legend.position = c(0.95,1), legend.direction = 'horizontal', legend.key.width = unit(1, 'mm'))  +
+  guides(fill = guide_colorbar(title.position = 'left', title.vjust = 1)) +
   scale_y_continuous(breaks = c(100,200,300,400), limits = c(75,425)) +
   scale_x_continuous(breaks = c(100,200,300,400), limits = c(75,370)) -> plt_SNA_1.plt
 
@@ -1581,7 +1584,7 @@ panc.7.1.1_nanopore_hex_to.plt %>%
   geom_hex(bins = 120) +
   # geom_vline(xintercept = median(panc.7.1.1_nanopore_hex_to.plt$read_length), color = 'grey', linetype = 'dashed') +
   annotate(geom = 'text', x = 275, y = 150, label = 'panc 7') +
-  xlab('avg. observed fragment length') + ylab('expected insertion length') +
+  xlab('avg. observed fragment size (bp)') + ylab('expected size (bp)') +
   # ggforce::facet_col(~sample) +
   scale_fill_viridis_c(option = 'viridis', direction = 1, name = 'scaled cpm', guide = 'none') +
   scale_y_continuous(breaks = c(100,200,300,400), limits = c(75,425)) +
@@ -1611,7 +1614,7 @@ ctrl_hex_to.plt %>%
   geom_hex(bins = 120) +
   # geom_vline(xintercept = median(ctrl_hex_to.plt$read_length), color = 'grey', linetype = 'dashed') +
   annotate(geom = 'text', x = 275, y = 175, label = 'ctrl') +
-  xlab('median observed SINE fragment length') + ylab('expected insertion length') +
+  xlab('median observed SINE fragment size (bp)') + ylab('expected size (bp)') +
   # ggforce::facet_col(~sample) +
   scale_fill_viridis_c(option = 'viridis', direction = 1, name = 'scaled cpm', breaks = c(0,1), guide = 'none') +
   scale_y_continuous(breaks = c(50,100,200,300,400, 500), limits = c(0,500)) +
@@ -1679,7 +1682,8 @@ ctrl_hex_to.plt %>%
   geom_hex(bins = 120) +
   annotate(geom = 'text', x = 250, y = 175, label = 'ctrl 6') +
   # geom_vline(xintercept = median(ctrl_hex_to.plt$read_length), color = 'grey', linetype = 'dashed') +
-  xlab('avg. observed fragment length') + ylab('expected insertion length') +
+  xlab('avg. observed fragment size (bp)') + ylab('expected size (bp)') +
+  ggtitle('illumina exp. vs obs. size') + 
   scale_y_continuous(breaks = c(100,200,300,400), limits = c(75,425)) +
   scale_x_continuous(breaks = c(100,200,300,400), limits = c(75,370)) +
   scale_fill_viridis_c(option = 'viridis', direction = 1, name = 'scaled cpm', breaks = c(0,1), guide = 'none') -> plt_SNB_1.plt
@@ -1695,12 +1699,10 @@ panc.6.1.1_hex_to.plt %>%
   geom_hex(bins = 120) +
   annotate(geom = 'text', x = 250, y = 175, label = 'panc 6') +
   # geom_vline(xintercept = median(panc.6.1.1_hex_to.plt$read_length), color = 'grey', linetype = 'dashed') +
-  xlab('avg. observed fragment length') + ylab('expected insertion length') +
+  xlab('avg. observed fragment size (bp)') + ylab('expected size (bp)') +
   scale_y_continuous(breaks = c(100,200,300,400), limits = c(75,425)) +
   scale_x_continuous(breaks = c(100,200,300,400), limits = c(75,370)) +
-  scale_fill_viridis_c(option = 'viridis', direction = 1, name = 'scaled cpm', breaks = c(0,1)) +
-  theme(legend.position = c(0.95,0.25), legend.direction = 'horizontal', legend.key.width = unit(1, 'mm')) +
-  guides(fill = guide_colorbar(title.position = 'left', title.vjust = 1)) -> plt_SNB_2.plt
+  scale_fill_viridis_c(option = 'viridis', direction = 1, name = 'scaled cpm', breaks = c(0,1), guide = 'none') -> plt_SNB_2.plt
 
 
 tmp %>%
@@ -1711,7 +1713,7 @@ panc.7.1.1_hex_to.plt %>%
   geom_hex(bins = 120) +
   annotate(geom = 'text', x = 250, y = 175, label = 'panc 7') +
   # geom_vline(xintercept = median(panc.7.1.1_hex_to.plt$read_length), color = 'grey', linetype = 'dashed') +
-  xlab('median observed SINE fragment length') + ylab('expected insertion length') +
+  xlab('avg. observed fragment size (bp)') + ylab('expected size (bp)') +
   scale_y_continuous(breaks = c(100,200,300,400), limits = c(75,425)) +
   scale_x_continuous(breaks = c(100,200,300,400), limits = c(75,370)) +
   scale_fill_viridis_c(option = 'viridis', direction = 1, name = 'scaled cpm', breaks = c(0,1), guide = 'none') -> plt_SNB_3.plt
@@ -1752,7 +1754,7 @@ tmp_mean_read_len.df %>%
   ggpubr::stat_compare_means(method = 'wilcox', comparisons = list(c('covid', 'ctrl')), size = txt.mm_to_pts(0.8)) +
   coord_cartesian(clip = 'off') + 
   theme(strip.placement = 'inside') +
-  xlab('') + ylab('median fragment length') -> plt_SNC.plt
+  xlab('') + ylab('median fragment size (bp)') -> plt_SNC.plt
 ```
 ## Fig_SND
 ```{r}

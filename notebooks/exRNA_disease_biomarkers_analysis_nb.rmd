@@ -2262,11 +2262,13 @@ beta %>% as.matrix() %>% as.data.frame() %>%
   rownames_to_column('ensg') %>% 
   merge(ucsc.rmsk.salmon_quant$analysis_set$covid_ctrl$deseq$de_out, by = 'ensg')
 ```
-## tcga & gtex
+## tcga & gtex load
 ```{r}
 tcga_data_path <- file.path(output_data.dir, 'tcga_gtex')
 gtex_colData <- read_csv(file.path(tcga_data_path, 'panc_gtex_colData.csv'), 
                          col_names = c('sample', 'name', 'tissue_1', 'tissue_2', 'sex', 'age'))
+tcga_colData <- read_tsv(file.path(tcga_data_path, 'paad_tcga_colData.tsv')) %>% 
+  mutate(submitter_id.samples = str_replace_all(string = submitter_id.samples, pattern = 'TCGA', replacement = 'PAAD'))
 
 if (! file.exists(file.path(tcga_data_path, 'paad_tcga_gene_count_matrix.tsv')) & 
     ! file.exists(file.path(tcga_data_path, 'paad_gtex_gene_count_matrix.tsv'))) {
@@ -2317,4 +2319,5 @@ if (! file.exists(file.path(tcga_data_path, 'paad_tcga_gene_count_matrix.tsv')) 
 
 
 ```
+
 

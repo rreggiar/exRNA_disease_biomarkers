@@ -2262,3 +2262,41 @@ beta %>% as.matrix() %>% as.data.frame() %>%
   rownames_to_column('ensg') %>% 
   merge(ucsc.rmsk.salmon_quant$analysis_set$covid_ctrl$deseq$de_out, by = 'ensg')
 ```
+## tcga & gtex
+```{r}
+tcga_data_path <- file.path(output_data.dir, 'tcga_gtex')
+
+tcga_paad_counts <- vroom::vroom(file.path(tcga_data_path, 'paad_tcga_count_matrix.tsv.gz'))
+tx_names <- tcga_paad_counts$Name
+
+enst_names <- tx_names[grepl('^ENST', tx_names), drop = F]
+enst_tx2gene <- tibble(tx = enst_names, gene = str_split_fixed(string = enst_names, pattern = '\\|', n = Inf)[,6])
+
+te_names <- tx_names[grepl('^hg38', tx_names), drop = F]
+te_tx2gene <- tibble(tx = te_names, gene = str_split_fixed(string = te_names, pattern = '_', n = Inf)[,3])
+
+tx2gene <- rbind(enst_tx2gene, te_tx2gene)
+
+tcga_paad_counts %>% 
+  merge(tx2gene, by.x = 'Name', by.y = 'tx') -> tcga_paad_counts
+
+tcga_paad_counts %>% 
+  group_by(gene) %>% 
+  summarize(across(is.numeric, ~sum(.x))) -> tcga_paad_gene_counts
+
+vroom::vroom_write(x = tcga_paad_gene_counts, file.path(tcga_data_path, 'paad_tcga_gene_count_matrix.tsv'))
+
+gtex_paad_counts <- vroom::vroom(file.path(tcga_data_path, 'paad_gtex_count_matrix.tsv.gz'))
+
+gtex_paad_counts %>% 
+  merge(tx2gene, by.x = 'Name', by.y = 'tx') -> gtex_paad_counts
+
+gtex_paad_counts %>% 
+  group_by(gene) %>% 
+  summarize(across(is.numeric, ~sum(.x))) -> gtex_paad_gene_counts
+
+rm(gtex_paad_counts)
+
+vroom::vroom_write(x = gtex_paad_gene_counts, file.path(tcga_data_path, 'paad_gtex_gene_count_matrix.tsv'))
+```
+

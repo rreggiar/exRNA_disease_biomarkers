@@ -2268,7 +2268,9 @@ tcga_data_path <- file.path(output_data.dir, 'tcga_gtex')
 gtex_colData <- read_csv(file.path(tcga_data_path, 'panc_gtex_colData.csv'), 
                          col_names = c('sample', 'name', 'tissue_1', 'tissue_2', 'sex', 'age'))
 tcga_colData <- read_tsv(file.path(tcga_data_path, 'paad_tcga_colData.tsv')) %>% 
-  mutate(submitter_id.samples = str_replace_all(string = submitter_id.samples, pattern = 'TCGA', replacement = 'PAAD'))
+  mutate(submitter_id.samples = str_replace_all(string = submitter_id.samples, pattern = 'TCGA', replacement = 'PAAD'),
+         submitter_id.samples = str_replace_all(string = submitter_id.samples, pattern = '01A', replacement = 'TP'),
+         submitter_id.samples = str_replace_all(string = submitter_id.samples, pattern = '11A', replacement = 'NT'))
 
 if (! file.exists(file.path(tcga_data_path, 'paad_tcga_gene_count_matrix.tsv')) & 
     ! file.exists(file.path(tcga_data_path, 'paad_gtex_gene_count_matrix.tsv'))) {
@@ -2316,8 +2318,73 @@ if (! file.exists(file.path(tcga_data_path, 'paad_tcga_gene_count_matrix.tsv')) 
   tcga_paad_gene_counts <- read_tsv(file.path(tcga_data_path, 'paad_tcga_gene_count_matrix.tsv'))
   
 }
+```
+## TCGA GTEx Heatmap
+```{r}
+tcga_paad_gene_counts %>% 
+  merge(gtex_paad_gene_counts, by = 'gene') %>%
+  filter(gene %in% filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, padj < 0.05 & log2FoldChange > 0.95)$gene) %>% 
+  # filter(!if_all(is.numeric, ~.x == 0)) %>% nrow()
+  # mutate(across(where(is.numeric), ~scale(log2(. + 1), center = T)[,1])) %>%
+  mutate(across(where(is.numeric), ~log2(. + 1))) %>%
+  column_to_rownames('gene') %>% as.matrix() %>% t() -> hm_count_data
+
+tcga_identity_color_pal <- identity_color_pal[1:2]
+names(tcga_identity_color_pal) <- c('GTEx', 'PAAD')
+
+hm_meta_data <- tibble('sample' = rownames(hm_count_data), 'condition' = ifelse(grepl('PAAD', sample), 'PAAD', 'GTEx'))
 
 
+hm_meta_data %>% pull(condition) -> hm_meta_condition
+names(hm_meta_condition) <- hm_meta_data$sample
+
+left_hma <- ComplexHeatmap::rowAnnotation(df = data.frame('condition' = hm_meta_condition), 
+                                          col = list(condition = tcga_identity_color_pal),
+                                          show_annotation_name = F, simple_anno_size = unit(.3, "cm"))
+
+hm_te_data <- data.frame('gene' = colnames(hm_count_data)) %>% 
+  merge(reference_meta_data$total_tx_to_gene.df %>% select(gene, biotype) %>% distinct(), by = 'gene') %>% 
+  mutate(biotype = ifelse(biotype %in% c('SINE', 'Simple_repeat'), biotype, 'gencode')) %>% 
+  distinct()
+
+top_hma <- ComplexHeatmap::columnAnnotation(df = hm_te_data %>% select(biotype), 
+                                            show_annotation_name = T,
+                                            annotation_name_side = 'left',
+                                            annotation_name_gp = grid::gpar(fontsize = 10, fontface = 'italic'),
+                                            show_legend = T, 
+                                            simple_anno_size = unit(.375, "cm"))
+
+
+set.seed(129)
+ComplexHeatmap::Heatmap(hm_count_data, 
+                        show_row_names = F, 
+                        show_column_names = T, 
+                        heatmap_width = figure_double_column_width * 0.85,
+                        left_annotation = left_hma,
+                        column_dend_height = unit(.75, "cm"),
+                        heatmap_legend_param = 
+                          list(legend_gp = grid::gpar(fontsize = 8)),
+                        # col = circlize::colorRamp2(breaks = c(-4,-2,0,2,4),
+                        #                            colors = viridis::rocket(n = 5)),
+                        top_annotation = top_hma,
+                        column_names_gp = grid::gpar(fontsize = 8),
+                        name = 'log2(TPM + 1)') -> tcga_hm
+
+new_hm <- grid::grid.grabExpr(ComplexHeatmap::draw(tcga_hm), merge_legend = T)
+
+patchwork::wrap_plots(full = new_hm)
+
+
+hm_count_data %>% 
+  as.data.frame() %>% 
+  select(contains('Alu')) %>% 
+  rownames_to_column('sample') %>% 
+  merge(hm_meta_data, by = 'sample') %>% 
+  gather(gene, tpm, -sample, -condition) %>% 
+  ggplot(aes(condition, tpm)) + 
+  geom_boxplot(outlier.colour = NA, fill = NA) + 
+  geom_jitter(alpha = 0.4) + 
+  ggforce::facet_row(~gene)
 ```
 
 

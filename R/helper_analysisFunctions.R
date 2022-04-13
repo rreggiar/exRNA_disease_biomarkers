@@ -23,7 +23,7 @@ save.manuscript.panel <- function(figure,
 	       width = width, 
 	       height = height, 
 	       units = 'mm', 
-	       plot = plot.in)
+	       plot = plot.in, device = cairo_pdf)
 }
 
 load.tximeta.object.list <- function(reference, output_data.dir = here::here('data/output_data')) {
@@ -52,8 +52,7 @@ load.tximeta.object.list <- function(reference, output_data.dir = here::here('da
 
 			     if (reference == 'process.aware.salmon'){
 				     gxi.split <- loadHDF5SummarizedExperiment(dir=file.path(output_data_path,
-											     paste0(sample, 
-												    '_gene_split_h5_se')))
+											     paste0(sample, '_gene_split_h5_se')))
 				     return(list('txi' = txi, 'gxi' = gxi, 'gxi.split' = gxi.split)) 
 			     } else {
 				     return(list('txi' = txi, 'gxi' = gxi)) 
@@ -87,6 +86,9 @@ parse.tximeta.quant.metadata <- function(se_list, qc_data.dir = here::here('data
 	  colnames(salmon_meta_tmp) <- paste0('salmon_', colnames(salmon_meta_tmp))
 
 	  salmon_meta_tmp %>% mutate(sample = names) -> salmon_meta_tmp
+	  
+	  process_aware = F
+	  if(grepl('process.aware', project)) {process_aware = T}
 
 	  project <- sub('_salmon', '', project)
 	  project <- sub('_ucsc.rmsk.salmon', '', project)
@@ -106,10 +108,19 @@ parse.tximeta.quant.metadata <- function(se_list, qc_data.dir = here::here('data
 	    mutate(sample = sub('_second_pass_out', '', sample)) -> star_meta_tmp
 
 	  meta_out <- merge(star_meta_tmp, salmon_meta_tmp, by = 'sample')
+	  
+	  if (process_aware == T){
 
-	  lst('txi' = data$txi,
-	      'gxi' = data$gxi,
-	      'quant_meta' = meta_out) 
+	    return(lst('txi' = data$txi, 
+        	        'gxi' = data$gxi, 
+        	        'gxi.split' = data$gxi.split,
+        	        'quant_meta' = meta_out))
+  
+	  } else {
+	    return(lst('txi' = data$txi,
+        	        'gxi' = data$gxi,
+        	        'quant_meta' = meta_out))
+	  }
 	  
 	  }) -> return_lst 
   
@@ -120,6 +131,9 @@ subset.tximeta.se <- function(se, filter_list = qc_fails) {
   
   import::here(.from = 'SummarizedExperiment', colData)
   import::here(.from = 'tibble', lst)
+  
+  process_aware = F
+  if(grepl('process.aware', deparse(substitute(se)))) { process_aware = T }
   
   txi_return <- 
     SummarizedExperiment::subset(se$txi, 
@@ -136,6 +150,23 @@ subset.tximeta.se <- function(se, filter_list = qc_fails) {
       'gxi' = gxi_return,
       'quant_meta' = quant_meta_return)
   
+  if (process_aware == T){
+    
+    gxi_split_return <- 
+      SummarizedExperiment::subset(se$gxi.split, 
+                                   select = !colData(se$gxi)$names %in% filter_list)
+    
+    return(lst('txi' = txi_return, 
+               'gxi' = gxi_return, 
+               'gxi.split' = gxi_split_return,
+               'quant_meta' = quant_meta_return))
+    
+  } else {
+    return(lst('txi' = txi_return,
+               'gxi' = gxi_return,
+               'quant_meta' = quant_meta_return))
+  }
+  
 }
 
 build.analysis.set <- function(se_list, 
@@ -145,6 +176,9 @@ build.analysis.set <- function(se_list,
                                sample_meta_in) { 
   
   import::here(.from = 'SummarizedExperiment', colData)
+  
+  process_aware = F
+  if(grepl('process.aware', deparse(substitute(se_list)))) { process_aware = T }
   
   if(! "SparseSummarizedExperiment" %in% rownames(installed.packages())) { 
     devtools::install_github("PeteHaitch/SparseSummarizedExperiment")
@@ -175,9 +209,22 @@ build.analysis.set <- function(se_list,
       SparseSummarizedExperiment::cbind(se_list[[se_1]]$txi,
                                         se_list[[se_2]]$txi)
     
-    lst('gxi' = gxi_return,
-        'txi' = txi_return,
-        'quant_meta' = quant_meta_return)
+    if (process_aware == T){
+      
+      gxi_split_return <- 
+        SparseSummarizedExperiment::cbind(se_list[[se_1]]$gxi.split,
+                                          se_list[[se_2]]$gxi.split)
+      
+      return(lst('txi' = txi_return, 
+                 'gxi' = gxi_return, 
+                 'gxi.split' = gxi_split_return,
+                 'quant_meta' = quant_meta_return))
+      
+    } else {
+      return(lst('gxi' = gxi_return,
+                 'txi' = txi_return,
+                 'quant_meta' = quant_meta_return))
+    }
     
   } else {
     
@@ -208,9 +255,22 @@ build.analysis.set <- function(se_list,
       SparseSummarizedExperiment::cbind(se_list[[se_1]]$txi,
                                         analysis_set_2[['txi']])
     
-    lst('gxi' = gxi_return,
-        'txi' = txi_return,
-        'quant_meta' = quant_meta_return)
+    if (process_aware == T){
+      
+      gxi_split_return <- 
+        SparseSummarizedExperiment::cbind(se_list[[se_1]]$gxi.split,
+                                          analysis_set_2[['gxi.split']])
+      
+      return(lst('txi' = txi_return, 
+                 'gxi' = gxi_return, 
+                 'gxi.split' = gxi_split_return,
+                 'quant_meta' = quant_meta_return))
+      
+    } else {
+      return(lst('gxi' = gxi_return,
+                 'txi' = txi_return,
+                 'quant_meta' = quant_meta_return))
+    }
     
   }
   
@@ -372,6 +432,12 @@ run.de.seq.individual <- function(type = 'gxi', base_level = 'ctrl',
       filter(seqnames %in% c('chrY'),
              grepl('ENSG', group_name))
     
+  } else if (ref_type == 'process.aware') {
+    
+    gencode_sex_filter.df <-
+      rowRanges(input_se[['gxi']]) %>% as.data.frame() %>% 
+      filter(seqnames %in% c('chrY'))
+    
   } else {
     gencode_sex_filter.df <-
       rowRanges(input_se[[type]]) %>% as.data.frame() %>% 
@@ -379,12 +445,25 @@ run.de.seq.individual <- function(type = 'gxi', base_level = 'ctrl',
     
   }
   
-  count_matrix.df <- 
-    assay(input_se[[type]], 'counts') %>% 
-    as.data.frame() %>% 
-    rownames_to_column('gene') %>% 
-    mutate_if(is.numeric, round) %>% 
-    column_to_rownames('gene')
+  if (ref_type == 'process.aware') {
+    
+    count_matrix.df <- 
+      assay(input_se[[type]], 'unspliced') %>% 
+      as.data.frame() %>% 
+      rownames_to_column('gene') %>% 
+      mutate_if(is.numeric, round) %>% 
+      column_to_rownames('gene')
+    
+  } else {
+  
+    count_matrix.df <- 
+      assay(input_se[[type]], 'counts') %>% 
+      as.data.frame() %>% 
+      rownames_to_column('gene') %>% 
+      mutate_if(is.numeric, round) %>% 
+      column_to_rownames('gene')
+    
+  }
   
   input_set_dds <- DESeqDataSetFromMatrix(countData = count_matrix.df, 
                                           colData = scaled_quant_meta_for_de.df, 
@@ -419,7 +498,9 @@ run.de.seq.individual <- function(type = 'gxi', base_level = 'ctrl',
   
   print(coef_list[[1]])
   
-  if (ref_type != 'ucsc.rmsk') { 
+  if (ref_type == 'salmon') { 
+    
+    message('gencode')
     
     de_out <- 
       lfcShrink(input_set_dds, coef = coef_list[[1]]) %>% 
@@ -432,7 +513,23 @@ run.de.seq.individual <- function(type = 'gxi', base_level = 'ctrl',
       merge(rowRanges(input_se[[type]]) %>% as.data.frame(), by.x = 'ensg', by.y = 'gene_id') %>%
       merge(reference_meta_in %>% select(ensg, gene) %>% distinct(), by = 'ensg')
     
+  } else if (ref_type == 'process.aware') {
+    
+    message('process.aware')
+    
+    de_out <- 
+      lfcShrink(input_set_dds, coef = coef_list[[1]]) %>% 
+      as.data.frame() %>% 
+      # indiv comparisons return flipped values ?
+      # mutate(log2FoldChange = -log2FoldChange) %>%
+      rownames_to_column('ensg') %>%
+      # filter(!ensg %in% c(condition_aware_age_cor_filter[, c(base_level, top_level)]$ensg,
+      #                     gencode_sex_filter.df$gene_id)) %>%
+      merge(reference_meta_in %>% select(ensg, gene) %>% distinct(), by = 'ensg')
+    
   } else { 
+    
+    message('ucsc.rmsk')
     
     de_out <- 
       lfcShrink(input_set_dds, coef = coef_list[[1]]) %>% 
@@ -494,18 +591,17 @@ run.pca <- function(input_de,
     spread(metric, value)
   
   pca.out %>% 
-    ggplot(aes(PC2, PC1,
+    ggplot(aes(PC1, PC2,
                color = condition)) +
     geom_point(size = rel(2), alpha = 1) + 
     # scale_shape_manual(values = c(21,25)) +
-    ylab(paste('PC1', round(cumsum(pcs.props)[1], digits = 3), sep = ' ')) +
-    # xlab(paste('PC2', round(cumsum(pcs.props)[2] - cumsum(pcs.props)[1], digits = 3), sep = ' ')) +
+    xlab(paste('PC1', round(cumsum(pcs.props)[1], digits = 3), sep = ' ')) +
+    ylab(paste('PC2', round(cumsum(pcs.props)[2] - cumsum(pcs.props)[1], digits = 3), sep = ' ')) +
     geom_vline(xintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) +
     geom_hline(yintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) + 
     scale_color_manual(values = identity_color_pal) + 
-    theme(axis.title.x = element_blank()) +
-    
-    ylim(-200,200) -> pca_1v2.plt
+    # theme(axis.title.x = element_blank()) +
+    xlim(-200,200) -> pca_1v2.plt
   
   pca.out %>% 
     ggplot(aes(PC2, PC3,
@@ -586,5 +682,30 @@ make.fgsea.ranks <- function(de.seq){
     mutate(pathway = gsub('_', ' ', pathway))
   
   return(de.seq.fgsea.df)
+  
+}
+
+generate.unsplice.data <- function(analysis_set) {
+  
+  import::here(SummarizedExperiment, assay)
+  
+  split.gxi <- analysis_set$gxi.split
+  
+  assay(split.gxi, 'unspliced') %>% 
+    as.data.frame() %>% 
+    rownames_to_column('gene') %>% 
+    gather(sample, count, -gene) %>% 
+    group_by(sample) %>% 
+    summarize(unsplice_count = sum(count)) -> unsplice.df
+  
+  assay(split.gxi, 'spliced') %>% 
+    as.data.frame() %>% 
+    rownames_to_column('gene') %>% 
+    gather(sample, count, -gene) %>% 
+    group_by(sample) %>% 
+    summarize(splice_count = sum(count)) -> splice.df
+  
+  merge(unsplice.df, splice.df, by = 'sample') %>% 
+    mutate(unsplice_rate = unsplice_count / (unsplice_count + splice_count))
   
 }

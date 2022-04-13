@@ -50,7 +50,7 @@ ggplot2::theme_set(ggthemes::theme_foundation(base_size = base_size,
                            axis.ticks.length.x.top = NULL, axis.ticks.length.x.bottom = NULL, 
                            axis.ticks.length.y = NULL, axis.ticks.length.y.left = NULL, 
                            axis.ticks.length.y.right = NULL,
-                           strip.text = element_text(size = rel(0.95), face = 'bold'),
+                           strip.text = element_text(size = rel(0.8), face = 'bold'),
                            strip.background = element_blank(),
                            legend.key.size= unit(0.08, "in"),
                            legend.spacing = unit(0, "in"),
@@ -71,6 +71,8 @@ ggplot2::theme_set(ggthemes::theme_foundation(base_size = base_size,
                            panel.grid.minor = element_blank()
                            )
                    )
+
+txt.mm_to_pts <- function(ratio){ base_size * ratio * (25.4 / 72.27) }
 ```
 
 ## data_path_obj
@@ -106,6 +108,9 @@ chr_order <- c('chr1', 'chr2', 'chr3',
                'chr16', 'chr17',
                'chr18', 'chr19', 'chr20', 
                'chr21', 'chr22', 'chrX', 'chrY')
+
+qc_fails <- c('panc.6.2.5', 'panc.7.2.5', 'panc.9.2.5', 
+              'panc.10.2.5', 'covid.427.0.80', 'covid.381.0.80')
 
 
 gencode_ver <- 39
@@ -244,9 +249,6 @@ process.aware.salmon_quant <- parse.tximeta.quant.metadata(process.aware.salmon_
 import::from(.directory = r_code.dir, 
              .from = 'helper_analysisFunctions.R', 
              subset.tximeta.se)
-
-qc_fails <- c('panc.6.2.5', 'panc.7.2.5', 'panc.9.2.5', 
-              'panc.10.2.5', 'covid.427.0.80', 'covid.381.0.80')
 
 salmon_quant$bioIvt_panc_salmon <- 
   subset.tximeta.se(salmon_quant$bioIvt_panc_salmon, 
@@ -409,6 +411,46 @@ ucsc.rmsk.salmon_quant$analysis_set$covid_ctrl$deseq <-
                         top_level = 'covid',
                         ref_type = 'ucsc.rmsk',
                         dds_formula = as.formula('~age+condition'))
+
+
+SummarizedExperiment::assay(process.aware.salmon_quant$analysis_set$panc_ctrl$gxi.split, 'unspliced')
+
+SummarizedExperiment::rowRanges(process.aware.salmon_quant$analysis_set$panc_ctrl$gxi)
+
+reference_meta_data$process_aware_tx_to_gene <-   
+  SummarizedExperiment::rowRanges(process.aware.salmon_quant$analysis_set$panc_ctrl$gxi) %>% 
+    as.data.frame() %>% 
+    select(gene_id) %>% 
+    separate(gene_id, sep = '-', into = c('gene_id', 'intron')) %>% 
+    mutate(intron = ifelse(is.na(intron), 'E', intron)) %>% 
+    merge(reference_meta_data$gencode_tx_to_gene.df, by.x = 'gene_id', by.y = 'ensg') %>% 
+    mutate(gene_id = ifelse(intron == 'I', paste0(gene_id, '-I'), gene_id)) %>% 
+    select(-intron) %>% 
+    dplyr::rename('ensg' = 'gene_id') %>% 
+    distinct()
+
+
+process.aware.salmon_quant$analysis_set$panc_ctrl$deseq <- 
+  run.de.seq.individual(input_se = process.aware.salmon_quant$analysis_set$panc_ctrl, 
+                        type = 'gxi.split',
+                        base_level = 'panc',
+                        top_level = 'ctrl',
+                        ref_type = 'process.aware',
+                        dds_formula = as.formula('~age+diabetes+condition'))
+
+process.aware.salmon_quant$analysis_set$covid_ctrl$deseq <- 
+  run.de.seq.individual(input_se = process.aware.salmon_quant$analysis_set$covid_ctrl,
+                        type = 'gxi.split',
+                        base_level = 'ctrl',
+                        top_level = 'covid',
+                        ref_type = 'process.aware',
+                        dds_formula = as.formula('~age+condition'))
+
+
+
+
+process.aware.salmon_quant$analysis_set$panc_ctrl$deseq$de_out %>% 
+  filter(grepl('-I', ensg))
 ```
 
 ## run_pca
@@ -469,21 +511,45 @@ salmon_quant$analysis_set$ctrl_panc_covid$deseq$fgsea$covid_v_ctrl <-
 
 ```
 
+## run_process_aware
+```{r}
+import::from(.directory = r_code.dir, 
+             .from = 'helper_analysisFunctions.R', 
+             generate.unsplice.data)
+
+process.aware.salmon_quant$analysis_set$ctrl_panc_covid$unsplice_data.df <- 
+  generate.unsplice.data(process.aware.salmon_quant$analysis_set$ctrl_panc_covid)
+```
+
 # Figures
 # Fig_1
+## Fig_flowchart
+```{r}
+flow_chart.plt <- magick::image_read_pdf(path = file.path(figure.dir, 'fig.1', 'ip_flowchart_tiny.pdf'))
+
+flow_chart.plt <- magick::image_read(path = file.path(figure.dir, 'fig.1', 'rer_biorender_8.08x8.3.png'))
+
+
+
+```
 ## Fig_1A
 ```{r 1A}
-# save.manuscript.panel(figure = 1,
-#                       figure.dir = figure.dir,
-#                       name = 'pca_total_1A',
-#                       width = figure_single_column_width,
-#                       height = figure_depth/2,
-#                       plot.in = salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_total.plt)
+
+
 
 fig.1A_1.plt <- 
-  salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_1v2.plt + labs(tag = 'B')
+  salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_1v2.plt +
+  annotate(geom = 'text', x = -175, y = -100, label = 'TE-aware', size = txt.mm_to_pts(1.25)) +
+  labs(tag = 'B') + coord_flip() 
+  
 fig.1A_2.plt <- 
-  salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_2v3.plt
+  salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_2v3.plt +
+  xlim(layer_scales(fig.1A_1.plt)$y$range$range) 
+
+
+
+# + 
+#   annotate(geom = 'text', x = -105, y = -200, label = 'TE-aware', size = txt.mm_to_pts(1.5))
 
 ```
 ## Fig_1B
@@ -499,19 +565,21 @@ meta_of_interest <- c('star_multimapped_percent',
 tidy_quant_meta.df %>%  
   filter(var %in% meta_of_interest) %>% 
   mutate(var = sub('star_', '', var),
-         var = factor(var, levels = c('uniquely_mapped_percent', 'multimapped_percent'))) %>% 
+         var = case_when(var == 'uniquely_mapped_percent' ~ 'uniquely-mapped', 
+                         var == 'multimapped_percent' ~ 'multi-mapped'),
+         var = factor(var, levels = c('uniquely-mapped', 'multi-mapped'))) %>% 
   ggplot(aes(condition, value, color = condition)) + 
   geom_boxplot(fill = NA, outlier.colour = NA, show.legend = F) + 
   geom_point(position = position_jitter(width = 0.2), size = rel(2), alpha = 1) +
   # scale_shape_manual(values = c(21,25)) +
-  ylab('%') + xlab('') +
-  ggforce::facet_col(~var, scales = 'free_y') + 
+  ylab('percent mapped') + xlab('') +
+  ggforce::facet_row(~var, scales = 'free_y') + 
   scale_color_manual(values = identity_color_pal) + 
   theme(legend.position = 'right', legend.justification = 'center') +
   ggpubr::stat_compare_means(comparisons = list(c('panc', 'covid'),
                                                 c('ctrl', 'covid'), 
                                                 c('ctrl', 'panc')), 
-                             method = 'wilcox', size = 2.5) -> mapping_rate_dist.plt
+                             method = 'wilcox', size = 2.5, method.args = list(exact =T)) -> mapping_rate_dist.plt
 
 # save.manuscript.panel(figure = 1,
 #                       figure.dir = figure.dir,
@@ -538,49 +606,49 @@ ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$quant_meta %>%
 
 mapping_rate_compare.df %>% 
   gather(var, value, -sample, -context, -sex, -condition, -var) %>% 
+  # filter(condition == 'panc') %>% 
   ggplot(aes(var, value, color = condition)) + 
   geom_boxplot(fill = NA, outlier.colour = NA, show.legend = F) + 
   geom_point(size = rel(2), alpha = 1) +
   geom_line(aes(group = sample), alpha = 0.2, show.legend = F) +
   # scale_shape_manual(values = c(21,25)) +
-  ylab('salmon % mapped') + xlab('') + 
-  ggforce::facet_row(~condition, scales = 'free_y') +
+  ylab('% mapped') + xlab('') + 
+  ggforce::facet_row(~condition, strip.position = 'bottom') +
   scale_color_manual(values = identity_color_pal) + 
   ggpubr::stat_compare_means(comparisons = list(c('gencode', 'TE-aware')), 
-                             method = 'wilcox', paired = T, size = 2.5) -> mapping_rate_compare.plt
+                             method = 'wilcox', size = 2.5, 
+                             method.args = list(exact = TRUE, paired = T)) -> mapping_rate_compare.plt
 
 fig.1C.plt <- mapping_rate_compare.plt + labs(tag = 'D')
 
 ```
 ### Fig_1_patchwork
 ```{r Fig1}
-import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer)
+import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer, wrap_elements)
 
 
 fig_1_layout <- "
-FF
-AC
-BC
+FA
+FB
 DD
+CC
 EE
 "
 
-wrap_plots(fig.1A_1.plt,
+wrap_plots(fig.1A_1.plt + theme(axis.title.x = element_blank()),
            fig.1A_2.plt,
-           fig.1B.plt,
+           fig.1B.plt + coord_cartesian(clip = 'off'),
            guide_area(),
-           fig.1C.plt,
-           plot_spacer(),
+           fig.1C.plt + coord_cartesian(clip = 'off'),
+           wrap_elements(full = magick::image_ggplot(flow_chart.plt)) + labs(tag = 'A'),
            design = fig_1_layout, 
            guides = 'collect',
-           heights = c(1,1,1,0.0625,1)) & 
+           heights = c(0.75,0.75,0.0825,1,1)) & 
   theme(plot.tag.position = c(0.01, 0.99), 
         legend.position = 'bottom',
         legend.title = element_text(vjust = 1.25),
         legend.justification = c(0.5, 0.5)) -> fig.1.patchwork
 
-
-fig.1.patchwork
 
 save.manuscript.panel(figure = 1,
                       figure.dir = figure.dir,
@@ -591,6 +659,7 @@ save.manuscript.panel(figure = 1,
 
 
 ```
+
 # Fig_S1
 ## Fig_S1A
 ```{r S1A}
@@ -603,27 +672,30 @@ salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_corr_out.df %>%
   group_by(pc) %>% 
   mutate(pc = paste0('PC', pc)) %>% 
   filter(!grepl('num', var),
-         ! var %in% c('input_vol', 'age')) %>% 
+         ! var %in% c('input_vol', 'age'),
+         grepl('map', var), grepl('percent', var)) %>% 
   top_n(7, wt = abs(cor)) %>% 
+  mutate(var = ifelse(var == 'salmon_percent_mapped', 'salmon_mapped_percent', var)) %>% 
   dplyr::rename('gencode' = 'cor') -> salmon_pca_corr_top_7.df
 
 ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_corr_out.df %>% 
   group_by(pc) %>% 
-  mutate(pc = paste0('PC', pc)) %>% 
-  filter(var %in% salmon_pca_corr_top_7.df$var) %>% 
+  mutate(pc = paste0('PC', pc)) %>%
+  # filter(var %in% salmon_pca_corr_top_7.df$var) %>% 
+  mutate(var = ifelse(var == 'salmon_percent_mapped', 'salmon_mapped_percent', var)) %>% 
   dplyr::rename('TE-aware' = 'cor') -> ucsc.rmsk.salmon_pca_corr_compare.df
 
 salmon_pca_corr_top_7.df %>% 
   merge(ucsc.rmsk.salmon_pca_corr_compare.df, by = c('pc', 'var')) %>% 
   gather(reference, cor, -pc, -var) %>% 
-  ggplot(aes(reorder(var, -abs(cor)), abs(cor), fill = reference)) + 
+  ggplot(aes(reorder(var, -abs(cor)),cor, fill = reference)) + 
   geom_col(color = 'white', position = position_dodge()) +
-  coord_flip() + 
-  ggforce::facet_col(~pc, scales = 'free_y') + 
-  xlab('') + ylab('pearson coeff.') + 
-  geom_hline(yintercept = c(0.5), linetype = 'dashed', alpha = 0.4) + 
-  theme(legend.position = 'bottom', legend.justification = 'center') + 
-  scale_fill_manual(values =RColorBrewer::brewer.pal(n = 3, 'Dark2')[1:2]) -> pca_correlation_top7.plt
+  # coord_flip() + 
+  ggforce::facet_col(~pc) + 
+  xlab('') + ylab('correlation between metric and PC (pearson)') + 
+  geom_hline(yintercept = c(-0.5, 0.5), linetype = 'dashed', alpha = 0.4) + 
+  theme(legend.position = 'top', legend.justification = 'center', axis.text.x = element_text(angle = 60, hjust = 1)) + 
+  scale_fill_manual(values = c('black', 'grey')) -> pca_correlation_top7.plt
   
   
   
@@ -638,25 +710,39 @@ fig.S1B.plt <- pca_correlation_top7.plt
 ```
 ## Fig_S1C
 ```{r 1B}
-tidy_quant_meta.df %>% 
-  filter(var %in% c('age')) %>%  
-  ggplot(aes(condition, value, color = condition)) + 
-  geom_boxplot(fill = NA, outlier.colour = NA, show.legend = F) + 
-  geom_point(size = rel(2), alpha = 1) +
-  # scale_shape_manual(values = c(21,25)) +
-  scale_color_manual(values = identity_color_pal) + 
-  ylab('Age -- years') + xlab('') -> fig.S1C.plt
-```
-## Fig_S1D
-```{r}
-tidy_quant_meta.df %>% 
-  filter(var %in% c('input_vol')) %>%  
-  ggplot(aes(condition, value, color = condition)) + 
-  geom_boxplot(fill = NA, outlier.colour = NA, show.legend = F) + 
-  geom_point(size = rel(2), alpha = 1) +
-  # scale_shape_manual(values = c(21,25)) +
-  scale_color_manual(values = identity_color_pal) + 
-  ylab('Input Volume -- mL') + xlab('') -> fig.S1D.plt
+# tidy_quant_meta.df %>% 
+#   filter(var %in% c('age')) %>%  
+#   ggplot(aes(condition, value, color = condition)) + 
+#   geom_boxplot(fill = NA, outlier.colour = NA, show.legend = F) + 
+#   geom_point(size = rel(2), alpha = 1) +
+#   # scale_shape_manual(values = c(21,25)) +
+#   scale_color_manual(values = identity_color_pal) + 
+#   ylab('Age -- years') + xlab('') -> fig.S1C.plt
+# 
+# tidy_quant_meta.df %>% 
+#   filter(var %in% c('input_vol')) %>%  
+#   ggplot(aes(condition, value, color = condition)) + 
+#   geom_boxplot(fill = NA, outlier.colour = NA, show.legend = F) + 
+#   geom_point(size = rel(2), alpha = 1) +
+#   # scale_shape_manual(values = c(21,25)) +
+#   scale_color_manual(values = identity_color_pal) + 
+#   ylab('Input Volume -- mL') + xlab('') -> fig.S1D.plt
+
+salmon_quant$analysis_set$ctrl_panc_covid$quant_meta %>% 
+  gather(var, value, -sample, -condition, -sex, -context) %>% 
+  mutate(value = as.numeric(value),
+         condition = factor(condition, levels = c('panc', 'ctrl', 'covid'))) %>% 
+  filter(var %in% c('age', 'input_vol')) %>% 
+  spread(var, value) %>% 
+  filter(! sample %in% qc_fails) %>% 
+  select(-context, -input_vol) %>% 
+  mutate(num = str_split_fixed(string = sample, pattern = '[.]', n = 4)[, 2],
+         sample = paste0(condition, ' ', num)) %>% 
+  select(-num) %>% 
+  gridExtra::tableGrob(theme = gridExtra::ttheme_minimal(base_size = 8,
+                                                         core = list(padding=unit(c(1, 5.5), "mm"))), 
+                       rows = NULL) ->
+  fig.S1C.meta_table.grob
 
 ```
 ### Fig_S1_patchwork
@@ -666,28 +752,13 @@ import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_
 
 fig_S1_layout <- "
 AB
-CB
-DB
-EB
+AB
 "
 
-wrap_plots(fig.S1A.plt,
-           fig.S1B.plt,
-           guide_area(),
-           fig.S1C.plt,
-           fig.S1D.plt,
+wrap_plots(fig.S1B.plt,
+           patchwork::wrap_elements(full = fig.S1C.meta_table.grob, ignore_tag = F),
            design = fig_S1_layout, 
-           guides = 'collect',
-           heights = c(1,0.25,1,1,1),
-           widths = c(1,1)) + plot_annotation(tag_levels = 'A') & 
-  theme(plot.tag.position = c(0.01, 0.99), 
-        legend.position = 'left',
-        legend.direction = 'horizontal',
-        legend.title = element_text(vjust = 1.25),
-        legend.justification = c(0.5, 0.5)) -> fig.S1.patchwork
-
-
-fig.S1.patchwork
+           widths = c(1,1)) + plot_annotation(tag_levels = 'A') -> fig.S1.patchwork
 
 save.manuscript.panel(figure = 's1',
                       figure.dir = figure.dir,
@@ -698,6 +769,7 @@ save.manuscript.panel(figure = 's1',
 
 
 ```
+
 # Fig_2
 ## Fig_2A
 ```{r}
@@ -711,7 +783,6 @@ rowRanges(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$gxi) %>%
   unlist() %>% unname() -> chrM.filter.list
 
 ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out %>% 
-# ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$deseq$panc_vs_ctrl %>% 
   merge(reference_meta_data$ucsc_rmsk_insert_info.df, by = 'gene', all.x = T) %>% 
   mutate(family = ifelse(ensg %in% reference_meta_data$gencode_lncRNA_gene_names.df$ensg,
                          'gencode_lncRNA', family),
@@ -730,7 +801,19 @@ ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out %>%
          !grepl('^MT', gene)) -> panc_annotated_rmsk_de
 
 panc_label_list <- panc_annotated_rmsk_de %>% 
-  top_n(3, wt = log2FoldChange)
+  filter(grepl('LTR|Alu', gene)) %>% 
+  top_n(6, wt = log2FoldChange)
+
+panc_label_list_dn <- panc_annotated_rmsk_de %>% 
+  filter(grepl('LTR|Alu', gene)) %>% 
+  top_n(3, wt = -log2FoldChange)
+
+panc_label_lnc_list_dn <- panc_annotated_rmsk_de %>% 
+  filter(clade == 'gencode_lncRNA',
+         !grepl('^ENSG', gene)) %>% 
+  top_n(3, wt = -log2FoldChange)
+
+panc_label_list <- rbind(panc_label_list, panc_label_list_dn, panc_label_lnc_list_dn)
 
 panc_annotated_rmsk_de %>%
   filter(clade == 'gencode_coding') %>% 
@@ -741,11 +824,12 @@ gencode_layer.plt +
   geom_point(data = filter(panc_annotated_rmsk_de, clade != 'gencode_coding') %>% 
                mutate(clade = factor(clade, levels = te_aware_annotation_levels)),
              aes(log2FoldChange, -log10(padj), color = clade), size = 2, alpha = 0.8) +
-  scale_color_manual(values = te_color_pal) + 
+  scale_color_manual(values = te_color_pal, name = 'biotype/clade') + 
   ggrepel::geom_text_repel(data = panc_annotated_rmsk_de %>% 
                mutate(clade = factor(clade, levels = te_aware_annotation_levels)),
                       aes(label = ifelse(gene %in% panc_label_list$gene, gene, '')), 
-                           show.legend = F, color = 'black', max.overlaps = 1000) -> fig.2A.plt
+                           show.legend = F, color = 'black', 
+               max.overlaps = 100, box.padding = unit(4.5, 'mm'), segment.colour = 'grey') -> fig.2A.plt
 
 fig.2A.plt
 
@@ -774,6 +858,13 @@ ucsc.rmsk.salmon_quant$analysis_set$covid_ctrl$deseq$de_out %>%
 covid_label_list <- covid_annotated_rmsk_de %>% 
   top_n(3, wt = log2FoldChange)
 
+covid_label_lnc_list_dn <- covid_annotated_rmsk_de %>% 
+  filter(clade == 'gencode_lncRNA',
+         !grepl('^ENSG', gene)) %>% 
+  top_n(3, wt = -log2FoldChange)
+
+covid_label_list <- rbind(covid_label_list, covid_label_lnc_list_dn)
+
 covid_annotated_rmsk_de %>%
   filter(clade == 'gencode_coding') %>% 
   ggplot(aes(log2FoldChange, -log10(padj), color = clade)) + 
@@ -783,7 +874,7 @@ gencode_layer.plt +
   geom_point(data = filter(covid_annotated_rmsk_de, clade != 'gencode_coding') %>% 
                mutate(clade = factor(clade, levels = te_aware_annotation_levels)),
              aes(log2FoldChange, -log10(padj), color = clade), size = 2, alpha = 0.8) +
-  scale_color_manual(values = te_color_pal) + 
+  scale_color_manual(values = te_color_pal, name = 'biotype/clade') + 
   ggrepel::geom_text_repel(data = covid_annotated_rmsk_de %>% 
              mutate(clade = factor(clade, levels = te_aware_annotation_levels)),
                     aes(label = ifelse(gene %in% covid_label_list$gene, gene, '')), 
@@ -824,10 +915,10 @@ tidy_total_annotated_rmsk_counts %>%
          condition = factor(condition, levels = c('panc', 'ctrl', 'covid'))) %>% 
   ggplot(aes(sample, clade_frac, fill = clade)) + 
   geom_col(color = 'white', show.legend = F) + 
-  scale_fill_manual(values = te_color_pal) + 
+  scale_fill_manual(values = te_color_pal, name = 'biotype/clade') + 
   ggforce::facet_row(~condition, scales = 'free_x') +
-  theme(axis.text.x = element_blank()) + 
-  xlab('sample') + ylab('norm. count fraction') -> fig.2C.plt
+  theme(axis.text.x = element_blank()) +
+  xlab('sample') + ylab('normalized count fraction') -> fig.2C.plt
 
 
 ```
@@ -892,8 +983,8 @@ import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_
 
 fig_2_layout <- "
 AA
-BC
 DD
+BC
 EE
 "
 
@@ -905,14 +996,11 @@ wrap_plots(fig.2C.plt,
                                                                 width = figure_double_column_width)),
            design = fig_2_layout, 
            guides = 'collect',
-           heights = c(0.75,0.75,0.0937,1)) + plot_annotation(tag_levels = 'A') & 
+           heights = c(0.75,0.0937,0.75,1)) + plot_annotation(tag_levels = 'A') & 
   theme(plot.tag.position = c(0.01, 0.99), 
         legend.position = 'bottom',
         legend.title = element_text(vjust = 0.5),
         legend.justification = c(0.5, 0.5)) -> fig.2.patchwork
-
-
-# fig.2.patchwork
 
 save.manuscript.panel(figure = 2,
                       figure.dir = figure.dir,
@@ -929,8 +1017,11 @@ save.manuscript.panel(figure = 2,
 bind_rows(list('panc' = salmon_quant$analysis_set$ctrl_panc_covid$deseq$fgsea$panc_v_ctrl,
           'covid' = salmon_quant$analysis_set$ctrl_panc_covid$deseq$fgsea$covid_v_ctrl),
           .id = 'condition') %>% 
-  select(condition, pathway, padj, NES) %>% 
-  gridExtra::tableGrob(theme = gridExtra::ttheme_minimal()) -> fig.S2A.fgsea_table.grob
+  select(condition, 'enriched pathway' = pathway, padj, NES) %>% 
+  mutate(padj = round(padj, 10),
+         NES = round(NES, 3)) %>% 
+  dplyr::rename('GSEA padj' = padj, 'GSEA NES' = NES) %>% 
+  gridExtra::tableGrob(theme = gridExtra::ttheme_minimal(), rows = NULL) -> fig.S2A.fgsea_table.grob
 
 ```
 ## Fig_S2B
@@ -955,7 +1046,7 @@ de_upset.df %>%
   geom_bar(fill = 'white', color = 'black') + 
   ggupset::scale_x_upset() +
   geom_text(stat='count', aes(label=after_stat(count)), nudge_y = -2) + 
-  xlab('') + ylab('MYC Target V1 genes') -> fig.S2B.plt
+  xlab('') + ylab('shared DE MYC Target V1 genes') -> fig.S2B.plt
 
 
 de_upset.df %>% 
@@ -975,6 +1066,7 @@ de_upset.df %>%
   geom_point() + 
   geom_hline(yintercept = 0, linetype = 'dashed', alpha = 0.6) +
   geom_vline(xintercept = 0, linetype = 'dashed', alpha = 0.6) + 
+  xlab('covid MYC Targets V1 log2FoldChange') + ylab('panc MYC Targets V1 log2FoldChange') +
   ggrepel::geom_text_repel() -> fig.S2B_2.plt
 
 ```
@@ -1004,7 +1096,7 @@ ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out %>%
                                      'DNA',
                                      'Simple_repeat'), clade, 'other'),
          type = ifelse(grepl('gencode',family), 'GENCODE', 'TE'),
-         clade = factor(clade, levels = te_aware_annotation_levels)) %>% 
+         clade = factor(clade, levels = te_aware_annotation_levels[c(1,8)])) %>% 
   filter(ensg %in% chrM.filter.list | grepl('^MT', gene)) -> mt_panc_annotated_rmsk_de
 
 mt_panc_label_list <- mt_panc_annotated_rmsk_de %>% 
@@ -1017,15 +1109,15 @@ mt_panc_annotated_rmsk_de %>%
 
 gencode_layer.plt + 
   geom_point(data = filter(mt_panc_annotated_rmsk_de, clade != 'gencode_coding') %>% 
-               mutate(clade = factor(clade, levels = te_aware_annotation_levels)),
+               mutate(clade = factor(clade, levels = te_aware_annotation_levels[c(1,8)])),
              aes(log2FoldChange, -log10(padj), color = clade), size = 2, alpha = 0.8) +
-  scale_color_manual(values = te_color_pal) + 
+  scale_color_manual(values = te_color_pal[c(1,8)], name = 'biotype/clade') + 
   ggrepel::geom_text_repel(data = mt_panc_annotated_rmsk_de %>% 
-             mutate(clade = factor(clade, levels = te_aware_annotation_levels)),
+             mutate(clade = factor(clade, levels = te_aware_annotation_levels[c(1,8)])),
                     aes(label = ifelse(gene %in% mt_panc_label_list$gene, gene, '')), 
                          show.legend = F, color = 'black', max.overlaps = 1000) + 
   xlim(-8.5,8.5) + 
-  ggtitle('panc') -> fig.S2C.plt
+  ggtitle('chrM panc DE') -> fig.S2C.plt
 
 fig.S2C.plt
 ```
@@ -1060,13 +1152,13 @@ gencode_layer.plt +
   geom_point(data = filter(mt_covid_annotated_rmsk_de, clade != 'gencode_coding') %>% 
                mutate(clade = factor(clade, levels = te_aware_annotation_levels)),
              aes(log2FoldChange, -log10(padj), color = clade), size = 2, alpha = 0.8) +
-  scale_color_manual(values = te_color_pal) + 
+  scale_color_manual(values = te_color_pal[c(1,8)], name = 'biotype/clade') + 
   ggrepel::geom_text_repel(data = mt_covid_annotated_rmsk_de %>% 
              mutate(clade = factor(clade, levels = te_aware_annotation_levels)),
                     aes(label = ifelse(gene %in% mt_covid_label_list$gene, gene, '')), 
                          show.legend = F, color = 'black', max.overlaps = 1000) + 
   xlim(-7.5,7.5) + 
-  ggtitle('covid') -> fig.S2D.plt
+  ggtitle('chrM covid DE') -> fig.S2D.plt
 
 fig.S2D.plt
 ```
@@ -1083,7 +1175,7 @@ EF
 "
 
 wrap_plots(patchwork::wrap_elements(fig.S2A.fgsea_table.grob, ignore_tag = F),
-           fig.S2B.plt,
+           patchwork::wrap_elements(full = fig.S2B.plt),
            fig.S2B_2.plt,
            guide_area(),
            fig.S2C.plt,
@@ -1096,9 +1188,6 @@ wrap_plots(patchwork::wrap_elements(fig.S2A.fgsea_table.grob, ignore_tag = F),
         legend.title = element_text(vjust = 0.5),
         legend.justification = c(0.5, 0.5)) -> fig.S2.patchwork
 
-
-fig.S2.patchwork
-
 save.manuscript.panel(figure = 's2',
                       figure.dir = figure.dir,
                       name = 'patchwork_full_fig_S2',
@@ -1109,7 +1198,7 @@ save.manuscript.panel(figure = 's2',
 
 ```
 
-# Fig_3
+# Fig_Modeling
 ```{r}
 # install.packages('glmnet')
 # install.packages('doMC')
@@ -1258,66 +1347,915 @@ beta %>% as.matrix() %>% as.data.frame() %>%
   merge(ucsc.rmsk.salmon_quant$analysis_set$covid_ctrl$deseq$de_out, by = 'ensg')
 ```
 
-# compare_samples_w_nanopore
+# Fig_Nanopore
+## read_len load
 ```{r}
-panc.7.1.1_nanopore_tpm <- read_tsv(file.path(output_data.dir, 'nanopore', 'gencodev39', 'panc.7.1.1_gene_abundance.tsv'))
-panc.6.1.1_nanopore_tpm <- read_tsv(file.path(output_data.dir, 'nanopore', 'gencodev39', 'panc.6.1.1_gene_abundance.tsv'))
+panc.7.1.1_read_len <- read_csv(file.path(output_data.dir, 'nanopore', 
+                                          'nanopore_read_len', 'panc.7.1.1_biotype_read_lengths.csv')) %>% 
+  separate(sample, sep = '[.]', into = c(NA,NA,'biotype',NA)) %>% 
+  mutate(biotype = sub('_extraction', '', biotype))
+
+panc.6.1.1_read_len <- read_csv(file.path(output_data.dir, 'nanopore', 
+                                          'nanopore_read_len', 'panc.6.1.1_biotype_read_lengths.csv')) %>% 
+  separate(sample, sep = '[.]', into = c(NA,NA,'biotype',NA)) %>% 
+  mutate(biotype = sub('_extraction', '', biotype))
+
+ctrl.6.1.5_read_len <- read_csv(file.path(output_data.dir, 'nanopore',
+                                          'nanopore_read_len', 'ctrl.6.1.5_biotype_read_lengths.csv')) %>%
+  separate(sample, sep = '[.]', into = c(NA,NA,'biotype',NA)) %>%
+  mutate(biotype = sub('_extraction', '', biotype))
+
+panc.7.1.1_read_len %>% 
+  mutate(sample = 'panc.7.1.1') %>% 
+  rbind(panc.6.1.1_read_len %>%
+         mutate(sample = 'panc.6.1.1')) %>% 
+  rbind(ctrl.6.1.5_read_len %>%
+         mutate(sample = 'ctrl.6.1.5')) %>%
+  group_by(biotype) -> panc_nanopore_read_length.df
+
+illumina_read_len <- list.files(file.path(output_data.dir, 'nanopore', 'illumina_read_len'), full.names = T)[1:31]
+names(illumina_read_len) <- gsub(basename(illumina_read_len), pattern = '.csv', replacement = '')[1:31]
+
+name_conversion <- data.frame('in_name' = stringr::str_split_fixed(names(illumina_read_len), '[.]', n = 2)[,1])
+
+name_conversion$out_name <- c('panc.1.2.3', 'panc.2.2.7', 'panc.4.3.9', 
+                              'panc.5.4.5', 'panc.6.2.5', 'panc.7.2.5',
+                              'panc.9.2.5', 'panc.7.1.1', 'panc.9.1.1', 
+                              'panc.10.1.2', 'panc.6.1.1', 'covid.400.0.56', 'covid.381.0.80',
+                              'covid.396.0.68', 'covid.411.0.75', 'covid.412.0.64',
+                              'covid.426.0.80', 'covid.432.0.58', 'covid.441.0.64',
+                              'covid.442.0.61', 'covid.450.0.84', 'ctrl.12.1.1', 
+                              'ctrl.5.1.3', 'ctrl.7.1.2', 'ctrl.9.1.2', 'ctrl.13.0.7', 
+                              'ctrl.8.1.2', 'ctrl.10.0.4', 'ctrl.6.1.5', 'ctrl.11.1.1','ctrl.4.1.3')
+
+illumina_roster_names <- read_csv(file.path(output_data.dir, 'nanopore', 'illumina_read_len', 'ROSTER.csv'),
+                                  col_names = c('read', 'sample'))
+
+# lapply(illumina_read_len, function(file) {
+# 
+#   read_len_file <- read_csv(file = file,
+#                             col_names = c('read', 'read_length', 'seq_1',
+#                                           'seq_2', 'originally_multisample',
+#                                           'tx', 'sample'))
+#   read_len_file %>%
+#     mutate(tx = ifelse(grepl('^ENST', tx),
+#             str_split_fixed(tx, pattern = '[|]', n = 10)[,1],
+#             tx)) %>%
+#     mutate(tx = ifelse(grepl('_range', tx),
+#             str_split_fixed(tx, pattern = '::', n = 2)[,1],
+#             tx)) %>%
+#   mutate(sample = stringr::str_split_fixed(sample, '[.]', n = 2)[,1],
+#          sample = gsub(pattern = 'panc_', replacement = 'panc', sample)) %>%
+#     merge(name_conversion, by.x = 'sample', by.y = 'in_name') %>%
+#     merge(reference_meta_data$total_tx_to_gene.df, by.x = 'tx', by.y = 'enst') %>%
+#     dplyr::rename('sample_name' = 'out_name')
+# 
+# 
+# }) -> illumina_read_len.list
+# 
+# 
+# saveRDS(object = illumina_read_len.list, file = file.path(output_data.dir, 'nanopore', 'illumina_read_len.rds'))
+# illumina_read_len.list <- readRDS(file = file.path(output_data.dir, 'nanopore', 'illumina_read_len.rds'))
+
+# illumina_read_len.list %>%
+#   bind_rows(.id = 'sample') %>%
+#   filter(!sample %in% qc_fails) %>%
+#   merge(sample_meta_data$`2022.01.14_combined_meta_data.csv`, by.x = 'sample_name', by.y = 'patient') %>%
+#   group_by(condition, biotype) %>%
+#   mutate(z_score = scale(abs(read_length))) %>%
+#   filter(between(z_score, -2.5, 2.5)) -> illumina_read_len.df
+# 
+# saveRDS(object = illumina_read_len.df, file = file.path(output_data.dir, 'nanopore',
+#                                                            'illumina_read_len.df.rds'))
+# rm(illumina_read_len.list)
+
+# illumina_read_len.df <- readRDS(file = file.path(output_data.dir, 'nanopore',
+#                                                            'illumina_read_len.df.rds'))
+# 
+# illumina_read_len.df$seq_1 <- NULL
+# illumina_read_len.df$seq_2 <- NULL
+# 
+# vroom::vroom_write(illumina_read_len.df, file = file.path(output_data.dir, 'nanopore','illumina_read_len_no_seq.tsv.gz'))
+
+illumina_read_len.df <-
+  vroom::vroom(file = file.path(output_data.dir,'nanopore','illumina_read_len_no_seq.tsv.gz'), num_threads = 16)
+```
+## Fig_NA
+```{r}
+table(illumina_read_len.df$biotype) %>% 
+  as.data.frame() %>% 
+  select(biotype = Var1) %>% 
+  filter(biotype %in% c('LINE', 'lncRNA', 'LTR', 'protein_coding', 'SINE')) %>% 
+  mutate(biolabel = c('LINE', 'gencode_lncRNA', 'LTR', 'gencode_coding', 'SINE')) -> illumina_biotype_labels
+
+illumina_read_len.df %>% 
+  filter(biotype %in% illumina_biotype_labels$biotype,
+         ! sample %in% qc_fails) -> illumina_biotype_to.plt
+
+illumina_read_len.df %>% 
+  filter(! sample %in% qc_fails) %>% 
+  group_by(sample, biotype, condition) %>% 
+  summarize(read_length = median(abs(read_length))) -> tmp_mean_read_len.df
+  
+
+tmp_mean_read_len.df %>%
+  group_by(biotype, condition) %>%
+  filter(n() == 10, ! biotype %in% c('polymorphic_pseudogene', 'TR_C_gene', 'TR_V_gene', 'IG_V_gene', 'IG_C_gene',
+                                   'TEC', 'non_stop_decay', 'nonsense_mediated_decay'),
+         condition != 'covid') %>% 
+  mutate(biotype = ifelse(biotype == 'lncRNA', 'gencode_lncRNA', biotype),
+         biotype = ifelse(biotype == 'protein_coding', 'gencode_coding', biotype)) %>% 
+  mutate(biotype = factor(biotype, levels = c('SINE', 'LINE', 'LTR', 'gencode_lncRNA', 
+                                              'retained_intron', 'gencode_coding'))) %>% 
+  ggplot(aes(condition, read_length, color = condition)) +
+  geom_boxplot(outlier.colour = NA) + 
+  geom_jitter(width = 0.24, alpha = 0.2) +
+  facet_wrap(~biotype, scales = 'free', ncol = 3, strip.position = 'bottom') +
+  scale_color_manual(values = identity_color_pal, guide = 'none') + 
+  ggpubr::stat_compare_means(method = 'wilcox', comparisons = list(c('panc', 'ctrl')), size = txt.mm_to_pts(0.8)) +
+  coord_cartesian(clip = 'off') + 
+  theme(strip.placement = 'inside') +
+  xlab('') + ylab('median fragment size (bp)') -> plt_NA.plt
+```
+## Fig_NB
+```{r}
+tmp_mean_read_len.df %>% 
+  filter(condition != 'covid',
+         ! sample %in% qc_fails) %>% 
+  pivot_wider(names_from = biotype, values_from = read_length) %>% 
+  select(-condition) %>% 
+  column_to_rownames('sample') -> read_len_pca.tmp
+  
+pca_tmp_in_sd <- apply(read_len_pca.tmp, 2, sd)
+pca_tmp_in_zero_sd <- read_len_pca.tmp[,pca_tmp_in_sd!=0 & !is.na(pca_tmp_in_sd)]
+non_zero_pca <- prcomp(pca_tmp_in_zero_sd, center = T, scale. = T, rank. = 50)
+
+summary(non_zero_pca)
+pcs.of.interest <- apply(non_zero_pca$x, 2, var)
+pcs.props <-  pcs.of.interest/sum(pcs.of.interest)
+cumsum(pcs.props)[c(1,2)]
+print(as.data.frame(pcs.props) %>% 
+        rownames_to_column('pc') %>% 
+        mutate(pc = as.numeric(sub('PC', '', pc))) %>% 
+        ggplot(aes(pc, pcs.props)) + 
+        geom_col())
+
+pca.out <- as.data.frame(non_zero_pca$x) %>% 
+  rownames_to_column('sample') %>% 
+  merge(tmp_mean_read_len.df %>% select(sample, condition) %>% ungroup() %>% distinct(), by = 'sample') %>% 
+  ungroup() %>% 
+  select(-biotype) %>% 
+  distinct()
+
+pca.out.summary <- 
+  as.data.frame(summary(non_zero_pca)$importance) %>% 
+  rownames_to_column('metric') %>% 
+  gather(pc, value, -metric) %>% 
+  spread(metric, value)
+
+pca.out %>% 
+  ggplot(aes(PC1, PC2,
+             color = condition)) +
+  geom_point(size = rel(2), alpha = 1) + 
+  # scale_shape_manual(values = c(21,25)) +
+  xlab(paste('PC1', round(cumsum(pcs.props)[1], digits = 3), sep = ' ')) +
+  ylab(paste('PC2', round(cumsum(pcs.props)[2] - cumsum(pcs.props)[1], digits = 3), sep = ' ')) +
+  geom_vline(xintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) +
+  geom_hline(yintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) + 
+  scale_color_manual(values = identity_color_pal[1:2]) + 
+  annotate(geom = 'text', x = -3.75, y = -3.25, label = 'size-aware', size = txt.mm_to_pts(1)) +
+  theme(legend.position = c(0.95,1), legend.direction = 'horizontal') -> plt_NB.plt
+```
+## Fig_NC
+```{r}
+panc_nanopore_read_length.df %>% 
+  group_by(biotype) %>% 
+  mutate(z_score = scale(abs(read_length))) %>% 
+  filter(between(z_score, -2.5, 2.5))-> panc_nanopore_read_length.df
+
+table(panc_nanopore_read_length.df$biotype) %>% 
+  as.data.frame() %>% 
+  select(biotype = Var1) %>% 
+  mutate(biolabel = c('LINE', 'gencode_lncRNA', 'LTR', 'gencode_coding', 'SINE')) -> nanopore_biotype_labels
+
+panc_nanopore_read_length.df %>% 
+  group_by(biotype) %>%
+  filter(!grepl('ctrl', sample)) %>% 
+  merge(nanopore_biotype_labels, by = 'biotype') %>% 
+  mutate(biolabel = factor(biolabel, levels = te_aware_annotation_levels),
+         sample = case_when(sample == 'panc.7.1.1' ~ 'panc 7', 
+                            sample == 'panc.6.1.1' ~ 'panc 6')) %>% 
+  ggplot(aes(abs(read_length), fill = sample)) + 
+  geom_histogram(aes(y=stat(density*width)), bins = 100) + 
+  scale_y_continuous(labels = scales::number_format(accuracy = 0.01)) +
+  ggforce::facet_col(~biolabel, scales = 'free') +
+  scale_fill_manual(values = viridisLite::plasma(20)[c(8,10)]) +
+  ylab('proportion of nanopore biotype/clade fragment lengths') + xlab('nanopore fragment size (bp)') +
+  theme(legend.position = c(0.55,0.99), legend.direction = 'horizontal') -> plt_NC.plt
+```
+## Fig_ND
+```{r}
+panc_nanopore_read_length.df %>% 
+  ungroup() %>% 
+  mutate(originally_multisample = ifelse(grepl('^ENST', originally_multisample), 
+            str_split_fixed(originally_multisample, pattern = '[|]', n = 10)[,1],
+            originally_multisample)) %>% 
+  mutate(originally_multisample = ifelse(grepl('_range', originally_multisample),
+            str_split_fixed(originally_multisample, pattern = '::', n = 2)[,1],
+            originally_multisample)) %>%
+  merge(reference_meta_data$total_tx_to_gene.df, by.x = 'originally_multisample', by.y = 'enst') %>% 
+  mutate(len = as.numeric(len)) -> len_compare.df
+
+len_compare.df %>%
+  filter(biotype.x == 'SINE', sample == 'ctrl.6.1.5') -> ctrl.6.1.5_nanopore_hex_to.plt
+
+len_compare.df %>% 
+  filter(biotype.x == 'SINE', sample == 'panc.6.1.1') -> panc.6.1.1_nanopore_hex_to.plt
+
+len_compare.df %>% 
+  filter(biotype.x == 'SINE', sample == 'panc.7.1.1') -> panc.7.1.1_nanopore_hex_to.plt
+
+# illumina_read_len.df %>% 
+#   filter(! sample %in% qc_fails,
+#          abs(read_length) <= 1000,
+#          condition != 'covid') %>% 
+#   mutate(read_length = abs(read_length)) %>% 
+#   group_by(condition) %>% 
+#   select(sample_name, biotype, read_length, condition) -> read_len_cdf_tmp
+# 
+# read_len_cdf_tmp %>% 
+#   filter(sample_name == 'ctrl.6.1.5', biotype == 'SINE') %>% 
+#   pull(read_length) %>% 
+#   AnalystHelper::ecdf_fun(CI = T, CI.interval = 0.99) %>% 
+#   mutate(sample = 'ctrl 6') %>% 
+#   rbind(read_len_cdf_tmp %>% 
+#     filter(sample_name == 'panc.6.1.1', biotype == 'SINE') %>% 
+#     pull(read_length) %>% 
+#     AnalystHelper::ecdf_fun(CI = T, CI.interval = 0.99) %>% 
+#     mutate(sample = 'panc 6')) %>% 
+#   rbind(read_len_cdf_tmp %>% 
+#     filter(sample_name == 'panc.7.1.1', biotype == 'SINE') %>% 
+#     pull(read_length) %>% 
+#     AnalystHelper::ecdf_fun(CI = T, CI.interval = 0.99) %>% 
+#     mutate(sample = 'panc 7')) %>% 
+#   ggplot(aes(x = value, y = proportion, min = lwr.CI, ymax = upr.CI, color = sample)) + 
+#   geom_ribbon(alpha = 0.05) + 
+#   geom_step() +
+#   # xlim(130,315) +
+#   scale_color_manual(values = c(three_color_pal[3], three_color_pal[1], three_color_pal[2])) + 
+#   ylab('cumulative proportion (99% CI)') + 
+#   xlab('read length') + 
+#   theme(legend.position = c(0.25, 0.99)) -> plt_ND_1.plt
+
+ctrl.6.1.5_nanopore_hex_to.plt %>% 
+  pull(read_length) %>% 
+  AnalystHelper::ecdf_fun(CI = T, CI.interval = 0.99) %>% 
+  mutate(sample = 'ctrl 6') %>% 
+  rbind(panc.6.1.1_nanopore_hex_to.plt %>% 
+        pull(read_length) %>% 
+        AnalystHelper::ecdf_fun(CI = T, CI.interval = 0.99) %>% 
+          mutate(sample = 'panc 6')) %>% 
+  rbind(panc.7.1.1_nanopore_hex_to.plt %>% 
+        pull(read_length) %>% 
+        AnalystHelper::ecdf_fun(CI = T, CI.interval = 0.99) %>% 
+          mutate(sample = 'panc 7')) %>% 
+  ggplot(aes(x = value, y = proportion, min = lwr.CI, ymax = upr.CI, color = sample)) + 
+  geom_ribbon(alpha = 0.05) + 
+  geom_step() + 
+  xlim(130,315) +
+  scale_color_manual(values = viridisLite::plasma(20)[c(1,8,10)]) +
+  ylab('cumulative prop. (99% CI)') + 
+  xlab('nanopore SINE fragment size (bp)') + 
+  theme(legend.position = c(0.25, 0.99)) -> plt_ND_2.plt
+
+# p4 <- ggplot(data.frame(l = plt_ND_2.plt$labels$y, x = 1, y = 1)) +
+#       geom_text(aes(x, y, label = l), angle = 90) + 
+#       theme_void() +
+#       coord_cartesian(clip = "off")
+# 
+# panel_ND_layout <- "
+# CA
+# CB
+# "
+# 
+# wrap_plots(plt_ND_1.plt + ylab('') + xlab(''),
+#            plt_ND_2.plt + ylab(''),
+#            p4,
+#            widths = c(0.02,1),
+#            design = panel_ND_layout) -> panel.ND.patchwork
+```
+## Fig_NE
+```{r}
+panc.6.1.1_nanopore_hex_to.plt %>% 
+  group_by(tx, len, biotype.x, sample) %>% 
+  summarize(read_length = mean(read_length)) %>% 
+  merge(nanopore_biotype_labels, by.x = 'biotype.x', by.y = 'biotype') %>% 
+  mutate(biolabel = factor(biolabel, levels = te_aware_annotation_levels),
+         condition = ifelse(grepl('ctrl', sample), 'ctrl', 'panc')) %>% 
+  # ggplot(aes(read_length, len, fill = scale(..count../(sum(..count..) * 1e6)))) + 
+  ggplot(aes(read_length, len, fill = scales::rescale((..count../(sum(..count..) * 1e6))))) + 
+  geom_hex(bins = 120) +
+  # geom_vline(xintercept = median(panc.6.1.1_nanopore_hex_to.plt$read_length), color = 'grey', linetype = 'dashed') +
+  annotate(geom = 'text', x = 215, y = 120, label = 'panc 6') +
+  xlab('avg. observed SINE fragment size (bp)') + ylab('expected size (bp)') +
+  # ggforce::facet_col(~sample) +
+  scale_fill_viridis_c(option = 'viridis', direction = 1, name = 'scaled cpm', breaks = c(0,1)) +
+  scale_y_continuous(breaks = c(100,200,300,400), limits = c(75,425)) +
+  scale_x_continuous(breaks = c(100,200,300,400), limits = c(75,370)) +
+  theme(legend.position = c(0.98,0.45), legend.direction = 'horizontal', legend.key.width = unit(1, 'mm')) +
+  guides(fill = guide_colorbar(title.position = 'left', title.vjust = 1)) -> plt_NE.plt
+```
+### Fig_Nanopore_patchwork
+```{r}
+import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer, wrap_elements)
 
 
-input_set_dds_norm_counts.df[, 'panc.7.1.1', drop = F] %>% rownames_to_column('Gene ID') %>% 
-  merge(panc.7.1.1_nanopore_tpm, by = 'Gene ID') %>% 
-  dplyr::rename('nanopore_tpm' = TPM) %>% 
-  mutate(illumina_tpm = panc.7.1.1*1e6/(sum(panc.7.1.1))) -> panc.7.1.1_seq_compare.df
+fig_N_layout <- "
+AA
+BB
+CD
+ED
+FD
+"
 
-input_set_dds_norm_counts.df[, 'panc.6.1.1', drop = F] %>% rownames_to_column('Gene ID') %>% 
-  merge(panc.6.1.1_nanopore_tpm, by = 'Gene ID') %>% 
-  dplyr::rename('nanopore_tpm' = TPM) %>% 
-  mutate(illumina_tpm = panc.6.1.1*1e6/(sum(panc.6.1.1))) -> panc.6.1.1_seq_compare.df
+wrap_plots(plt_NA.plt,
+           guide_area(),
+           plt_NB.plt,
+           plt_NC.plt,
+           wrap_elements(full = plt_NE.plt),
+           wrap_elements(full = plt_ND_2.plt),
+           design = fig_N_layout, 
+           guides = 'collect',
+           heights = c(1.2,0.025,0.5,1,1)) +
+  plot_annotation(tag_levels = 'A') &
+  theme(legend.justification = 'center', legend.position = 'bottom') -> fig.N.patchwork
 
 
-panc.7.1.1_seq_compare.df %>% 
-  filter(illumina_tpm > 1 & nanopore_tpm > 1) %>% 
-  ggplot(aes(log2(illumina_tpm + 1), log2(nanopore_tpm + 1), label = `Gene ID`)) + 
-  geom_point(alpha = 0.4)
+# fig.N.patchwork
 
-panc.6.1.1_seq_compare.df %>% 
-  filter(illumina_tpm > 1 & nanopore_tpm > 1) %>% 
-  ggplot(aes(log2(illumina_tpm + 1), log2(nanopore_tpm + 1), label = `Gene ID`)) + 
-  geom_point(alpha = 0.4) 
+save.manuscript.panel(figure = 3,
+                      figure.dir = figure.dir,
+                      name = 'patchwork_full_fig_3',
+                      width = figure_double_column_width,
+                      height = figure_depth,
+                      plot.in = fig.N.patchwork)
+```
 
+# Fig_supp_nanopore
+## Fig_SNA
+```{r}
+import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer)
+
+ctrl.6.1.5_nanopore_hex_to.plt %>%
+  group_by(tx, len, biotype.x, sample) %>%
+  summarize(read_length = mean(read_length)) %>%
+  merge(nanopore_biotype_labels, by.x = 'biotype.x', by.y = 'biotype') %>%
+  mutate(biolabel = factor(biolabel, levels = te_aware_annotation_levels),
+         condition = ifelse(grepl('ctrl', sample), 'ctrl', 'panc')) %>%
+  ggplot(aes(read_length, len, fill = scales::rescale((..count../(sum(..count..) * 1e6))))) +
+  geom_hex(bins = 120) +
+  annotate(geom = 'text', x = 275, y = 150, label = 'ctrl 6') +
+  # geom_vline(xintercept = median(ctrl.6.1.5_nanopore_hex_to.plt$read_length), 
+  #            color = 'grey', linetype = 'dashed') +
+  xlab('avg. observed fragment size (bp)') + ylab('expected size (bp)') +
+  # ggforce::facet_col(~sample) +
+  ggtitle('nanopore exp. vs obs. size') + 
+  scale_fill_viridis_c(option = 'viridis', direction = 1, name = 'scaled cpm', breaks = c(0,1)) +
+  theme(legend.position = c(0.95,1), legend.direction = 'horizontal', legend.key.width = unit(1, 'mm'))  +
+  guides(fill = guide_colorbar(title.position = 'left', title.vjust = 1)) +
+  scale_y_continuous(breaks = c(100,200,300,400), limits = c(75,425)) +
+  scale_x_continuous(breaks = c(100,200,300,400), limits = c(75,370)) -> plt_SNA_1.plt
+
+
+panc.7.1.1_nanopore_hex_to.plt %>% 
+  group_by(tx, len, biotype.x, sample) %>% 
+  summarize(read_length = mean(read_length)) %>% 
+  merge(nanopore_biotype_labels, by.x = 'biotype.x', by.y = 'biotype') %>% 
+  mutate(biolabel = factor(biolabel, levels = te_aware_annotation_levels),
+         condition = ifelse(grepl('ctrl', sample), 'ctrl', 'panc')) %>% 
+  ggplot(aes(read_length, len, fill = scales::rescale((..count../(sum(..count..) * 1e6))))) + 
+  geom_hex(bins = 120) +
+  # geom_vline(xintercept = median(panc.7.1.1_nanopore_hex_to.plt$read_length), color = 'grey', linetype = 'dashed') +
+  annotate(geom = 'text', x = 275, y = 150, label = 'panc 7') +
+  xlab('avg. observed fragment size (bp)') + ylab('expected size (bp)') +
+  # ggforce::facet_col(~sample) +
+  scale_fill_viridis_c(option = 'viridis', direction = 1, name = 'scaled cpm', guide = 'none') +
+  scale_y_continuous(breaks = c(100,200,300,400), limits = c(75,425)) +
+  scale_x_continuous(breaks = c(100,200,300,400), limits = c(75,370)) -> plt_SNA_3.plt
+  
+panel_SNA_layout <- "
+AB
+"
+
+wrap_plots(plt_SNA_1.plt + xlab(''),
+           plt_SNA_3.plt + ylab('') + xlab(''),
+           design = panel_SNA_layout) -> panel.SNA.patchwork
+```
+## Fig_SNA_dep
+```{r}
+illumina_biotype_to.plt %>% 
+  filter(biotype == 'SINE') %>% 
+  group_by(tx, len, biotype, condition) %>% 
+  mutate(len = as.numeric(len)) %>%
+  summarize(read_length = median(abs(read_length))) -> tmp
+
+tmp %>% 
+  filter(condition == 'ctrl') -> ctrl_hex_to.plt
+
+ctrl_hex_to.plt %>% 
+  ggplot(aes(read_length, len, fill = scales::rescale((..count../(sum(..count..) * 1e6))))) + 
+  geom_hex(bins = 120) +
+  # geom_vline(xintercept = median(ctrl_hex_to.plt$read_length), color = 'grey', linetype = 'dashed') +
+  annotate(geom = 'text', x = 275, y = 175, label = 'ctrl') +
+  xlab('median observed SINE fragment size (bp)') + ylab('expected size (bp)') +
+  # ggforce::facet_col(~sample) +
+  scale_fill_viridis_c(option = 'viridis', direction = 1, name = 'scaled cpm', breaks = c(0,1), guide = 'none') +
+  scale_y_continuous(breaks = c(50,100,200,300,400, 500), limits = c(0,500)) +
+  scale_x_continuous(breaks = c(50,100,200,300,400, 500), limits = c(0,350)) -> plt_SNA_1.plt
+
+tmp %>% 
+  filter(condition == 'panc') -> panc_hex_to.plt
+
+panc_hex_to.plt %>% 
+  ggplot(aes(read_length, len, fill = scales::rescale((..count../(sum(..count..) * 1e6))))) + 
+  geom_hex(bins = 120) +
+  # geom_vline(xintercept = median(panc_hex_to.plt$read_length), color = 'grey', linetype = 'dashed') +
+  annotate(geom = 'text', x = 275, y = 175, label = 'panc') +
+  xlab('avg. observed fragment length') + ylab('expected insertion length') +
+  # ggforce::facet_col(~sample) +
+  scale_fill_viridis_c(option = 'viridis', direction = 1, name = 'scaled cpm', breaks = c(0,1)) +
+  scale_y_continuous(breaks = c(50,100,200,300,400, 500), limits = c(0,500)) +
+  scale_x_continuous(breaks = c(50,100,200,300,400, 500), limits = c(0,350)) +
+  theme(legend.position = c(0.95,0.25), legend.direction = 'horizontal', legend.key.width = unit(1, 'mm')) +
+  guides(fill = guide_colorbar(title.position = 'left', title.vjust = 1)) -> plt_SNA_2.plt
+
+tmp %>% 
+  filter(condition == 'covid') -> covid_hex_to.plt
+
+covid_hex_to.plt %>% 
+  ggplot(aes(read_length, len, fill = scales::rescale((..count../(sum(..count..) * 1e6))))) + 
+  geom_hex(bins = 120) +
+  # geom_vline(xintercept = median(covid_hex_to.plt$read_length), color = 'grey', linetype = 'dashed') +
+  annotate(geom = 'text', x = 275, y = 175, label = 'covid') +
+  xlab('avg. observed fragment length') + ylab('expected insertion length') +
+  # ggforce::facet_col(~sample) +
+  scale_fill_viridis_c(option = 'viridis', direction = 1, name = 'scaled cpm', breaks = c(0,1), guide = 'none') +
+  scale_y_continuous(breaks = c(50,100,200,300,400, 500), limits = c(0,500)) +
+  scale_x_continuous(breaks = c(50,100,200,300,400, 500), limits = c(0,350)) -> plt_SNA_3.plt
+
+p4 <- ggplot(data.frame(l = plt_SNA_1.plt$labels$x, x = 1, y = 1)) +
+      geom_text(aes(x, y, label = l), angle = 0, size = txt.mm_to_pts(0.95)) + 
+      theme_void() +
+      coord_cartesian(clip = "off")
+  
+panel_SNA_layout <- "
+ABC
+"
+
+wrap_plots(plt_SNA_1.plt + xlab(''),
+           plt_SNA_2.plt + xlab('') + ylab(''),
+           plt_SNA_3.plt + xlab('') + ylab(''),
+           heights = c(1),
+           design = panel_SNA_layout) -> panel.SNA.patchwork
+```
+## Fig_SNB
+```{r}
+illumina_biotype_to.plt %>% 
+  filter(biotype == 'SINE',
+         sample_name %in% c('panc.6.1.1', 'panc.7.1.1', 'ctrl.6.1.5')) %>% 
+  group_by(tx, len, biotype, sample_name) %>% 
+  mutate(len = as.numeric(len)) %>% 
+  summarize(read_length = median(abs(read_length))) -> tmp
+
+tmp %>%
+  filter(sample_name == 'ctrl.6.1.5') -> ctrl_hex_to.plt
+
+ctrl_hex_to.plt %>%
+  ggplot(aes(read_length, len, fill = scales::rescale((..count../(sum(..count..) * 1e6))))) +
+  geom_hex(bins = 120) +
+  annotate(geom = 'text', x = 250, y = 175, label = 'ctrl 6') +
+  # geom_vline(xintercept = median(ctrl_hex_to.plt$read_length), color = 'grey', linetype = 'dashed') +
+  xlab('avg. observed fragment size (bp)') + ylab('expected size (bp)') +
+  ggtitle('illumina exp. vs obs. size') + 
+  scale_y_continuous(breaks = c(100,200,300,400), limits = c(75,425)) +
+  scale_x_continuous(breaks = c(100,200,300,400), limits = c(75,370)) +
+  scale_fill_viridis_c(option = 'viridis', direction = 1, name = 'scaled cpm', breaks = c(0,1), guide = 'none') -> plt_SNB_1.plt
+  
+
+tmp %>% 
+  filter(sample_name == 'panc.6.1.1') -> panc.6.1.1_hex_to.plt
+
+panc.6.1.1_hex_to.plt %>% 
+  mutate(bin = ifelse(read_length > 180, 'large', 'small')) %>% 
+  group_by(tx) %>%
+  ggplot(aes(read_length, len, fill = scales::rescale((..count../(sum(..count..) * 1e6))))) + 
+  geom_hex(bins = 120) +
+  annotate(geom = 'text', x = 250, y = 175, label = 'panc 6') +
+  # geom_vline(xintercept = median(panc.6.1.1_hex_to.plt$read_length), color = 'grey', linetype = 'dashed') +
+  xlab('avg. observed fragment size (bp)') + ylab('expected size (bp)') +
+  scale_y_continuous(breaks = c(100,200,300,400), limits = c(75,425)) +
+  scale_x_continuous(breaks = c(100,200,300,400), limits = c(75,370)) +
+  scale_fill_viridis_c(option = 'viridis', direction = 1, name = 'scaled cpm', breaks = c(0,1), guide = 'none') -> plt_SNB_2.plt
+
+
+tmp %>%
+  filter(sample_name == 'panc.7.1.1') -> panc.7.1.1_hex_to.plt
+
+panc.7.1.1_hex_to.plt %>% 
+  ggplot(aes(read_length, len, fill = scales::rescale((..count../(sum(..count..) * 1e6))))) + 
+  geom_hex(bins = 120) +
+  annotate(geom = 'text', x = 250, y = 175, label = 'panc 7') +
+  # geom_vline(xintercept = median(panc.7.1.1_hex_to.plt$read_length), color = 'grey', linetype = 'dashed') +
+  xlab('avg. observed fragment size (bp)') + ylab('expected size (bp)') +
+  scale_y_continuous(breaks = c(100,200,300,400), limits = c(75,425)) +
+  scale_x_continuous(breaks = c(100,200,300,400), limits = c(75,370)) +
+  scale_fill_viridis_c(option = 'viridis', direction = 1, name = 'scaled cpm', breaks = c(0,1), guide = 'none') -> plt_SNB_3.plt
+
+p4 <- ggplot(data.frame(l = plt_SNB_3.plt$labels$x, x = 1, y = 1)) +
+      geom_text(aes(x, y, label = l), angle = 0, size = txt.mm_to_pts(0.95)) + 
+      theme_void() +
+      coord_cartesian(clip = "off")
+  
+panel_SNB_layout <- "
+ABC
+DDD
+"
+
+wrap_plots(plt_SNB_1.plt + xlab(''),
+           plt_SNB_2.plt + xlab('') + ylab(''),
+           plt_SNB_3.plt + xlab('') + ylab(''),
+           p4,
+           heights = c(1,0.06),
+           design = panel_SNB_layout) -> panel.SNB.patchwork
+
+```
+## Fig_SNC
+```{r}
+tmp_mean_read_len.df %>%
+  group_by(biotype, condition) %>%
+  filter(n() == 10, ! biotype %in% c('polymorphic_pseudogene', 'TR_C_gene', 'TR_V_gene', 'IG_V_gene', 'IG_C_gene',
+                                   'TEC', 'non_stop_decay', 'nonsense_mediated_decay'),
+         condition != 'panc') %>% 
+  mutate(biotype = ifelse(biotype == 'lncRNA', 'gencode_lncRNA', biotype),
+         biotype = ifelse(biotype == 'protein_coding', 'gencode_coding', biotype)) %>% 
+  mutate(biotype = factor(biotype, levels = c('SINE', 'LINE', 'LTR', 'gencode_lncRNA', 'retained_intron', 'gencode_coding'))) %>% 
+  ggplot(aes(condition, read_length, color = condition)) +
+  geom_boxplot(outlier.colour = NA) + 
+  geom_jitter(width = 0.24, alpha = 0.2) +
+  facet_wrap(~biotype, scales = 'free', ncol = 3, strip.position = 'bottom') +
+  scale_color_manual(values = identity_color_pal, guide = 'none') + 
+  ggpubr::stat_compare_means(method = 'wilcox', comparisons = list(c('covid', 'ctrl')), size = txt.mm_to_pts(0.8)) +
+  coord_cartesian(clip = 'off') + 
+  theme(strip.placement = 'inside') +
+  xlab('') + ylab('median fragment size (bp)') -> plt_SNC.plt
+```
+## Fig_SND
+```{r}
+tmp_mean_read_len.df %>% 
+  filter(condition != 'panc',
+         ! sample %in% qc_fails) %>% 
+  pivot_wider(names_from = biotype, values_from = read_length) %>% 
+  select(-condition) %>% 
+  column_to_rownames('sample') -> read_len_pca.tmp
+  
+pca_tmp_in_sd <- apply(read_len_pca.tmp, 2, sd)
+pca_tmp_in_zero_sd <- read_len_pca.tmp[,pca_tmp_in_sd!=0 & !is.na(pca_tmp_in_sd)]
+non_zero_pca <- prcomp(pca_tmp_in_zero_sd, center = T, scale. = T, rank. = 50)
+
+summary(non_zero_pca)
+pcs.of.interest <- apply(non_zero_pca$x, 2, var)
+pcs.props <-  pcs.of.interest/sum(pcs.of.interest)
+cumsum(pcs.props)[c(1,2)]
+print(as.data.frame(pcs.props) %>% 
+        rownames_to_column('pc') %>% 
+        mutate(pc = as.numeric(sub('PC', '', pc))) %>% 
+        ggplot(aes(pc, pcs.props)) + 
+        geom_col())
+
+pca.out <- as.data.frame(non_zero_pca$x) %>% 
+  rownames_to_column('sample') %>% 
+  merge(tmp_mean_read_len.df %>% select(sample, condition) %>% ungroup() %>% distinct(), by = 'sample') %>% 
+  ungroup() %>% 
+  select(-biotype) %>% 
+  distinct()
+
+pca.out.summary <- 
+  as.data.frame(summary(non_zero_pca)$importance) %>% 
+  rownames_to_column('metric') %>% 
+  gather(pc, value, -metric) %>% 
+  spread(metric, value)
+
+pca.out %>% 
+  ggplot(aes(PC1, PC2,
+             color = condition)) +
+  geom_point(size = rel(2), alpha = 1) + 
+  # scale_shape_manual(values = c(21,25)) +
+  xlab(paste('PC1', round(cumsum(pcs.props)[1], digits = 3), sep = ' ')) +
+  ylab(paste('PC2', round(cumsum(pcs.props)[2] - cumsum(pcs.props)[1], digits = 3), sep = ' ')) +
+  geom_vline(xintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) +
+  geom_hline(yintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) + 
+  scale_color_manual(values = identity_color_pal[c(1,3)]) + 
+  annotate(geom = 'text', x = -5.5, y = 2.25, label = 'size-aware', size = txt.mm_to_pts(1)) +
+  theme(legend.position ='top', legend.direction = 'horizontal') -> plt_SND.plt
+```
+### Fig_SNanopore_patchwork
+```{r}
+import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer, wrap_elements)
+
+
+fig_SN_layout <- "
+AA
+BB
+CC
+DD
+"
+
+wrap_plots(wrap_elements(full = panel.SNA.patchwork),
+           wrap_elements(full = panel.SNB.patchwork),
+           plt_SNC.plt,
+           plt_SND.plt,
+           heights = c(1.25,1.25,1,0.5),
+           design = fig_SN_layout) +
+  plot_annotation(tag_levels = 'A') -> fig.SN.patchwork
+
+save.manuscript.panel(figure = 's3',
+                      figure.dir = figure.dir,
+                      name = 'patchwork_full_fig_S3',
+                      width = figure_double_column_width,
+                      height = figure_depth,
+                      plot.in = fig.SN.patchwork)
+```
+
+# Fig_supp_nanopore_2
+## Fig_SN2_patchwork
+```{r}
+panc.7.1.1_nanopore_tpm <- 
+  read_tsv(file.path(output_data.dir, 'nanopore', 'gencode_39_rmsk_nanopore_abundance', 'panc.7.1.1_gene_abundance.tsv'))
+
+panc.6.1.1_nanopore_tpm <- 
+  read_tsv(file.path(output_data.dir, 'nanopore', 'gencode_39_rmsk_nanopore_abundance', 'panc.6.1.1_gene_abundance.tsv'))
+
+import::from(.from = 'SummarizedExperiment', assay)
+
+count_matrix.df <- as.data.frame(as.matrix(assay(ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$gxi, 'counts')))
 
 count_matrix.df[, 'panc.7.1.1', drop = F] %>% rownames_to_column('Gene ID') %>% 
   mutate(panc.7.1.1_tpm = panc.7.1.1*1e6/(sum(panc.7.1.1))) %>% 
   merge(panc.7.1.1_nanopore_tpm %>% select(`Gene ID`, TPM), by = 'Gene ID') %>% 
-  dplyr::rename('panc.7.1.1_nanopore_tpm' = TPM) %>% 
-  merge(count_matrix.df[, 'panc.6.1.1', drop = F] %>% rownames_to_column('Gene ID') %>% 
-        mutate(panc.6.1.1_tpm = panc.6.1.1 *1e6/(sum(panc.6.1.1))) %>% 
-            merge(panc.6.1.1_nanopore_tpm %>% select(`Gene ID`, TPM), by = 'Gene ID') %>% 
-            dplyr::rename('panc.6.1.1_nanopore_tpm' = TPM), by = 'Gene ID') -> panc_compare.df
+  dplyr::rename('panc.7.1.1_nanopore_tpm' = TPM) %>%
+  group_by(`Gene ID`) %>% 
+  summarize(panc_7_tpm = mean(panc.7.1.1_tpm),
+            panc_7_nanopore_tpm = mean(panc.7.1.1_nanopore_tpm)) %>% 
+  distinct() -> panc_7.1.1_tpm
+
+count_matrix.df[, 'panc.6.1.1', drop = F] %>% rownames_to_column('Gene ID') %>%
+  mutate(panc.6.1.1_tpm = panc.6.1.1 *1e6/(sum(panc.6.1.1))) %>% 
+  merge(panc.6.1.1_nanopore_tpm %>% select(`Gene ID`, TPM), by = 'Gene ID') %>% 
+  dplyr::rename('panc.6.1.1_nanopore_tpm' = TPM) %>% 
+  group_by(`Gene ID`) %>% 
+  summarize(panc_6_tpm = mean(panc.6.1.1_tpm),
+            panc_6_nanopore_tpm = mean(panc.6.1.1_nanopore_tpm)) %>% 
+  distinct() -> panc_6.1.1_tpm
+
+
+merge(panc_7.1.1_tpm, panc_6.1.1_tpm, by = 'Gene ID') -> panc_compare.df
+
 
 panc_compare.df %>% 
-  # filter_if(is.numeric, ~. > 1) %>% 
-  # ggplot(aes(log2(ctrl.10.0.4_tpm + 1), log2(panc.7.1.1_tpm + 1))) + 
-  ggplot(aes(panc.6.1.1_tpm, panc.7.1.1_tpm)) + 
-  geom_point(alpha = 0.4) -> plt.1
+  merge(reference_meta_data$ucsc_rmsk_insert_info.df, by.x = 'Gene ID', by.y = 'gene', all.x = T) %>% 
+  mutate(family = ifelse(`Gene ID` %in% reference_meta_data$gencode_lncRNA_gene_names.df$ensg,
+                         'gencode_lncRNA', family),
+         family = ifelse(is.na(family), 'gencode_coding', family),
+         clade = ifelse(grepl('gencode', family), family, clade),
+         clade = ifelse(clade %in% c('gencode_coding',
+                                     'gencode_lncRNA',
+                                     'LINE',
+                                     'SINE',
+                                     'LTR',
+                                     'DNA',
+                                     'Simple_repeat'), clade, 'other'),
+         type = ifelse(grepl('gencode',family), 'GENCODE', 'TE'),
+         clade = factor(clade, levels = te_aware_annotation_levels)) -> panc_compare_annotated.df
 
-panc_compare.df %>% 
-  # filter_if(is.numeric, ~. > 1) %>% 
-  ggplot(aes(log2(panc.6.1.1_nanopore_tpm + 1), log2(panc.7.1.1_nanopore_tpm + 1))) + 
-  geom_point(alpha = 0.4) -> plt.2
+lm(panc_6_tpm ~ panc_7_tpm, data = panc_compare_annotated.df) %>% 
+  summary() -> panc_lm_out
 
-panc_compare.df %>% 
-  # filter_if(is.numeric, ~. > 1) %>% 
-  ggplot(aes(log2(panc.6.1.1_nanopore_tpm + 1), log2(ctrl.10.0.4_tpm + 1))) + 
-  geom_point(alpha = 0.4) -> plt.3
+b <- round(panc_lm_out$coefficients[1,1], 2)
+m <- round(panc_lm_out$coefficients[2,1], 2)
+r2 <- round(panc_lm_out$adj.r.squared, 2)
 
-panc_compare.df %>% 
-  # filter_if(is.numeric, ~. > 1) %>% 
-  ggplot(aes(log2(panc.7.1.1_nanopore_tpm + 1), log2(panc.7.1.1_tpm + 1))) + 
-  geom_point(alpha = 0.4) -> plt.4
+panc_compare_annotated.df %>% 
+  ggplot(aes(log2(panc_6_tpm + 1), log2(panc_7_tpm + 1), color = clade, fill = clade)) + 
+  geom_hex(alpha = 0.4, bins = 250) +
+  annotate(geom = 'text', x = 3, y = 15, fontface = 'italic',
+           label = paste0('y', ' ', ' = ',b,' + ',m,'x; adj. R2 = ', r2), 
+           size = rel(3.75), alpha = 0.8) + 
+  scale_color_manual(values = te_color_pal) + 
+  scale_fill_manual(values = te_color_pal) -> plt_SN2A.plt
 
-plt.1 + plt.3 / plt.4 + plt.2
+lm(panc_7_nanopore_tpm ~ panc_7_tpm, data = panc_compare_annotated.df) %>% 
+  summary() -> panc_lm_out
 
+b <- round(panc_lm_out$coefficients[1,1], 2)
+m <- round(panc_lm_out$coefficients[2,1], 2)
+r2 <- round(panc_lm_out$adj.r.squared, 2)
+
+panc_compare_annotated.df %>% 
+  ggplot(aes(log2(panc_7_nanopore_tpm + 1), log2(panc_7_tpm + 1), color = clade, fill = clade)) + 
+  geom_hex(alpha = 0.4, bins = 250) +
+  annotate(geom = 'text', x = 6, y = 16, fontface = 'italic',
+         label = paste0('y', ' ', ' = ',b,' + ',m,'x; adj. R2 = ', r2), 
+         size = rel(3.75), alpha = 0.8) + 
+  scale_color_manual(values = te_color_pal) + 
+  scale_fill_manual(values = te_color_pal)-> plt_SN2B.plt
+
+lm(panc_6_nanopore_tpm ~ panc_6_tpm, data = panc_compare_annotated.df) %>% 
+  summary() -> panc_lm_out
+
+b <- round(panc_lm_out$coefficients[1,1], 2)
+m <- round(panc_lm_out$coefficients[2,1], 2)
+r2 <- round(panc_lm_out$adj.r.squared, 2)
+
+panc_compare_annotated.df %>% 
+  ggplot(aes(log2(panc_6_nanopore_tpm + 1), log2(panc_6_tpm + 1), color = clade, fill = clade)) + 
+  geom_hex(alpha = 0.4, bins = 250) +
+  annotate(geom = 'text', x = 6, y = 16, fontface = 'italic',
+         label = paste0('y', ' ', ' = ',b,' + ',m,'x; adj. R2 = ', r2), 
+         size = rel(3.75), alpha = 0.8) +
+  scale_color_manual(values = te_color_pal) + 
+  scale_fill_manual(values = te_color_pal) -> plt_SN2C.plt
+
+lm(panc_6_nanopore_tpm ~ panc_7_nanopore_tpm, data = panc_compare_annotated.df) %>% 
+  summary() -> panc_lm_out
+
+b <- round(panc_lm_out$coefficients[1,1], 2)
+m <- round(panc_lm_out$coefficients[2,1], 2)
+r2 <- round(panc_lm_out$adj.r.squared, 2)
+
+panc_compare_annotated.df %>% 
+  ggplot(aes(log2(panc_6_nanopore_tpm + 1), log2(panc_7_nanopore_tpm + 1), color = clade, fill = clade)) + 
+  geom_hex(alpha = 0.4, bins = 250) +
+  annotate(geom = 'text', x = 3, y = 15, fontface = 'italic',
+         label = paste0('y', ' ', ' = ',b,' + ',m,'x; adj. R2 = ', r2), 
+         size = rel(3.75), alpha = 0.8) +
+  scale_color_manual(values = te_color_pal) + 
+  scale_fill_manual(values = te_color_pal) -> plt_SN2D.plt
+
+import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer, wrap_elements)
+
+
+fig_SN2_layout <- "
+AA
+BB
+CD
+EE
+"
+
+wrap_plots(plt_SN2A.plt + ggtitle('illumina v illumina'),
+           guide_area(),
+           plt_SN2B.plt + ggtitle('nanopore v illumina'),
+           plt_SN2C.plt + ggtitle('nanopore v illumina'),
+           plt_SN2D.plt + ggtitle('nanopore v nanopore'),
+           guides = 'collect',
+           design = fig_SN2_layout,
+           heights = c(1,0.25,1,1)) +
+  plot_annotation(tag_levels = 'A') & 
+  theme(legend.position = 'bottom')-> fig.SN2.patchwork
+
+save.manuscript.panel(figure = 's3',
+                      figure.dir = figure.dir,
+                      name = 'patchwork_full_fig_S3_2',
+                      width = figure_double_column_width,
+                      height = figure_depth,
+                      plot.in = fig.SN2.patchwork)
+
+
+```
+
+# Figure_process_aware
+## Fig_4A
+```{r}
+process.aware.salmon_quant$analysis_set$ctrl_panc_covid$unsplice_data.df %>% 
+  merge(process.aware.salmon_quant$analysis_set$ctrl_panc_covid$quant_meta, by = 'sample') %>% 
+  # filter(condition != 'covid') %>% 
+  mutate(condition = factor(condition, levels = c('panc', 'ctrl', 'covid'))) %>% 
+  ggplot(aes(condition, unsplice_rate, color = condition)) + 
+  geom_boxplot(fill = NA, outlier.colour = NA) + 
+  geom_point() + 
+  scale_color_manual(values = identity_color_pal, guide = 'none') + 
+  theme(legend.position = c(0.99,0.99)) + 
+  coord_cartesian(clip = 'off') +
+  ggpubr::stat_compare_means(method = 'wilcox', 
+                             comparisons = list(c('panc', 'ctrl'), c('covid', 'ctrl'),  c('panc', 'covid'))) + 
+  xlab('') + ylab('detection rate of un-spliced genes') -> plt_4A.plt
+```
+## Fig_4B
+```{r}
+SummarizedExperiment::assay(process.aware.salmon_quant$analysis_set$ctrl_panc_covid$gxi.split,
+                            'unspliced') %>% as.data.frame() -> unsplice_counts_pca.df
+
+unsplice_counts_pca.df %>% 
+  select(!contains(qc_fails)) %>% 
+  t() %>% 
+  as.data.frame() -> unsplice_counts_pca.tmp
+  
+pca_tmp_in_sd <- apply(unsplice_counts_pca.tmp, 2, sd)
+pca_tmp_in_zero_sd <- unsplice_counts_pca.tmp[,pca_tmp_in_sd!=0 & !is.na(pca_tmp_in_sd)]
+non_zero_pca <- prcomp(pca_tmp_in_zero_sd, center = T, scale. = T, rank. = 50)
+
+summary(non_zero_pca)
+pcs.of.interest <- apply(non_zero_pca$x, 2, var)
+pcs.props <-  pcs.of.interest/sum(pcs.of.interest)
+cumsum(pcs.props)[c(1,2)]
+print(as.data.frame(pcs.props) %>% 
+        rownames_to_column('pc') %>% 
+        mutate(pc = as.numeric(sub('PC', '', pc))) %>% 
+        ggplot(aes(pc, pcs.props)) + 
+        geom_col())
+
+pca.out <- as.data.frame(non_zero_pca$x) %>% 
+  rownames_to_column('sample') %>% 
+  merge(process.aware.salmon_quant$analysis_set$ctrl_panc_covid$quant_meta %>% 
+          select(sample, condition) %>% 
+          ungroup() %>% distinct(), by = 'sample')
+
+pca.out.summary <- 
+  as.data.frame(summary(non_zero_pca)$importance) %>% 
+  rownames_to_column('metric') %>% 
+  gather(pc, value, -metric) %>% 
+  spread(metric, value)
+
+pca.out %>% 
+  ggplot(aes(PC1, PC2,
+             color = condition)) +
+  geom_point(size = rel(2), alpha = 1) + 
+  # scale_shape_manual(values = c(21,25)) +
+  xlab(paste('PC1', round(cumsum(pcs.props)[1], digits = 3), sep = ' ')) +
+  ylab(paste('PC2', round(cumsum(pcs.props)[2] - cumsum(pcs.props)[1], digits = 3), sep = ' ')) +
+  geom_vline(xintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) +
+  geom_hline(yintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) + 
+  scale_color_manual(values = identity_color_pal) + 
+  annotate(geom = 'text', x = -65, y = -160, label = 'size-aware', size = txt.mm_to_pts(1)) +
+  theme(legend.position = c(0.95,1), legend.direction = 'horizontal') -> plt_4B.plt
+```
+### Fig_4_patchwork
+```{r}
+import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer, wrap_elements)
+
+
+fig_4_layout <- "
+AABB
+CCCC
+CCCC
+"
+
+wrap_plots(plt_4A.plt,
+           plt_4B.plt,
+           plot_spacer(),
+           design = fig_4_layout) +
+  plot_annotation(tag_levels = 'A') -> fig.4.patchwork
+
+save.manuscript.panel(figure = 4,
+                      figure.dir = figure.dir,
+                      name = 'patchwork_full_fig_4',
+                      width = figure_double_column_width,
+                      height = figure_depth,
+                      plot.in = fig.4.patchwork)
+```
+
+```{r}
+process.aware.salmon_quant$analysis_set$ctrl_panc_covid$unsplice_data.df %>% 
+  merge(process.aware.salmon_quant$analysis_set$ctrl_panc_covid$quant_meta, by = 'sample') %>%
+  mutate(condition = factor(condition, levels = c('panc', 'ctrl', 'covid'))) %>% 
+  ggplot(aes(unsplice_rate, star_multimapped_percent, color = condition)) + 
+  geom_point() + 
+  ggforce::facet_col(~condition) + 
+  geom_smooth(method = 'lm', se = F, linetype = 'dashed') + 
+  scale_color_manual(values = identity_color_pal, guide = 'none')
+
+SummarizedExperiment::assay(process.aware.salmon_quant$analysis_set$panc_ctrl$gxi, 'counts')  %>% 
+  as.data.frame() %>% 
+  rownames_to_column('ensg') %>% 
+  filter(ensg == 'ENSG00000230021.10-I') %>% 
+  gather(sample, count, -ensg) %>% 
+  mutate(condition = ifelse(grepl('panc', sample), 'panc', 'ctrl')) %>% 
+  ggplot(aes(condition, count)) + 
+  geom_boxplot()
+  
+
+
+process.aware.salmon_quant$analysis_set$covid_ctrl$deseq$de_out %>% 
+  merge(salmon_quant$analysis_set$covid_ctrl$deseq$de_out, by = 'gene') %>% 
+  # filter(grepl('-I', ensg)) %>% View()
+  ggplot(aes(log2FoldChange.x, log2FoldChange.y, label = gene)) +
+  geom_point() + 
+  ggrepel::geom_text_repel() + 
+  geom_hline(yintercept = 0, linetype = 'dashed') +
+  geom_vline(xintercept = 0, linetype = 'dashed')
+
+unsplice_counts_pca.df %>% 
+  rownames_to_column('ensg') %>% 
+  merge(reference_meta_data$gencode_tx_to_gene.df %>% select(ensg, gene) %>% distinct(), by = 'ensg')
 
 ```
 

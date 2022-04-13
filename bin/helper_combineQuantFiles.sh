@@ -6,6 +6,7 @@
 inputPath=$1
 inputQuant=$2
 outputPath=$3
+countField=$4
 
 tempQuant="$inputPath"/"$inputQuant"
 
@@ -19,7 +20,7 @@ for quantFile in "$inputPath"/*; do
 
 	paste <(cat quant_tmp.txt) \
 		<(gzip -cd "$quantFile" \
-		| cut -f4 \
+		| cut -f$countField \
 		| sed  "1s/.*/"$thisQuant"/") > tmp && mv tmp quant_tmp.txt
 
 done

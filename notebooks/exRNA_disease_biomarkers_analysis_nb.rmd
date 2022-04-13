@@ -2265,38 +2265,56 @@ beta %>% as.matrix() %>% as.data.frame() %>%
 ## tcga & gtex
 ```{r}
 tcga_data_path <- file.path(output_data.dir, 'tcga_gtex')
+gtex_colData <- read_csv(file.path(tcga_data_path, 'panc_gtex_colData.csv'), 
+                         col_names = c('sample', 'name', 'tissue_1', 'tissue_2', 'sex', 'age'))
 
-tcga_paad_counts <- vroom::vroom(file.path(tcga_data_path, 'paad_tcga_count_matrix.tsv.gz'))
-tx_names <- tcga_paad_counts$Name
+if (! file.exists(file.path(tcga_data_path, 'paad_tcga_gene_count_matrix.tsv')) & 
+    ! file.exists(file.path(tcga_data_path, 'paad_gtex_gene_count_matrix.tsv'))) {
+  
+  tcga_paad_counts <- vroom::vroom(file.path(tcga_data_path, 'paad_tcga_count_matrix.tsv.gz'))
+  tx_names <- tcga_paad_counts$Name
+  
+  enst_names <- tx_names[grepl('^ENST', tx_names), drop = F]
+  enst_tx2gene <- tibble(tx = enst_names, gene = str_split_fixed(string = enst_names, pattern = '\\|', n = Inf)[,6])
+  
+  te_names <- tx_names[grepl('^hg38', tx_names), drop = F]
+  te_tx2gene <- tibble(tx = te_names, gene = str_split_fixed(string = te_names, pattern = '_', n = Inf)[,3])
+  
+  tx2gene <- rbind(enst_tx2gene, te_tx2gene)
+  
+  tx2gene
+  vroom::vroom_write(x = tx2gene, file.path(tcga_data_path, 'tcga_gtex_tx2gene.tsv'))
+  
+  tcga_paad_counts %>% 
+    merge(tx2gene, by.x = 'Name', by.y = 'tx') -> tcga_paad_counts
+  
+  tcga_paad_counts %>% 
+    group_by(gene) %>% 
+    summarize(across(is.numeric, ~sum(.x))) -> tcga_paad_gene_counts
+  
+  vroom::vroom_write(x = tcga_paad_gene_counts, file.path(tcga_data_path, 'paad_tcga_gene_count_matrix.tsv'))
+  
+  gtex_paad_counts <- vroom::vroom(file.path(tcga_data_path, 'paad_gtex_count_matrix.tsv.gz'))
+  
+  gtex_paad_counts %>% 
+    merge(tx2gene, by.x = 'Name', by.y = 'tx') -> gtex_paad_counts
+  
+  gtex_paad_counts %>% 
+    group_by(gene) %>% 
+    summarize(across(is.numeric, ~sum(.x))) -> gtex_paad_gene_counts
+  
+  rm(gtex_paad_counts)
+  
+  vroom::vroom_write(x = gtex_paad_gene_counts, file.path(tcga_data_path, 'paad_gtex_gene_count_matrix.tsv'))
+  
+} else {
+  
+  tx2gene <- read_tsv(file.path(tcga_data_path, 'tcga_gtex_tx2gene.tsv'))
+  gtex_paad_gene_counts <- read_tsv(file.path(tcga_data_path, 'paad_gtex_gene_count_matrix.tsv'))
+  tcga_paad_gene_counts <- read_tsv(file.path(tcga_data_path, 'paad_tcga_gene_count_matrix.tsv'))
+  
+}
 
-enst_names <- tx_names[grepl('^ENST', tx_names), drop = F]
-enst_tx2gene <- tibble(tx = enst_names, gene = str_split_fixed(string = enst_names, pattern = '\\|', n = Inf)[,6])
 
-te_names <- tx_names[grepl('^hg38', tx_names), drop = F]
-te_tx2gene <- tibble(tx = te_names, gene = str_split_fixed(string = te_names, pattern = '_', n = Inf)[,3])
-
-tx2gene <- rbind(enst_tx2gene, te_tx2gene)
-
-tcga_paad_counts %>% 
-  merge(tx2gene, by.x = 'Name', by.y = 'tx') -> tcga_paad_counts
-
-tcga_paad_counts %>% 
-  group_by(gene) %>% 
-  summarize(across(is.numeric, ~sum(.x))) -> tcga_paad_gene_counts
-
-vroom::vroom_write(x = tcga_paad_gene_counts, file.path(tcga_data_path, 'paad_tcga_gene_count_matrix.tsv'))
-
-gtex_paad_counts <- vroom::vroom(file.path(tcga_data_path, 'paad_gtex_count_matrix.tsv.gz'))
-
-gtex_paad_counts %>% 
-  merge(tx2gene, by.x = 'Name', by.y = 'tx') -> gtex_paad_counts
-
-gtex_paad_counts %>% 
-  group_by(gene) %>% 
-  summarize(across(is.numeric, ~sum(.x))) -> gtex_paad_gene_counts
-
-rm(gtex_paad_counts)
-
-vroom::vroom_write(x = gtex_paad_gene_counts, file.path(tcga_data_path, 'paad_gtex_gene_count_matrix.tsv'))
 ```
 

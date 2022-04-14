@@ -2323,9 +2323,13 @@ if (! file.exists(file.path(tcga_data_path, 'paad_tcga_gene_count_matrix.tsv')) 
 ```{r}
 tcga_paad_gene_counts %>% 
   merge(gtex_paad_gene_counts, by = 'gene') %>%
-  filter(gene %in% filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, padj < 0.05 & log2FoldChange > 0.95)$gene) %>% 
+  filter(gene %in% reference_meta_data$ucsc_rmsk_insert_info.df$gene) %>% 
+  filter(gene %in% filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
+                          padj < 0.05 & abs(log2FoldChange) > 0.75)$gene) %>%
   # filter(!if_all(is.numeric, ~.x == 0)) %>% nrow()
   # mutate(across(where(is.numeric), ~scale(log2(. + 1), center = T)[,1])) %>%
+  mutate(across(where(is.numeric), ~scale(., center = T)[,1])) %>%
+  filter(!if_any(where(is.numeric), ~abs(.) > 2.5), gene != 'AluYm1') %>% 
   # mutate(across(where(is.numeric), ~log2(. + 1))) %>%
   column_to_rownames('gene') %>% as.matrix() %>% t() -> hm_count_data
 
@@ -2342,12 +2346,16 @@ left_hma <- ComplexHeatmap::rowAnnotation(df = data.frame('condition' = hm_meta_
                                           col = list(condition = tcga_identity_color_pal),
                                           show_annotation_name = F, simple_anno_size = unit(.3, "cm"))
 
-hm_te_data <- data.frame('gene' = colnames(hm_count_data)) %>% 
-  merge(reference_meta_data$total_tx_to_gene.df %>% select(gene, biotype) %>% distinct(), by = 'gene') %>% 
-  mutate(biotype = ifelse(biotype %in% c('SINE', 'Simple_repeat'), biotype, 'gencode')) %>% 
+# hm_te_data <- data.frame('gene' = colnames(hm_count_data)) %>%
+#   merge(reference_meta_data$total_tx_to_gene.df %>% select(gene, biotype) %>% distinct(), by = 'gene') %>%
+#   mutate(biotype = ifelse(biotype %in% c('SINE', 'Simple_repeat'), biotype, 'gencode')) %>%
+#   distinct()
+
+hm_te_data <- data.frame('gene' = colnames(hm_count_data)) %>%
+  merge(reference_meta_data$ucsc_rmsk_insert_info.df %>% select(gene, clade) %>% distinct(), by = 'gene') %>%
   distinct()
 
-top_hma <- ComplexHeatmap::columnAnnotation(df = hm_te_data %>% select(biotype), 
+top_hma <- ComplexHeatmap::columnAnnotation(df = hm_te_data %>% select(clade), 
                                             show_annotation_name = T,
                                             annotation_name_side = 'left',
                                             annotation_name_gp = grid::gpar(fontsize = 10, fontface = 'italic'),
@@ -2368,7 +2376,7 @@ ComplexHeatmap::Heatmap(hm_count_data,
                         #                            colors = viridis::rocket(n = 5)),
                         top_annotation = top_hma,
                         column_names_gp = grid::gpar(fontsize = 8),
-                        name = 'log2(TPM + 1)') -> tcga_hm
+                        name = 'Z-score') -> tcga_hm
 
 new_hm <- grid::grid.grabExpr(ComplexHeatmap::draw(tcga_hm), merge_legend = T)
 
@@ -2377,14 +2385,15 @@ patchwork::wrap_plots(full = new_hm)
 
 hm_count_data %>% 
   as.data.frame() %>% 
-  select(contains('Alu')) %>% 
+  # select(contains('Alu')) %>% 
   rownames_to_column('sample') %>% 
   merge(hm_meta_data, by = 'sample') %>% 
   gather(gene, tpm, -sample, -condition) %>% 
   ggplot(aes(condition, tpm)) + 
   geom_boxplot(outlier.colour = NA, fill = NA) + 
   geom_jitter(alpha = 0.4) + 
-  ggforce::facet_row(~gene)
+  ggforce::facet_row(~gene) + 
+  ggpubr::stat_compare_means(method = 'wilcox', comparisons = list(c('GTEx', 'PAAD')))
 ```
 ## tcga_modeling
 ```{r}
@@ -2411,63 +2420,6 @@ y_in_train <- y_in[trainSplitIndex, ,drop = F] %>% pull(condition)
 x_in_test <- x_in[-trainSplitIndex, ,drop = F]
 y_in_test <- y_in[-trainSplitIndex, ,drop = F] %>% pull(condition)
 
-lapply(seq(0,1,0.01), function(alpha) {
-  set.seed(123)
-
-  mult_model <- 
-    cv.glmnet(x = x_in_train,
-              y = y_in_train,
-              family = 'binomial',
-              type.measure = 'auc',
-              nfolds = 10, 
-              alpha = alpha, 
-              parallel = TRUE,
-              keep = TRUE)
-  
-  
-  coef_tmp <- Reduce(cbind, coef(mult_model, s = mult_model$lambda.1se))
-  
-  beta <- coef_tmp[apply(coef_tmp != 0, 1, any), ]
-  
-  colnames(beta) <- names(coef(mult_model, s = mult_model$lambda.1se))
-  
-  beta
-  
-  inverse.logit.calc <- function(y_hat) { exp(y_hat)/(1+exp(y_hat)) }
-  softmax.logit.calc <- function(y_hat) { exp(y_hat)/sum(exp(y_hat)) }
-  
-  y_hat_matrix <- mult_model$fit.preval[,,which(mult_model$lambda == mult_model$lambda.min)]
-  
-  # multi-nomial so need to apply softmax to each row (sample)
-  mult_response_matrix <- 
-    t(apply(y_hat_matrix, 1, softmax.logit.calc))
-  
-  mult_response_matrix
-  
-  # which column is the max -- so need to pull from column names
-  y_hat_predictions <- 
-    colnames(mult_response_matrix)[apply(mult_response_matrix, 1, which.max)]
-  
-  multi_roc <- 
-    pROC::multiclass.roc(response = y, 
-                         predictor = mult_response_matrix, 
-                         levels = c('0','1','2'))
-  
-  # multi_roc$rocs[[3]]$specificities
-  # multi_roc$rocs[[3]]$sensitivities
-  # multi_roc$rocs[[3]]$thresholds
-  # plot(multi_roc$rocs[[2]])
-  
-  caret::confusionMatrix(data = as.factor(y_hat_predictions),
-                         reference = as.factor(y)) -> cm_out
-  
-  ret_lst <- list(cm_out)
-  names(ret_lst) <- alpha
-  
-  ret_lst
-  
-}) %>% purrr::flatten() -> alpha_list
-
 set.seed(123)
 
 tcga_binomial_model <- 
@@ -2492,7 +2444,17 @@ inverse.logit.calc <- function(y_hat) { exp(y_hat)/(1+exp(y_hat)) }
 
 y_hat_matrix <- tcga_binomial_model$fit.preval[,which(tcga_binomial_model$lambda == tcga_binomial_model$lambda.min)]
 
-inverse.logit.calc(predict(tcga_binomial_model, s = 'lambda.min', newx = x_in_test))
+# predict(tcga_binomial_model, s = 'lambda.min', newx = x_in_train, type = 'response')
+
+training_pred_matrix <- predict(tcga_binomial_model, s = 'lambda.min', newx = x_in_train, type = 'response')
+
+pROC::roc(response = y_in_train, predictor = training_pred_matrix[,1])$auc
+
+
+testing_pred_matrix <- predict(tcga_binomial_model, s = 'lambda.min', newx = x_in_test, type = 'response')
+
+str(pROC::roc(response = y_in_test, predictor = testing_pred_matrix[,1]))
+
 
 
 tcga_binomial_model_response_prob <- inverse.logit.calc(y_hat_matrix)
@@ -2508,6 +2470,46 @@ tcga_binomial_model_response_prob %>%
   geom_boxplot()
 
 
+```
+## tcga_pca
+```{r}
+pca_tmp_in_sd <- apply(x_in_train, 2, sd)
+pca_tmp_in_zero_sd <- x_in_train[,pca_tmp_in_sd!=0 & !is.na(pca_tmp_in_sd)]
+non_zero_pca <- prcomp(pca_tmp_in_zero_sd, center = T, scale. = T, rank. = 50)
+
+summary(non_zero_pca)
+pcs.of.interest <- apply(non_zero_pca$x, 2, var)
+pcs.props <-  pcs.of.interest/sum(pcs.of.interest)
+cumsum(pcs.props)[c(1,2)]
+print(as.data.frame(pcs.props) %>% 
+        rownames_to_column('pc') %>% 
+        mutate(pc = as.numeric(sub('PC', '', pc))) %>% 
+        ggplot(aes(pc, pcs.props)) + 
+        geom_col())
+
+pca.out <- as.data.frame(non_zero_pca$x) %>% 
+  rownames_to_column('sample') %>% 
+  merge(hm_meta_data %>% select(sample, condition) %>% ungroup() %>% distinct(), by = 'sample') %>% 
+  ungroup() %>% 
+  distinct()
+
+pca.out.summary <- 
+  as.data.frame(summary(non_zero_pca)$importance) %>% 
+  rownames_to_column('metric') %>% 
+  gather(pc, value, -metric) %>% 
+  spread(metric, value)
+
+pca.out %>% 
+  ggplot(aes(PC1, PC2,
+             color = condition)) +
+  geom_point(size = rel(2), alpha = 1) + 
+  # scale_shape_manual(values = c(21,25)) +
+  xlab(paste('PC1', round(cumsum(pcs.props)[1], digits = 3), sep = ' ')) +
+  ylab(paste('PC2', round(cumsum(pcs.props)[2] - cumsum(pcs.props)[1], digits = 3), sep = ' ')) +
+  geom_vline(xintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) +
+  geom_hline(yintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) + 
+  scale_color_manual(values = tcga_identity_color_pal) +
+  theme(legend.position = 'top', legend.direction = 'horizontal')
 ```
 
 

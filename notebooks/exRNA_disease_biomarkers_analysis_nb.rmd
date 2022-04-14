@@ -2329,7 +2329,7 @@ tcga_paad_gene_counts %>%
   # filter(!if_all(is.numeric, ~.x == 0)) %>% nrow()
   # mutate(across(where(is.numeric), ~scale(log2(. + 1), center = T)[,1])) %>%
   mutate(across(where(is.numeric), ~scale(., center = T)[,1])) %>%
-  filter(!if_any(where(is.numeric), ~abs(.) > 2.5), gene != 'AluYm1') %>% 
+  filter(!gene %in% c('AluYm1', 'AluJo')) %>% 
   # mutate(across(where(is.numeric), ~log2(. + 1))) %>%
   column_to_rownames('gene') %>% as.matrix() %>% t() -> hm_count_data
 

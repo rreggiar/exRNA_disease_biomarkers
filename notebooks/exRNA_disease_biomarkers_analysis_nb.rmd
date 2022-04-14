@@ -2312,7 +2312,7 @@ if (! file.exists(file.path(tcga_data_path, 'paad_tcga_gene_count_matrix.tsv')) 
   vroom::vroom_write(x = gtex_paad_gene_counts, file.path(tcga_data_path, 'paad_gtex_gene_count_matrix.tsv'))
   
 } else {
-  
+  message('loading....')
   tx2gene <- read_tsv(file.path(tcga_data_path, 'tcga_gtex_tx2gene.tsv'))
   gtex_paad_gene_counts <- read_tsv(file.path(tcga_data_path, 'paad_gtex_gene_count_matrix.tsv'))
   tcga_paad_gene_counts <- read_tsv(file.path(tcga_data_path, 'paad_tcga_gene_count_matrix.tsv'))
@@ -2326,7 +2326,7 @@ tcga_paad_gene_counts %>%
   filter(gene %in% filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, padj < 0.05 & log2FoldChange > 0.95)$gene) %>% 
   # filter(!if_all(is.numeric, ~.x == 0)) %>% nrow()
   # mutate(across(where(is.numeric), ~scale(log2(. + 1), center = T)[,1])) %>%
-  mutate(across(where(is.numeric), ~log2(. + 1))) %>%
+  # mutate(across(where(is.numeric), ~log2(. + 1))) %>%
   column_to_rownames('gene') %>% as.matrix() %>% t() -> hm_count_data
 
 tcga_identity_color_pal <- identity_color_pal[1:2]
@@ -2385,6 +2385,129 @@ hm_count_data %>%
   geom_boxplot(outlier.colour = NA, fill = NA) + 
   geom_jitter(alpha = 0.4) + 
   ggforce::facet_row(~gene)
+```
+## tcga_modeling
+```{r}
+library(glmnet)
+library(pROC)
+
+model_input_data <- hm_count_data[!grepl('-TM$|-NT$', rownames(hm_count_data)), ]
+model_input_meta_data <- hm_meta_data[match(rownames(model_input_data), hm_meta_data$sample), ]
+
+set.seed(123)
+
+doMC::registerDoMC(cores =12)
+
+trainSplitIndex <- 
+  caret::createDataPartition(factor(model_input_meta_data$condition, levels = c('GTEx', 'PAAD')), p = .8, list = FALSE, times = 1)
+
+x_in <- hm_count_data
+
+y_in <- hm_meta_data %>% mutate(condition = ifelse(condition == 'PAAD', 1, 0))
+
+x_in_train <- x_in[trainSplitIndex, ,drop = F]
+y_in_train <- y_in[trainSplitIndex, ,drop = F] %>% pull(condition)
+
+x_in_test <- x_in[-trainSplitIndex, ,drop = F]
+y_in_test <- y_in[-trainSplitIndex, ,drop = F] %>% pull(condition)
+
+lapply(seq(0,1,0.01), function(alpha) {
+  set.seed(123)
+
+  mult_model <- 
+    cv.glmnet(x = x_in_train,
+              y = y_in_train,
+              family = 'binomial',
+              type.measure = 'auc',
+              nfolds = 10, 
+              alpha = alpha, 
+              parallel = TRUE,
+              keep = TRUE)
+  
+  
+  coef_tmp <- Reduce(cbind, coef(mult_model, s = mult_model$lambda.1se))
+  
+  beta <- coef_tmp[apply(coef_tmp != 0, 1, any), ]
+  
+  colnames(beta) <- names(coef(mult_model, s = mult_model$lambda.1se))
+  
+  beta
+  
+  inverse.logit.calc <- function(y_hat) { exp(y_hat)/(1+exp(y_hat)) }
+  softmax.logit.calc <- function(y_hat) { exp(y_hat)/sum(exp(y_hat)) }
+  
+  y_hat_matrix <- mult_model$fit.preval[,,which(mult_model$lambda == mult_model$lambda.min)]
+  
+  # multi-nomial so need to apply softmax to each row (sample)
+  mult_response_matrix <- 
+    t(apply(y_hat_matrix, 1, softmax.logit.calc))
+  
+  mult_response_matrix
+  
+  # which column is the max -- so need to pull from column names
+  y_hat_predictions <- 
+    colnames(mult_response_matrix)[apply(mult_response_matrix, 1, which.max)]
+  
+  multi_roc <- 
+    pROC::multiclass.roc(response = y, 
+                         predictor = mult_response_matrix, 
+                         levels = c('0','1','2'))
+  
+  # multi_roc$rocs[[3]]$specificities
+  # multi_roc$rocs[[3]]$sensitivities
+  # multi_roc$rocs[[3]]$thresholds
+  # plot(multi_roc$rocs[[2]])
+  
+  caret::confusionMatrix(data = as.factor(y_hat_predictions),
+                         reference = as.factor(y)) -> cm_out
+  
+  ret_lst <- list(cm_out)
+  names(ret_lst) <- alpha
+  
+  ret_lst
+  
+}) %>% purrr::flatten() -> alpha_list
+
+set.seed(123)
+
+tcga_binomial_model <- 
+  cv.glmnet(x = x_in_train,
+            y = y_in_train,
+            family = 'binomial',
+            type.measure = 'deviance',
+            nfolds = 20, 
+            alpha = 0.75, 
+            parallel = TRUE,
+            keep = TRUE)
+
+plot(tcga_binomial_model)
+
+coef_tmp <- coef(tcga_binomial_model, s = tcga_binomial_model$lambda.min)
+
+beta <- coef_tmp[apply(coef_tmp != 0, 1, any), ]
+
+beta
+
+inverse.logit.calc <- function(y_hat) { exp(y_hat)/(1+exp(y_hat)) }
+
+y_hat_matrix <- tcga_binomial_model$fit.preval[,which(tcga_binomial_model$lambda == tcga_binomial_model$lambda.min)]
+
+inverse.logit.calc(predict(tcga_binomial_model, s = 'lambda.min', newx = x_in_test))
+
+
+tcga_binomial_model_response_prob <- inverse.logit.calc(y_hat_matrix)
+
+
+tcga_binomial_model_response_prob %>% 
+  as.data.frame() %>% 
+  rownames_to_column('sample') %>% 
+  dplyr::rename('prob' = '.') %>% 
+  merge(y_in, by = 'sample') %>% 
+  mutate(condition = ifelse(condition == 1, 'PAAD', 'GTEx')) %>% 
+  ggplot(aes(condition, prob)) + 
+  geom_boxplot()
+
+
 ```
 
 

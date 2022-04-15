@@ -1401,6 +1401,17 @@ panc_nanopore_read_length.df %>%
   scale_fill_manual(values = viridisLite::plasma(20)[c(1,8,10)]) +
   ylab('proportion of nanopore biotype/clade fragment lengths') + xlab('nanopore fragment size (bp)') +
   theme(legend.position = c(0.55,0.99), legend.direction = 'horizontal') -> plt_NC.plt
+
+
+panc_nanopore_read_length.df %>% 
+  filter(sample == 'panc.7.1.1', biotype == 'SINE') %>% 
+  unite(col = 'name', c('read_id', 'originally_multisample'), sep = '::') %>% 
+  ungroup() %>% 
+  select(name, 'seq' = reference_name) -> tmp_fa.df
+
+seqinr::write.fasta(sequences = as.list(tmp_fa.df %>% pull(seq)), 
+                    names = tmp_fa.df %>% pull(name), 
+                    as.string = F, file.out = file.path(output_data.dir, 'nanopore', 'panc.7.1.1_SINE_read.fasta'))
 ```
 ## Fig_ND
 ```{r}

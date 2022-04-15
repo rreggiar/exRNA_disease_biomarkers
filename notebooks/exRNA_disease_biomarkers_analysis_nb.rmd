@@ -2272,10 +2272,10 @@ tcga_colData <- read_tsv(file.path(tcga_data_path, 'paad_tcga_colData.tsv')) %>%
          submitter_id.samples = str_replace_all(string = submitter_id.samples, pattern = '01A', replacement = 'TP'),
          submitter_id.samples = str_replace_all(string = submitter_id.samples, pattern = '11A', replacement = 'NT'))
 
-if (! file.exists(file.path(tcga_data_path, 'paad_tcga_gene_count_matrix.tsv')) & 
-    ! file.exists(file.path(tcga_data_path, 'paad_gtex_gene_count_matrix.tsv'))) {
+if (! file.exists(file.path(tcga_data_path, 'paad_tcga_gene_readNum_matrix.tsv')) & 
+    ! file.exists(file.path(tcga_data_path, 'paad_gtex_gene_readNum_matrix.tsv'))) {
   
-  tcga_paad_counts <- vroom::vroom(file.path(tcga_data_path, 'paad_tcga_count_matrix.tsv.gz'))
+  tcga_paad_counts <- vroom::vroom(file.path(tcga_data_path, 'paad_tcga_readNum_matrix.tsv.gz'))
   tx_names <- tcga_paad_counts$Name
   
   enst_names <- tx_names[grepl('^ENST', tx_names), drop = F]
@@ -2296,9 +2296,9 @@ if (! file.exists(file.path(tcga_data_path, 'paad_tcga_gene_count_matrix.tsv')) 
     group_by(gene) %>% 
     summarize(across(is.numeric, ~sum(.x))) -> tcga_paad_gene_counts
   
-  vroom::vroom_write(x = tcga_paad_gene_counts, file.path(tcga_data_path, 'paad_tcga_gene_count_matrix.tsv'))
+  vroom::vroom_write(x = tcga_paad_gene_counts, file.path(tcga_data_path, 'paad_tcga_gene_readNum_matrix.tsv'))
   
-  gtex_paad_counts <- vroom::vroom(file.path(tcga_data_path, 'paad_gtex_count_matrix.tsv.gz'))
+  gtex_paad_counts <- vroom::vroom(file.path(tcga_data_path, 'paad_gtex_readNum_matrix.tsv.gz'))
   
   gtex_paad_counts %>% 
     merge(tx2gene, by.x = 'Name', by.y = 'tx') -> gtex_paad_counts
@@ -2309,13 +2309,13 @@ if (! file.exists(file.path(tcga_data_path, 'paad_tcga_gene_count_matrix.tsv')) 
   
   rm(gtex_paad_counts)
   
-  vroom::vroom_write(x = gtex_paad_gene_counts, file.path(tcga_data_path, 'paad_gtex_gene_count_matrix.tsv'))
+  vroom::vroom_write(x = gtex_paad_gene_counts, file.path(tcga_data_path, 'paad_gtex_gene_readNum_matrix.tsv'))
   
 } else {
   message('loading....')
   tx2gene <- read_tsv(file.path(tcga_data_path, 'tcga_gtex_tx2gene.tsv'))
-  gtex_paad_gene_counts <- read_tsv(file.path(tcga_data_path, 'paad_gtex_gene_count_matrix.tsv'))
-  tcga_paad_gene_counts <- read_tsv(file.path(tcga_data_path, 'paad_tcga_gene_count_matrix.tsv'))
+  gtex_paad_gene_counts <- read_tsv(file.path(tcga_data_path, 'paad_gtex_gene_readNum_matrix.tsv'))
+  tcga_paad_gene_counts <- read_tsv(file.path(tcga_data_path, 'paad_tcga_gene_readNum_matrix.tsv'))
   
 }
 ```
@@ -2323,20 +2323,32 @@ if (! file.exists(file.path(tcga_data_path, 'paad_tcga_gene_count_matrix.tsv')) 
 ```{r}
 tcga_paad_gene_counts %>% 
   merge(gtex_paad_gene_counts, by = 'gene') %>%
-  filter(gene %in% reference_meta_data$ucsc_rmsk_insert_info.df$gene) %>% 
-  filter(gene %in% filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
-                          padj < 0.05 & abs(log2FoldChange) > 0.75)$gene) %>%
+  # filter(gene %in% reference_meta_data$ucsc_rmsk_insert_info.df$gene) %>%
+  # filter(gene %in% filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out,
+  #                         padj < 0.05 & abs(log2FoldChange) > 0.75)$gene) %>%
   # filter(!if_all(is.numeric, ~.x == 0)) %>% nrow()
   # mutate(across(where(is.numeric), ~scale(log2(. + 1), center = T)[,1])) %>%
-  mutate(across(where(is.numeric), ~scale(., center = T)[,1])) %>%
-  filter(!gene %in% c('AluYm1', 'AluJo')) %>% 
+  # mutate(across(where(is.numeric), ~scale(., center = T)[,1])) %>%
+  # filter(!gene %in% c('AluYm1', 'AluJo')) %>% 
   # mutate(across(where(is.numeric), ~log2(. + 1))) %>%
   column_to_rownames('gene') %>% as.matrix() %>% t() -> hm_count_data
+
+t(hm_count_data) %>% 
+  as.data.frame() %>%
+  mutate(across(where(is.numeric), ~round(.x))) -> count_data_for_DEseq
+
+tcga_de_dds <- DESeq2::DESeqDataSetFromMatrix(countData = count_data_for_DEseq, colData = hm_meta_data, design = as.formula('~condition'), tidy = F)
+
+tcga_de_dds <- DESeq2::estimateSizeFactors(tcga_de_dds)
+
+tcga_de_dds_norm_counts.df <- as.data.frame(DESeq2::counts(tcga_de_dds, normalized=T))
 
 tcga_identity_color_pal <- identity_color_pal[1:2]
 names(tcga_identity_color_pal) <- c('GTEx', 'PAAD')
 
 hm_meta_data <- tibble('sample' = rownames(hm_count_data), 'condition' = ifelse(grepl('PAAD', sample), 'PAAD', 'GTEx'))
+
+
 
 
 hm_meta_data %>% pull(condition) -> hm_meta_condition
@@ -2395,12 +2407,44 @@ hm_count_data %>%
   ggforce::facet_row(~gene) + 
   ggpubr::stat_compare_means(method = 'wilcox', comparisons = list(c('GTEx', 'PAAD')))
 ```
+## tcga matched DESeq
+```{r}
+matched_samples <- c(colnames(count_data_for_DEseq[,grepl('-NT', colnames(count_data_for_DEseq))]),
+                     str_replace_all(colnames(count_data_for_DEseq[,grepl('-NT', colnames(count_data_for_DEseq))]), '-NT', '-TP'))
+
+matched_samples_counts <- count_data_for_DEseq[, colnames(count_data_for_DEseq) %in% matched_samples]
+
+tcga_de_colData <- tibble('sample' = colnames(matched_samples_counts), 'condition' = ifelse(grepl('NT', sample), 'control', 'tumor'))
+
+tcga_de_dds <- DESeq2::DESeqDataSetFromMatrix(countData = matched_samples_counts, colData = tcga_de_colData, 
+                                              design = as.formula('~condition'), tidy = F)
+
+tcga_de_dds <- DESeq2::estimateSizeFactors(tcga_de_dds)
+
+de_filter <- rowSums(DESeq2::counts(tcga_de_dds, normalized=T) >= 10) >= ncol(DESeq2::counts(tcga_de_dds, normalized=T))*0.75
+  
+input_set_dds <- DESeq2::DESeq(tcga_de_dds[de_filter,])
+
+DESeq2::resultsNames(input_set_dds)
+
+input_set_dds_de_out <- DESeq2::lfcShrink(input_set_dds, coef = "condition_tumor_vs_control") %>% 
+  as.data.frame() %>% 
+  rownames_to_column('gene') %>% 
+  filter(padj < 0.05)
+
+
+input_set_dds_de_out %>% 
+  merge(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, by = 'gene')
+```
+
 ## tcga_modeling
 ```{r}
 library(glmnet)
 library(pROC)
 
-model_input_data <- hm_count_data[!grepl('-TM$|-NT$', rownames(hm_count_data)), ]
+
+
+model_input_data <- t(tcga_de_dds_norm_counts.df)[!grepl('-TM$|-NT$', rownames(hm_count_data)), ]
 model_input_meta_data <- hm_meta_data[match(rownames(model_input_data), hm_meta_data$sample), ]
 
 set.seed(123)
@@ -2453,7 +2497,7 @@ pROC::roc(response = y_in_train, predictor = training_pred_matrix[,1])$auc
 
 testing_pred_matrix <- predict(tcga_binomial_model, s = 'lambda.min', newx = x_in_test, type = 'response')
 
-str(pROC::roc(response = y_in_test, predictor = testing_pred_matrix[,1]))
+pROC::roc(response = y_in_test, predictor = testing_pred_matrix[,1])
 
 
 

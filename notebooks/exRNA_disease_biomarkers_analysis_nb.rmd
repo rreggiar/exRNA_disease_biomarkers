@@ -528,9 +528,6 @@ process.aware.salmon_quant$analysis_set$ctrl_panc_covid$unsplice_data.df <-
 flow_chart.plt <- magick::image_read_pdf(path = file.path(figure.dir, 'fig.1', 'ip_flowchart_tiny.pdf'))
 
 flow_chart.plt <- magick::image_read(path = file.path(figure.dir, 'fig.1', 'rer_biorender_8.08x8.3.png'))
-
-
-
 ```
 ## Fig_1A
 ```{r 1A}
@@ -1390,17 +1387,18 @@ table(panc_nanopore_read_length.df$biotype) %>%
   mutate(biolabel = c('LINE', 'gencode_lncRNA', 'LTR', 'gencode_coding', 'SINE')) -> nanopore_biotype_labels
 
 panc_nanopore_read_length.df %>% 
-  group_by(biotype) %>%
-  filter(!grepl('ctrl', sample)) %>% 
+  group_by(biotype) %>% 
+  # filter(!grepl('ctrl', sample)) %>% 
   merge(nanopore_biotype_labels, by = 'biotype') %>% 
   mutate(biolabel = factor(biolabel, levels = te_aware_annotation_levels),
          sample = case_when(sample == 'panc.7.1.1' ~ 'panc 7', 
-                            sample == 'panc.6.1.1' ~ 'panc 6')) %>% 
+                            sample == 'panc.6.1.1' ~ 'panc 6',
+                            sample == 'ctrl.6.1.5' ~ 'ctrl 6')) %>% 
   ggplot(aes(abs(read_length), fill = sample)) + 
   geom_histogram(aes(y=stat(density*width)), bins = 100) + 
   scale_y_continuous(labels = scales::number_format(accuracy = 0.01)) +
   ggforce::facet_col(~biolabel, scales = 'free') +
-  scale_fill_manual(values = viridisLite::plasma(20)[c(8,10)]) +
+  scale_fill_manual(values = viridisLite::plasma(20)[c(1,8,10)]) +
   ylab('proportion of nanopore biotype/clade fragment lengths') + xlab('nanopore fragment size (bp)') +
   theme(legend.position = c(0.55,0.99), legend.direction = 'horizontal') -> plt_NC.plt
 ```

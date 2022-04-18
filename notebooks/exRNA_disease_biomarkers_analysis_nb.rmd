@@ -2322,10 +2322,10 @@ if (! file.exists(file.path(tcga_data_path, 'paad_tcga_gene_readNum_matrix.tsv')
 ## TCGA GTEx Heatmap
 ```{r}
 tcga_paad_gene_counts %>% 
-  merge(gtex_paad_gene_counts, by = 'gene') %>%
-  # filter(gene %in% reference_meta_data$ucsc_rmsk_insert_info.df$gene) %>%
-  # filter(gene %in% filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out,
-  #                         padj < 0.05 & abs(log2FoldChange) > 0.75)$gene) %>%
+  # merge(gtex_paad_gene_counts, by = 'gene') %>%
+  filter(gene %in% reference_meta_data$ucsc_rmsk_insert_info.df$gene) %>%
+  filter(gene %in% filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out,
+                          padj < 0.05 & abs(log2FoldChange) > 0.75)$gene) %>%
   # filter(!if_all(is.numeric, ~.x == 0)) %>% nrow()
   # mutate(across(where(is.numeric), ~scale(log2(. + 1), center = T)[,1])) %>%
   # mutate(across(where(is.numeric), ~scale(., center = T)[,1])) %>%
@@ -2337,7 +2337,7 @@ t(hm_count_data) %>%
   as.data.frame() %>%
   mutate(across(where(is.numeric), ~round(.x))) -> count_data_for_DEseq
 
-tcga_de_dds <- DESeq2::DESeqDataSetFromMatrix(countData = count_data_for_DEseq, colData = hm_meta_data, design = as.formula('~condition'), tidy = F)
+tcga_de_dds <- DESeq2::DESeqDataSetFromMatrix(countData = count_data_for_DEseq, colData = hm_meta_data, design = as.formula('~1'), tidy = F)
 
 tcga_de_dds <- DESeq2::estimateSizeFactors(tcga_de_dds)
 
@@ -2399,13 +2399,15 @@ hm_count_data %>%
   as.data.frame() %>% 
   # select(contains('Alu')) %>% 
   rownames_to_column('sample') %>% 
-  merge(hm_meta_data, by = 'sample') %>% 
-  gather(gene, tpm, -sample, -condition) %>% 
-  ggplot(aes(condition, tpm)) + 
+  # merge(hm_meta_data, by = 'sample') %>% 
+  merge(tcga_colData %>% select(submitter_id.samples, tumor_stage.diagnoses), 
+        by.x = 'sample', by.y = 'submitter_id.samples') %>%
+  gather(gene, tpm, -sample, -tumor_stage.diagnoses) %>%
+  ggplot(aes(tumor_stage.diagnoses, tpm)) + 
   geom_boxplot(outlier.colour = NA, fill = NA) + 
-  geom_jitter(alpha = 0.4) + 
-  ggforce::facet_row(~gene) + 
-  ggpubr::stat_compare_means(method = 'wilcox', comparisons = list(c('GTEx', 'PAAD')))
+  # geom_jitter(alpha = 0.4) + 
+  ggforce::facet_row(~gene) 
+  # ggpubr::stat_compare_means(method = 'wilcox', comparisons = list(c('GTEx', 'PAAD')))
 ```
 ## tcga matched DESeq
 ```{r}
@@ -2554,6 +2556,22 @@ pca.out %>%
   geom_hline(yintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) + 
   scale_color_manual(values = tcga_identity_color_pal) +
   theme(legend.position = 'top', legend.direction = 'horizontal')
+
+
+pca.out %>% 
+  merge(tcga_colData, by.x = 'sample', by.y = 'submitter_id.samples') %>% 
+    ggplot(aes(PC1, PC2,
+             color = tumor_stage.diagnoses)) +
+  geom_point(size = rel(2), alpha = 1) + 
+  # scale_shape_manual(values = c(21,25)) +
+  xlab(paste('PC1', round(cumsum(pcs.props)[1], digits = 3), sep = ' ')) +
+  ylab(paste('PC2', round(cumsum(pcs.props)[2] - cumsum(pcs.props)[1], digits = 3), sep = ' ')) +
+  geom_vline(xintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) +
+  geom_hline(yintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) + 
+  # scale_color_manual(values = tcga_identity_color_pal) +
+  theme(legend.position = 'top', legend.direction = 'horizontal')
+  # extract.meta.pca.correlates()
+  
 ```
 
 

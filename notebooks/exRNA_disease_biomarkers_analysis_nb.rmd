@@ -619,6 +619,55 @@ mapping_rate_compare.df %>%
 fig.1C.plt <- mapping_rate_compare.plt + labs(tag = 'D')
 
 ```
+## Fig_1stats
+```{r}
+SummarizedExperiment::assay(ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$txi, 'counts') %>% 
+  as.data.frame() -> ucsc_rmsk_counts
+
+ucsc_rmsk_counts <- ucsc_rmsk_counts[, !colnames(ucsc_rmsk_counts) %in% qc_fails]
+
+ucsc_rmsk_counts %>%
+  rownames_to_column('enst') %>% 
+  merge(reference_meta_data$total_tx_to_gene.df, by = 'enst') -> ucsc_rmsk_counts
+
+ucsc_rmsk_counts %>% 
+  pivot_longer(cols = panc.1.2.3:ctrl.9.1.2, names_to = 'sample', values_to = 'count') %>% 
+  mutate(condition = case_when(grepl('panc', sample) ~ 'panc',
+                               grepl('covid', sample) ~ 'covid',
+                               grepl('ctrl', sample) ~ 'ctrl')) %>% 
+  group_by(biotype, condition) %>% 
+  filter(count >= 5) %>% 
+  summarize(count = n()) -> ucsc_rmsk_biotype_summary
+
+
+ucsc_rmsk_biotype_summary %>% 
+  filter(!grepl('\\?', biotype)) %>% 
+  ggplot(aes(condition, count)) + 
+  geom_col() + 
+  ylab('number of detected transcripts') + 
+  xlab('') +
+  facet_wrap(~biotype, scales = 'free_y') + 
+  theme(axis.text.x = element_text(angle = 40, hjust = 1)) -> biotype_count
+
+import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer, wrap_elements)
+
+
+fig_1_layout <- "
+AA
+AA
+"
+
+wrap_plots(biotype_count) + plot_annotation(tag_levels = 'A') -> biotype_plt
+
+save.manuscript.panel(figure = 's1',
+                      figure.dir = figure.dir,
+                      name = 'patchwork_full_biotype_tx',
+                      width = figure_double_column_width,
+                      height = figure_depth,
+                      plot.in = biotype_plt)
+  
+```
+
 ### Fig_1_patchwork
 ```{r Fig1}
 import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer, wrap_elements)

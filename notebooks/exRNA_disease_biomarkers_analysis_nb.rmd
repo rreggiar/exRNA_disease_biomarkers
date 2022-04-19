@@ -685,6 +685,7 @@ ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_corr_out.df %>
 salmon_pca_corr_top_7.df %>% 
   merge(ucsc.rmsk.salmon_pca_corr_compare.df, by = c('pc', 'var')) %>% 
   gather(reference, cor, -pc, -var) %>% 
+  filter(reference == 'TE-aware') %>% 
   ggplot(aes(reorder(var, -abs(cor)),cor, fill = reference)) + 
   geom_col(color = 'white', position = position_dodge()) +
   # coord_flip() + 

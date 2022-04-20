@@ -642,12 +642,13 @@ ucsc_rmsk_counts %>%
 
 ucsc_rmsk_biotype_summary %>% 
   filter(!grepl('\\?', biotype)) %>% 
-  ggplot(aes(condition, count)) + 
+  ggplot(aes(condition, count/1000)) + 
   geom_col() + 
-  ylab('number of detected transcripts') + 
-  xlab('') +
-  facet_wrap(~biotype, scales = 'free_y') + 
-  theme(axis.text.x = element_text(angle = 40, hjust = 1)) -> biotype_count
+  ylab('1000s of detected transcripts') + 
+  xlab('') + 
+  scale_y_continuous(labels = scales::number_format(accuracy = 0.01)) +
+  facet_wrap(~biotype, scales = 'free_y', ncol = 3) + 
+  theme(axis.text.x = element_text(angle = 40, hjust = 1), text = element_text(size = 7)) -> biotype_count
 
 import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer, wrap_elements)
 

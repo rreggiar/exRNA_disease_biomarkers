@@ -1059,6 +1059,7 @@ save.manuscript.panel(figure = 2,
 
 
 ```
+
 # Fig_S2
 ## Fig_S2A
 ```{r}
@@ -1858,6 +1859,7 @@ pca.out %>%
   annotate(geom = 'text', x = -5.5, y = 2.25, label = 'size-aware', size = txt.mm_to_pts(1)) +
   theme(legend.position ='top', legend.direction = 'horizontal') -> plt_SND.plt
 ```
+
 ### Fig_SNanopore_patchwork
 ```{r}
 import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer, wrap_elements)
@@ -1890,14 +1892,21 @@ save.manuscript.panel(figure = 's3',
 ## Fig_SN2_patchwork
 ```{r}
 panc.7.1.1_nanopore_tpm <- 
-  read_tsv(file.path(output_data.dir, 'nanopore', 'gencode_39_rmsk_nanopore_abundance', 'panc.7.1.1_gene_abundance.tsv'))
+  read_tsv(file.path(output_data.dir, 
+                     'nanopore', 'gencode_39_rmsk_nanopore_abundance', 'panc.7.1.1_gene_abundance.tsv'))
 
 panc.6.1.1_nanopore_tpm <- 
-  read_tsv(file.path(output_data.dir, 'nanopore', 'gencode_39_rmsk_nanopore_abundance', 'panc.6.1.1_gene_abundance.tsv'))
+  read_tsv(file.path(output_data.dir, 
+                     'nanopore', 'gencode_39_rmsk_nanopore_abundance', 'panc.6.1.1_gene_abundance.tsv'))
+
+ctrl.6.1.5_nanopore_tpm <- 
+  read_tsv(file.path(output_data.dir, 
+                     'nanopore', 'gencode_39_rmsk_nanopore_abundance', 'ctrl.6.1.5_gene_abundance.tsv'))
 
 import::from(.from = 'SummarizedExperiment', assay)
 
-count_matrix.df <- as.data.frame(as.matrix(assay(ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$gxi, 'counts')))
+count_matrix.df <- 
+  as.data.frame(as.matrix(assay(ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$gxi, 'counts')))
 
 count_matrix.df[, 'panc.7.1.1', drop = F] %>% rownames_to_column('Gene ID') %>% 
   mutate(panc.7.1.1_tpm = panc.7.1.1*1e6/(sum(panc.7.1.1))) %>% 
@@ -1917,8 +1926,18 @@ count_matrix.df[, 'panc.6.1.1', drop = F] %>% rownames_to_column('Gene ID') %>%
             panc_6_nanopore_tpm = mean(panc.6.1.1_nanopore_tpm)) %>% 
   distinct() -> panc_6.1.1_tpm
 
+count_matrix.df[, 'ctrl.6.1.5', drop = F] %>% rownames_to_column('Gene ID') %>%
+  mutate(ctrl.6.1.5_tpm = ctrl.6.1.5 *1e6/(sum(ctrl.6.1.5))) %>% 
+  merge(ctrl.6.1.5_nanopore_tpm %>% select(`Gene ID`, TPM), by = 'Gene ID') %>% 
+  dplyr::rename('ctrl.6.1.5_nanopore_tpm' = TPM) %>% 
+  group_by(`Gene ID`) %>% 
+  summarize(ctrl_6_tpm = mean(ctrl.6.1.5_tpm),
+            ctrl_6_nanopore_tpm = mean(ctrl.6.1.5_nanopore_tpm)) %>% 
+  distinct() -> ctrl.6.1.5_tpm
 
-merge(panc_7.1.1_tpm, panc_6.1.1_tpm, by = 'Gene ID') -> panc_compare.df
+
+merge(panc_7.1.1_tpm, panc_6.1.1_tpm, by = 'Gene ID') %>% 
+  merge(ctrl.6.1.5_tpm, by = 'Gene ID') -> panc_compare.df
 
 
 panc_compare.df %>% 
@@ -1937,21 +1956,21 @@ panc_compare.df %>%
          type = ifelse(grepl('gencode',family), 'GENCODE', 'TE'),
          clade = factor(clade, levels = te_aware_annotation_levels)) -> panc_compare_annotated.df
 
-lm(panc_6_tpm ~ panc_7_tpm, data = panc_compare_annotated.df) %>% 
-  summary() -> panc_lm_out
-
-b <- round(panc_lm_out$coefficients[1,1], 2)
-m <- round(panc_lm_out$coefficients[2,1], 2)
-r2 <- round(panc_lm_out$adj.r.squared, 2)
-
-panc_compare_annotated.df %>% 
-  ggplot(aes(log2(panc_6_tpm + 1), log2(panc_7_tpm + 1), color = clade, fill = clade)) + 
-  geom_hex(alpha = 0.4, bins = 250) +
-  annotate(geom = 'text', x = 3, y = 15, fontface = 'italic',
-           label = paste0('y', ' ', ' = ',b,' + ',m,'x; adj. R2 = ', r2), 
-           size = rel(3.75), alpha = 0.8) + 
-  scale_color_manual(values = te_color_pal) + 
-  scale_fill_manual(values = te_color_pal) -> plt_SN2A.plt
+# lm(panc_6_tpm ~ panc_7_tpm, data = panc_compare_annotated.df) %>% 
+#   summary() -> panc_lm_out
+# 
+# b <- round(panc_lm_out$coefficients[1,1], 2)
+# m <- round(panc_lm_out$coefficients[2,1], 2)
+# r2 <- round(panc_lm_out$adj.r.squared, 2)
+# 
+# panc_compare_annotated.df %>% 
+#   ggplot(aes(log2(panc_6_tpm + 1), log2(panc_7_tpm + 1), color = clade, fill = clade)) + 
+#   geom_hex(alpha = 0.4, bins = 250) +
+#   annotate(geom = 'text', x = 3, y = 15, fontface = 'italic',
+#            label = paste0('y', ' ', ' = ',b,' + ',m,'x; adj. R2 = ', r2), 
+#            size = rel(3.75), alpha = 0.8) + 
+#   scale_color_manual(values = te_color_pal) + 
+#   scale_fill_manual(values = te_color_pal) -> plt_SN2A.plt
 
 lm(panc_7_nanopore_tpm ~ panc_7_tpm, data = panc_compare_annotated.df) %>% 
   summary() -> panc_lm_out
@@ -1985,7 +2004,7 @@ panc_compare_annotated.df %>%
   scale_color_manual(values = te_color_pal) + 
   scale_fill_manual(values = te_color_pal) -> plt_SN2C.plt
 
-lm(panc_6_nanopore_tpm ~ panc_7_nanopore_tpm, data = panc_compare_annotated.df) %>% 
+lm(ctrl_6_nanopore_tpm ~ ctrl_6_tpm, data = panc_compare_annotated.df) %>% 
   summary() -> panc_lm_out
 
 b <- round(panc_lm_out$coefficients[1,1], 2)
@@ -1993,13 +2012,29 @@ m <- round(panc_lm_out$coefficients[2,1], 2)
 r2 <- round(panc_lm_out$adj.r.squared, 2)
 
 panc_compare_annotated.df %>% 
-  ggplot(aes(log2(panc_6_nanopore_tpm + 1), log2(panc_7_nanopore_tpm + 1), color = clade, fill = clade)) + 
+  ggplot(aes(log2(ctrl_6_nanopore_tpm + 1), log2(ctrl_6_tpm + 1), color = clade, fill = clade)) + 
   geom_hex(alpha = 0.4, bins = 250) +
-  annotate(geom = 'text', x = 3, y = 15, fontface = 'italic',
+  annotate(geom = 'text', x = 6, y = 16, fontface = 'italic',
          label = paste0('y', ' ', ' = ',b,' + ',m,'x; adj. R2 = ', r2), 
          size = rel(3.75), alpha = 0.8) +
   scale_color_manual(values = te_color_pal) + 
   scale_fill_manual(values = te_color_pal) -> plt_SN2D.plt
+
+# lm(panc_6_nanopore_tpm ~ panc_7_nanopore_tpm, data = panc_compare_annotated.df) %>% 
+#   summary() -> panc_lm_out
+# 
+# b <- round(panc_lm_out$coefficients[1,1], 2)
+# m <- round(panc_lm_out$coefficients[2,1], 2)
+# r2 <- round(panc_lm_out$adj.r.squared, 2)
+# 
+# panc_compare_annotated.df %>% 
+#   ggplot(aes(log2(panc_6_nanopore_tpm + 1), log2(panc_7_nanopore_tpm + 1), color = clade, fill = clade)) + 
+#   geom_hex(alpha = 0.4, bins = 250) +
+#   annotate(geom = 'text', x = 3, y = 15, fontface = 'italic',
+#          label = paste0('y', ' ', ' = ',b,' + ',m,'x; adj. R2 = ', r2), 
+#          size = rel(3.75), alpha = 0.8) +
+#   scale_color_manual(values = te_color_pal) + 
+#   scale_fill_manual(values = te_color_pal) -> plt_SN2D.plt
 
 import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer, wrap_elements)
 
@@ -2007,15 +2042,15 @@ import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_
 fig_SN2_layout <- "
 AA
 BB
-CD
-EE
+CC
+DD
 "
 
-wrap_plots(plt_SN2A.plt + ggtitle('illumina v illumina'),
+wrap_plots(plt_SN2B.plt + ggtitle('panc 7 nanopore v nanopore'),
            guide_area(),
-           plt_SN2B.plt + ggtitle('nanopore v illumina'),
-           plt_SN2C.plt + ggtitle('nanopore v illumina'),
-           plt_SN2D.plt + ggtitle('nanopore v nanopore'),
+           # plt_SN2B.plt + ggtitle('nanopore v illumina'),
+           plt_SN2C.plt + ggtitle('panc 6 nanopore v nanopore'),
+           plt_SN2D.plt + ggtitle('ctrl 6 nanopore v nanopore'),
            guides = 'collect',
            design = fig_SN2_layout,
            heights = c(1,0.25,1,1)) +

@@ -1250,6 +1250,62 @@ save.manuscript.panel(figure = 's2',
 
 ```
 
+# Fig_S2_2
+## Fig_S2_2_patchwork
+```{r}
+
+panc_annotated_rmsk_de %>% 
+  filter(clade %in% c('gencode_coding', 'gencode_lncRNA')) %>% 
+  ggplot(aes(log2FoldChange, -log10(padj), color = clade)) + 
+  geom_point(size = 2, alpha = 0.6) + 
+  scale_color_manual(values = te_color_pal[1:2], name = 'biotype') + 
+  ggtitle('panc GENCODE DE') +
+  ggrepel::geom_text_repel(aes(label = ifelse(-log10(padj) > 2.5, gene, '')), 
+                         show.legend = F, color = 'black', 
+             max.overlaps = 30, box.padding = unit(4.5, 'mm'), segment.colour = 'grey') -> plt_S2_2A
+
+covid_annotated_rmsk_de %>% 
+  filter(clade %in% c('gencode_coding', 'gencode_lncRNA')) %>% 
+  ggplot(aes(log2FoldChange, -log10(padj), color = clade)) + 
+  geom_point(size = 2, alpha = 0.6) + 
+  scale_color_manual(values = te_color_pal[1:2], name = 'biotype') + 
+  ggtitle('covid GENCODE DE') +
+  ggrepel::geom_text_repel(aes(label = ifelse(-log10(padj) > 2.5, gene, '')), 
+                         show.legend = F, color = 'black', 
+             max.overlaps = 60, box.padding = unit(4.5, 'mm'), segment.colour = 'grey') -> plt_S2_2B
+
+import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer)
+
+
+fig_S2_2_layout <- "
+AA
+BB
+CC
+"
+
+wrap_plots(plt_S2_2A,
+           guide_area(),
+           plt_S2_2B,
+           design = fig_S2_2_layout, 
+           guides = 'collect',
+           heights = c(1,0.05,1)) + plot_annotation(tag_levels = 'A') & 
+  theme(plot.tag.position = c(0.01, 0.99), 
+        legend.position = 'bottom',
+        legend.title = element_text(vjust = 0.5),
+        legend.justification = c(0.5, 0.5)) -> fig.S2_2.patchwork
+
+save.manuscript.panel(figure = 's2',
+                      figure.dir = figure.dir,
+                      name = 'patchwork_full_fig_S2_2',
+                      width = figure_double_column_width,
+                      height = figure_depth,
+                      plot.in = fig.S2_2.patchwork)
+
+
+```
+
+
+
 # Fig_Nanopore
 ## read_len load
 ```{r}

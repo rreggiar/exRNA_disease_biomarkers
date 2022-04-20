@@ -959,14 +959,17 @@ total_annotated_rmsk_counts %>%
 tidy_total_annotated_rmsk_counts %>% 
   group_by(sample, condition, clade) %>% 
   summarize(clade_sum = sum(count)) %>% 
+  mutate(num = str_split_fixed(string = sample, pattern = '[.]', n = 4)[, 2],
+       sample = paste0(condition, ' ', num)) %>% 
   mutate(clade_frac = clade_sum/sum(clade_sum),
          condition = factor(condition, levels = c('panc', 'ctrl', 'covid'))) %>% 
   ggplot(aes(sample, clade_frac, fill = clade)) + 
   geom_col(color = 'white', show.legend = F) + 
   scale_fill_manual(values = te_color_pal, name = 'biotype/clade') + 
   ggforce::facet_row(~condition, scales = 'free_x') +
-  theme(axis.text.x = element_blank()) +
-  xlab('sample') + ylab('normalized count fraction') -> fig.2C.plt
+  theme(axis.text.x = element_text(angle = 40, hjust = 1)) +
+  scale_y_continuous(expand = c(0,0)) +
+  xlab('') + ylab('normalized count fraction') -> fig.2C.plt
 
 
 ```

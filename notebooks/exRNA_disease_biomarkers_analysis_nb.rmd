@@ -1501,6 +1501,7 @@ table(panc_nanopore_read_length.df$biotype) %>%
 
 panc_nanopore_read_length.df %>% 
   group_by(biotype) %>% 
+  # mutate(biotype = factor(biotype, levels = c('SINE', ')))
   # filter(!grepl('ctrl', sample)) %>% 
   merge(nanopore_biotype_labels, by = 'biotype') %>% 
   mutate(biolabel = factor(biolabel, levels = te_aware_annotation_levels),
@@ -1585,7 +1586,7 @@ ctrl.6.1.5_nanopore_hex_to.plt %>%
   geom_ribbon(alpha = 0.05) + 
   geom_step() + 
   xlim(130,315) +
-  scale_color_manual(values = viridisLite::plasma(20)[c(1,8,10)]) +
+  scale_color_manual(values = viridisLite::plasma(20)[c(1,8,10)], guide = 'none') +
   ylab('cumulative prop. (99% CI)') + 
   xlab('nanopore SINE fragment size (bp)') + 
   theme(legend.position = c(0.25, 0.99)) -> plt_ND_2.plt
@@ -1618,14 +1619,64 @@ panc.6.1.1_nanopore_hex_to.plt %>%
   ggplot(aes(read_length, len, fill = scales::rescale((..count../(sum(..count..) * 1e6))))) + 
   geom_hex(bins = 120) +
   # geom_vline(xintercept = median(panc.6.1.1_nanopore_hex_to.plt$read_length), color = 'grey', linetype = 'dashed') +
-  annotate(geom = 'text', x = 215, y = 120, label = 'panc 6') +
+  # annotate(geom = 'text', x = 275, y = 120, label = 'panc 6') +
   xlab('avg. observed SINE fragment size (bp)') + ylab('expected size (bp)') +
   # ggforce::facet_col(~sample) +
+  ggtitle('nanopore exp. vs obs. size -- panc 6') + 
   scale_fill_viridis_c(option = 'viridis', direction = 1, name = 'scaled cpm', breaks = c(0,1)) +
   scale_y_continuous(breaks = c(100,200,300,400), limits = c(75,425)) +
   scale_x_continuous(breaks = c(100,200,300,400), limits = c(75,370)) +
   theme(legend.position = c(0.98,0.45), legend.direction = 'horizontal', legend.key.width = unit(1, 'mm')) +
   guides(fill = guide_colorbar(title.position = 'left', title.vjust = 1)) -> plt_NE.plt
+
+ctrl.6.1.5_nanopore_hex_to.plt %>%
+  group_by(tx, len, biotype.x, sample) %>%
+  summarize(read_length = mean(read_length)) %>%
+  merge(nanopore_biotype_labels, by.x = 'biotype.x', by.y = 'biotype') %>%
+  mutate(biolabel = factor(biolabel, levels = te_aware_annotation_levels),
+         condition = ifelse(grepl('ctrl', sample), 'ctrl', 'panc')) %>%
+  ggplot(aes(read_length, len, fill = scales::rescale((..count../(sum(..count..) * 1e6))))) +
+  geom_hex(bins = 120) +
+  # annotate(geom = 'text', x = 275, y = 150, label = 'ctrl 6') +
+  # geom_vline(xintercept = median(ctrl.6.1.5_nanopore_hex_to.plt$read_length), 
+  #            color = 'grey', linetype = 'dashed') +
+  xlab('avg. observed fragment size (bp)') + ylab('expected size (bp)') +
+  # ggforce::facet_col(~sample) +
+  ggtitle('ctrl 6') + 
+  scale_fill_viridis_c(option = 'viridis', direction = 1, name = 'scaled cpm', guide = 'none') +
+  # theme(legend.position = c(0.95,1), legend.direction = 'horizontal', legend.key.width = unit(1, 'mm'))  +
+  # guides(fill = guide_colorbar(title.position = 'left', title.vjust = 1)) +
+  scale_y_continuous(breaks = c(100,200,300,400), limits = c(75,425)) +
+  scale_x_continuous(breaks = c(100,200,300,400), limits = c(75,370)) -> plt_SNA_1.plt
+
+panc.7.1.1_nanopore_hex_to.plt %>% 
+  group_by(tx, len, biotype.x, sample) %>% 
+  summarize(read_length = mean(read_length)) %>% 
+  merge(nanopore_biotype_labels, by.x = 'biotype.x', by.y = 'biotype') %>% 
+  mutate(biolabel = factor(biolabel, levels = te_aware_annotation_levels),
+         condition = ifelse(grepl('ctrl', sample), 'ctrl', 'panc')) %>% 
+  ggplot(aes(read_length, len, fill = scales::rescale((..count../(sum(..count..) * 1e6))))) + 
+  geom_hex(bins = 120) +
+  # geom_vline(xintercept = median(panc.7.1.1_nanopore_hex_to.plt$read_length), color = 'grey', linetype = 'dashed') +
+  # annotate(geom = 'text', x = 275, y = 150, label = 'panc 7') +
+  xlab('avg. observed fragment size (bp)') + ylab('expected size (bp)') +
+  # ggforce::facet_col(~sample) +
+  ggtitle('panc 7') + 
+  scale_fill_viridis_c(option = 'viridis', direction = 1, name = 'scaled cpm', guide = 'none') +
+  scale_y_continuous(breaks = c(100,200,300,400), limits = c(75,425)) +
+  scale_x_continuous(breaks = c(100,200,300,400), limits = c(75,370)) -> plt_SNA_3.plt
+
+panel_SNA_layout <- "
+AA
+BB
+CC
+"
+
+wrap_plots(plt_NE.plt + xlab('') + ylab(''),
+           plt_SNA_1.plt + xlab(''),
+           plt_SNA_3.plt + ylab(''),
+           design = panel_SNA_layout) -> panel.SNA.patchwork
+  
 ```
 ### Fig_Nanopore_patchwork
 ```{r}
@@ -1633,22 +1684,21 @@ import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_
 
 
 fig_N_layout <- "
-AA
-BB
-CD
-ED
-FD
+AB
+AB
+AB
+CC
+DD
 "
 
-wrap_plots(plt_NA.plt,
+wrap_plots(plt_NC.plt,
+           wrap_elements(full = panel.SNA.patchwork),
            guide_area(),
-           plt_NB.plt,
-           plt_NC.plt,
-           wrap_elements(full = plt_NE.plt),
-           wrap_elements(full = plt_ND_2.plt),
+           plt_ND_2.plt,
+           # wrap_elements(full = plt_ND_2.plt),
            design = fig_N_layout, 
            guides = 'collect',
-           heights = c(1.2,0.025,0.5,1,1)) +
+           heights = c(1,1,1,0.035,1)) +
   plot_annotation(tag_levels = 'A') &
   theme(legend.justification = 'center', legend.position = 'bottom') -> fig.N.patchwork
 
@@ -1681,7 +1731,7 @@ ctrl.6.1.5_nanopore_hex_to.plt %>%
   #            color = 'grey', linetype = 'dashed') +
   xlab('avg. observed fragment size (bp)') + ylab('expected size (bp)') +
   # ggforce::facet_col(~sample) +
-  ggtitle('nanopore exp. vs obs. size') + 
+  ggtitle('nanopore exp. vs obs. size -- ctrl 6') + 
   scale_fill_viridis_c(option = 'viridis', direction = 1, name = 'scaled cpm', breaks = c(0,1)) +
   theme(legend.position = c(0.95,1), legend.direction = 'horizontal', legend.key.width = unit(1, 'mm'))  +
   guides(fill = guide_colorbar(title.position = 'left', title.vjust = 1)) +
@@ -1701,6 +1751,7 @@ panc.7.1.1_nanopore_hex_to.plt %>%
   annotate(geom = 'text', x = 275, y = 150, label = 'panc 7') +
   xlab('avg. observed fragment size (bp)') + ylab('expected size (bp)') +
   # ggforce::facet_col(~sample) +
+    ggtitle('nanopore exp. vs obs. size -- ctrl 6') + 
   scale_fill_viridis_c(option = 'viridis', direction = 1, name = 'scaled cpm', guide = 'none') +
   scale_y_continuous(breaks = c(100,200,300,400), limits = c(75,425)) +
   scale_x_continuous(breaks = c(100,200,300,400), limits = c(75,370)) -> plt_SNA_3.plt

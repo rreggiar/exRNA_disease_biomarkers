@@ -621,14 +621,14 @@ fig.1C.plt <- mapping_rate_compare.plt + labs(tag = 'D')
 ```
 ## Fig_1stats
 ```{r}
-SummarizedExperiment::assay(ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$txi, 'counts') %>% 
-  as.data.frame() -> ucsc_rmsk_counts
+SummarizedExperiment::assay(ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$gxi, 
+                            'counts') %>% as.data.frame() -> ucsc_rmsk_counts
 
 ucsc_rmsk_counts <- ucsc_rmsk_counts[, !colnames(ucsc_rmsk_counts) %in% qc_fails]
 
-ucsc_rmsk_counts %>%
-  rownames_to_column('enst') %>% 
-  merge(reference_meta_data$total_tx_to_gene.df, by = 'enst') -> ucsc_rmsk_counts
+ucsc_rmsk_counts %>% 
+  rownames_to_column('gene') %>% 
+  merge(reference_meta_data$total_tx_to_gene.df %>% select(), by = 'gene') -> ucsc_rmsk_counts
 
 ucsc_rmsk_counts %>% 
   pivot_longer(cols = panc.1.2.3:ctrl.9.1.2, names_to = 'sample', values_to = 'count') %>% 
@@ -744,7 +744,8 @@ salmon_pca_corr_top_7.df %>%
   ggforce::facet_col(~pc) + 
   xlab('') + ylab('correlation between metric and PC (pearson)') + 
   geom_hline(yintercept = c(-0.5, 0.5), linetype = 'dashed', alpha = 0.4) + 
-  theme(legend.position = 'top', legend.justification = 'center', axis.text.x = element_text(angle = 60, hjust = 1)) + 
+  theme(legend.position = 'top', legend.justification = 'center', 
+        axis.text.x = element_text(angle = 60, hjust = 1)) + 
   scale_fill_manual(values = c('black', 'grey')) -> pca_correlation_top7.plt
   
   
@@ -778,6 +779,7 @@ fig.S1B.plt <- pca_correlation_top7.plt
 #   scale_color_manual(values = identity_color_pal) + 
 #   ylab('Input Volume -- mL') + xlab('') -> fig.S1D.plt
 
+
 salmon_quant$analysis_set$ctrl_panc_covid$quant_meta %>% 
   gather(var, value, -sample, -condition, -sex, -context) %>% 
   mutate(value = as.numeric(value),
@@ -786,13 +788,14 @@ salmon_quant$analysis_set$ctrl_panc_covid$quant_meta %>%
   spread(var, value) %>% 
   filter(! sample %in% qc_fails) %>% 
   select(-context, -input_vol) %>% 
-  mutate(num = str_split_fixed(string = sample, pattern = '[.]', n = 4)[, 2],
+  mutate(num = ifelse(grepl('covid', sample),
+                      row_number(),
+                      str_split_fixed(string = sample, pattern = '[.]', n = 4)[, 2]),
          sample = paste0(condition, ' ', num)) %>% 
   select(-num) %>% 
   gridExtra::tableGrob(theme = gridExtra::ttheme_minimal(base_size = 8,
                                                          core = list(padding=unit(c(1, 5.5), "mm"))), 
-                       rows = NULL) ->
-  fig.S1C.meta_table.grob
+                       rows = NULL) -> fig.S1C.meta_table.grob
 
 ```
 ### Fig_S1_patchwork
@@ -2308,7 +2311,7 @@ SummarizedExperiment::assay(process.aware.salmon_quant$analysis_set$panc_ctrl$gx
   
 
 
-process.aware.salmon_quant$analysis_set$covid_ctrl$deseq$de_out %>% 
+process.aware.salmon_quant$analysis_set$panc_ctrl$deseq$de_out %>% 
   merge(salmon_quant$analysis_set$covid_ctrl$deseq$de_out, by = 'gene') %>% 
   # filter(grepl('-I', ensg)) %>% View()
   ggplot(aes(log2FoldChange.x, log2FoldChange.y, label = gene)) +

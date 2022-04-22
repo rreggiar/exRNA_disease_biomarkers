@@ -662,7 +662,7 @@ ucsc_rmsk_biotype_summary %>%
   # scale_y_continuous(labels = scales::number_format(accuracy = 0.01)) +
   scale_fill_manual(values = identity_color_pal) + 
   facet_wrap(~clade, scales = 'free_y', ncol = 2) + 
-  theme(axis.text.x = element_text(angle = 40, hjust = 1), text = element_text(size = 7),
+  theme(axis.text.x = element_text(angle = 40, hjust = 1),
         legend.position = 'top', legend.direction = 'horizontal') -> biotype_count
 
 panc_compare_annotated.df %>% 
@@ -675,10 +675,11 @@ panc_compare_annotated.df %>%
   summarize(detected = n()) %>% 
   ggplot(aes(sample, detected, fill = sample)) + 
   geom_col() + 
+  ylab('detected genes/elements') + 
   xlab('') + 
   scale_fill_manual(values = viridisLite::plasma(20)[c(1,8,10)]) +
   facet_wrap(~clade, scales = 'free_y', ncol = 2) + 
-  theme(axis.text.x = element_text(angle = 40, hjust = 1), text = element_text(size = 7),
+  theme(axis.text.x = element_text(angle = 40, hjust = 1),
         legend.position = 'top', legend.direction = 'horizontal') -> plt_SN2E.plt
 
 import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer, wrap_elements)

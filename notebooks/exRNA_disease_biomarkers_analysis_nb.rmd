@@ -791,8 +791,11 @@ salmon_quant$analysis_set$ctrl_panc_covid$quant_meta %>%
   mutate(num = ifelse(grepl('covid', sample),
                       row_number(),
                       str_split_fixed(string = sample, pattern = '[.]', n = 4)[, 2]),
-         sample = paste0(condition, ' ', num)) %>% 
-  select(-num) %>% 
+         old_name = sample,
+         sample = paste0(condition, ' ', num)) -> meta_grob_input_table
+
+meta_grob_input_table %>% 
+  select(-num, -old_name) %>% 
   gridExtra::tableGrob(theme = gridExtra::ttheme_minimal(base_size = 8,
                                                          core = list(padding=unit(c(1, 5.5), "mm"))), 
                        rows = NULL) -> fig.S1C.meta_table.grob
@@ -961,14 +964,15 @@ total_annotated_rmsk_counts %>%
   merge(ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$deseq$scaled_quant_meta_for_de.df %>%
           select(sample, condition), by = 'sample') -> tidy_total_annotated_rmsk_counts
 
+
 tidy_total_annotated_rmsk_counts %>% 
-  group_by(sample, condition, clade) %>% 
+  merge(meta_grob_input_table %>% select('sample' = old_name, 'name' = sample), 
+        by = 'sample') %>% 
+  group_by(name, condition, clade) %>% 
   summarize(clade_sum = sum(count)) %>% 
-  mutate(num = str_split_fixed(string = sample, pattern = '[.]', n = 4)[, 2],
-       sample = paste0(condition, ' ', num)) %>% 
   mutate(clade_frac = clade_sum/sum(clade_sum),
          condition = factor(condition, levels = c('panc', 'ctrl', 'covid'))) %>% 
-  ggplot(aes(sample, clade_frac, fill = clade)) + 
+  ggplot(aes(name, clade_frac, fill = clade)) + 
   geom_col(color = 'white', show.legend = F) + 
   scale_fill_manual(values = te_color_pal, name = 'biotype/clade') + 
   ggforce::facet_row(~condition, scales = 'free_x') +

@@ -2207,7 +2207,6 @@ AA
 BB
 CC
 DD
-EE
 "
 
 wrap_plots(plt_SN2B.plt + ggtitle('panc 7 nanopore v nanopore'),
@@ -2215,7 +2214,7 @@ wrap_plots(plt_SN2B.plt + ggtitle('panc 7 nanopore v nanopore'),
            # plt_SN2B.plt + ggtitle('nanopore v illumina'),
            plt_SN2C.plt + ggtitle('panc 6 nanopore v nanopore'),
            plt_SN2D.plt + ggtitle('ctrl 6 nanopore v nanopore'),
-           plt_SN2E.plt,
+           # plt_SN2E.plt,
            guides = 'collect',
            design = fig_SN2_layout,
            heights = c(1,0.25,1,1)) +

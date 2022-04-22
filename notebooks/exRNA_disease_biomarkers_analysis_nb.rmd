@@ -570,7 +570,7 @@ tidy_quant_meta.df %>%
   geom_point(position = position_jitter(width = 0.2), size = rel(2), alpha = 1) +
   # scale_shape_manual(values = c(21,25)) +
   ylab('percent mapped') + xlab('') +
-  ggforce::facet_row(~var, scales = 'free_y') + 
+  ggforce::facet_col(~var, scales = 'free_y') + 
   scale_color_manual(values = identity_color_pal) + 
   theme(legend.position = 'right', legend.justification = 'center') +
   ggpubr::stat_compare_means(comparisons = list(c('panc', 'covid'),
@@ -707,10 +707,10 @@ import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_
 
 
 fig_1_layout <- "
-FA
-FB
-DD
-CC
+AC
+AC
+DC
+BC
 EE
 "
 
@@ -719,7 +719,7 @@ wrap_plots(fig.1A_1.plt + theme(axis.title.x = element_blank()),
            fig.1B.plt + coord_cartesian(clip = 'off'),
            guide_area(),
            fig.1C.plt + coord_cartesian(clip = 'off'),
-           wrap_elements(full = magick::image_ggplot(flow_chart.plt)) + labs(tag = 'A'),
+           # wrap_elements(full = magick::image_ggplot(flow_chart.plt)) + labs(tag = 'A'),
            design = fig_1_layout, 
            guides = 'collect',
            heights = c(0.75,0.75,0.0825,1,1)) & 

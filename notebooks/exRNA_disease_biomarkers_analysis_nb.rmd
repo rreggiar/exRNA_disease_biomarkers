@@ -1343,8 +1343,6 @@ save.manuscript.panel(figure = 's2',
 
 ```
 
-
-
 # Fig_Nanopore
 ## read_len load
 ```{r}
@@ -1435,8 +1433,8 @@ illumina_roster_names <- read_csv(file.path(output_data.dir, 'nanopore', 'illumi
 # 
 # vroom::vroom_write(illumina_read_len.df, file = file.path(output_data.dir, 'nanopore','illumina_read_len_no_seq.tsv.gz'))
 
-illumina_read_len.df <-
-  vroom::vroom(file = file.path(output_data.dir,'nanopore','illumina_read_len_no_seq.tsv.gz'), num_threads = 16)
+# illumina_read_len.df <-
+#   vroom::vroom(file = file.path(output_data.dir,'nanopore','illumina_read_len_no_seq.tsv.gz'), num_threads = 16)
 ```
 ## Fig_NA
 ```{r}
@@ -1550,8 +1548,9 @@ panc_nanopore_read_length.df %>%
   scale_y_continuous(labels = scales::number_format(accuracy = 0.01)) +
   ggforce::facet_col(~biolabel, scales = 'free') +
   scale_fill_manual(values = viridisLite::plasma(20)[c(1,8,10)]) +
+  coord_cartesian(clip = 'off') +
   ylab('proportion of nanopore biotype/clade fragment lengths') + xlab('nanopore fragment size (bp)') +
-  theme(legend.position = c(0.55,0.99), legend.direction = 'horizontal') -> plt_NC.plt
+  theme(legend.position = c(0.55,0.99), legend.direction = 'horizontal', plot.margin = margin(r = 3, unit = 'mm')) -> plt_NC.plt
 ```
 ## Fig_ND
 ```{r}
@@ -1657,9 +1656,9 @@ panc.6.1.1_nanopore_hex_to.plt %>%
   geom_hex(bins = 120) +
   # geom_vline(xintercept = median(panc.6.1.1_nanopore_hex_to.plt$read_length), color = 'grey', linetype = 'dashed') +
   # annotate(geom = 'text', x = 275, y = 120, label = 'panc 6') +
-  xlab('avg. observed SINE fragment size (bp)') + ylab('expected size (bp)') +
+  xlab('avg. observed SINE fragment size (bp)') + ylab('expected SINE insert size (bp)') +
   # ggforce::facet_col(~sample) +
-  ggtitle('nanopore exp. vs obs. size -- panc 6') + 
+  ggtitle('panc 6') + 
   scale_fill_viridis_c(option = 'viridis', direction = 1, name = 'scaled cpm', breaks = c(0,1)) +
   scale_y_continuous(breaks = c(100,200,300,400), limits = c(75,425)) +
   scale_x_continuous(breaks = c(100,200,300,400), limits = c(75,370)) +
@@ -1677,7 +1676,7 @@ ctrl.6.1.5_nanopore_hex_to.plt %>%
   # annotate(geom = 'text', x = 275, y = 150, label = 'ctrl 6') +
   # geom_vline(xintercept = median(ctrl.6.1.5_nanopore_hex_to.plt$read_length), 
   #            color = 'grey', linetype = 'dashed') +
-  xlab('avg. observed fragment size (bp)') + ylab('expected size (bp)') +
+  xlab('avg. observed fragment size (bp)') + ylab('expected SINE insert size (bp)') +
   # ggforce::facet_col(~sample) +
   ggtitle('ctrl 6') + 
   scale_fill_viridis_c(option = 'viridis', direction = 1, name = 'scaled cpm', guide = 'none') +
@@ -1696,7 +1695,7 @@ panc.7.1.1_nanopore_hex_to.plt %>%
   geom_hex(bins = 120) +
   # geom_vline(xintercept = median(panc.7.1.1_nanopore_hex_to.plt$read_length), color = 'grey', linetype = 'dashed') +
   # annotate(geom = 'text', x = 275, y = 150, label = 'panc 7') +
-  xlab('avg. observed fragment size (bp)') + ylab('expected size (bp)') +
+  xlab('avg. observed SINE fragment size (bp)') + ylab('expected SINE insert size (bp)') +
   # ggforce::facet_col(~sample) +
   ggtitle('panc 7') + 
   scale_fill_viridis_c(option = 'viridis', direction = 1, name = 'scaled cpm', guide = 'none') +
@@ -1709,8 +1708,8 @@ BB
 CC
 "
 
-wrap_plots(plt_NE.plt + xlab('') + ylab(''),
-           plt_SNA_1.plt + xlab(''),
+wrap_plots(plt_SNA_1.plt + xlab('') + ylab(''),
+           plt_NE.plt + xlab(''),
            plt_SNA_3.plt + ylab(''),
            design = panel_SNA_layout) -> panel.SNA.patchwork
   
@@ -1729,13 +1728,13 @@ DD
 "
 
 wrap_plots(plt_NC.plt,
-           wrap_elements(full = panel.SNA.patchwork),
+           wrap_elements(full = panel.SNA.patchwork, clip = F),
            guide_area(),
            plt_ND_2.plt,
            # wrap_elements(full = plt_ND_2.plt),
            design = fig_N_layout, 
            guides = 'collect',
-           heights = c(1,1,1,0.035,1)) +
+           heights = c(1,1,1,0.035,0.75)) +
   plot_annotation(tag_levels = 'A') &
   theme(legend.justification = 'center', legend.position = 'bottom') -> fig.N.patchwork
 

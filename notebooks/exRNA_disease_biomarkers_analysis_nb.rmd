@@ -641,27 +641,35 @@ ucsc_rmsk_counts %>%
                                      'DNA',
                                      'Simple_repeat'), clade, 'other'),
          type = ifelse(grepl('gencode',family), 'GENCODE', 'TE'),
-         clade = factor(clade, levels = te_aware_annotation_levels)) -> ucsc_rmsk_counts
+         clade = factor(clade, levels = te_aware_annotation_levels)) %>% 
+    distinct() -> ucsc_rmsk_counts
+
+
+## how you counting?
 
 ucsc_rmsk_counts %>% 
   pivot_longer(cols = panc.1.2.3:ctrl.9.1.2, names_to = 'sample', values_to = 'count') %>% 
   mutate(condition = case_when(grepl('panc', sample) ~ 'panc',
                                grepl('covid', sample) ~ 'covid',
                                grepl('ctrl', sample) ~ 'ctrl')) %>% 
-  group_by(clade, condition) %>% 
+  group_by(sample, clade, condition) %>% 
   filter(count >= 5) %>% 
   summarize(count = n()) -> ucsc_rmsk_biotype_summary
 
 
 ucsc_rmsk_biotype_summary %>% 
+  group_by(clade) %>% 
   filter(!grepl('\\?', clade)) %>% 
-  ggplot(aes(condition, count, fill = condition)) + 
-  geom_col() + 
+  ggplot(aes(condition, count, color = condition)) + 
+  geom_boxplot(fill = NA, outlier.colour = NA) + 
+  geom_jitter(width = 0.25) +
   ylab('detected genes/elements') + 
-  xlab('') + 
+  xlab('') +
   # scale_y_continuous(labels = scales::number_format(accuracy = 0.01)) +
-  scale_fill_manual(values = identity_color_pal) + 
-  facet_wrap(~clade, scales = 'free_y', ncol = 2) + 
+  scale_color_manual(values = identity_color_pal) + 
+  facet_wrap(~clade, scales = 'free_y', ncol = 2) +
+  coord_cartesian(clip = 'off') +
+  ggpubr::stat_compare_means(method = 'wilcox', comparisons = list(c('covid', 'ctrl'), c('panc', 'ctrl'), c('covid', 'panc'))) +
   theme(axis.text.x = element_text(angle = 40, hjust = 1),
         legend.position = 'top', legend.direction = 'horizontal') -> biotype_count
 

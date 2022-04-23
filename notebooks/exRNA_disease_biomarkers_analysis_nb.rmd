@@ -668,7 +668,7 @@ ucsc_rmsk_biotype_summary %>%
   scale_color_manual(values = identity_color_pal) + 
   facet_wrap(~clade, scales = 'free_y', ncol = 2) +
   coord_cartesian(clip = 'off') +
-  ggpubr::stat_compare_means(method = 'wilcox', comparisons = list(c('covid', 'ctrl'), c('panc', 'ctrl'), c('covid', 'panc'))) +
+  ggpubr::stat_compare_means(method = 'wilcox', comparisons = list(c('covid', 'ctrl'), c('panc', 'ctrl'))) +
   theme(axis.text.x = element_text(angle = 40, hjust = 1),
         legend.position = 'top', legend.direction = 'horizontal') -> biotype_count
 
@@ -693,11 +693,11 @@ import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_
 
 
 fig_1_layout <- "
-AB
-AB
+AA
+AA
 "
 
-wrap_plots(biotype_count, plt_SN2E.plt) + plot_annotation(tag_levels = 'A') -> biotype_plt
+wrap_plots(biotype_count) + plot_annotation(tag_levels = 'A') -> biotype_plt
 
 save.manuscript.panel(figure = 's1',
                       figure.dir = figure.dir,
@@ -705,6 +705,16 @@ save.manuscript.panel(figure = 's1',
                       width = figure_double_column_width,
                       height = figure_depth,
                       plot.in = biotype_plt)
+
+wrap_plots(plt_SN2E.plt) + plot_annotation(tag_levels = 'A') -> nanopore_biotype_plt
+
+
+save.manuscript.panel(figure = 's1',
+                      figure.dir = figure.dir,
+                      name = 'patchwork_full_nanopore_biotype_tx',
+                      width = figure_double_column_width,
+                      height = figure_depth,
+                      plot.in = nanopore_biotype_plt)
   
 ```
 

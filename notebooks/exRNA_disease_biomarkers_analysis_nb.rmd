@@ -536,8 +536,7 @@ flow_chart.plt <- magick::image_read(path = file.path(figure.dir, 'fig.1', 'rer_
 
 fig.1A_1.plt <- 
   salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_1v2.plt +
-  annotate(geom = 'text', x = -175, y = -100, label = 'TE-aware', size = txt.mm_to_pts(1.25)) +
-  labs(tag = 'B') + coord_flip() 
+  annotate(geom = 'text', x = -175, y = -100, label = 'TE-aware', size = txt.mm_to_pts(1.25)) + coord_flip() 
   
 fig.1A_2.plt <- 
   salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_2v3.plt +
@@ -585,7 +584,7 @@ tidy_quant_meta.df %>%
 #                       height = figure_depth/2,
 #                       plot.in = mapping_rate_dist.plt)
 
-fig.1B.plt <- mapping_rate_dist.plt + labs(tag = 'C')
+fig.1B.plt <- mapping_rate_dist.plt
 ```
 ## Fig_1C
 ```{r 1C}
@@ -616,7 +615,7 @@ mapping_rate_compare.df %>%
                              method = 'wilcox', size = 2.5, 
                              method.args = list(exact = TRUE, paired = T)) -> mapping_rate_compare.plt
 
-fig.1C.plt <- mapping_rate_compare.plt + labs(tag = 'D')
+fig.1C.plt <- mapping_rate_compare.plt
 
 ```
 ## Fig_1stats
@@ -722,7 +721,7 @@ BC
 EE
 "
 
-wrap_plots(fig.1A_1.plt + theme(axis.title.x = element_blank()),
+wrap_plots(fig.1A_1.plt,
            fig.1A_2.plt,
            fig.1B.plt + coord_cartesian(clip = 'off'),
            guide_area(),
@@ -730,7 +729,7 @@ wrap_plots(fig.1A_1.plt + theme(axis.title.x = element_blank()),
            # wrap_elements(full = magick::image_ggplot(flow_chart.plt)) + labs(tag = 'A'),
            design = fig_1_layout, 
            guides = 'collect',
-           heights = c(0.75,0.75,0.0825,1,1)) & 
+           heights = c(0.75,0.75,0.0825,1,1)) + plot_annotation(tag_levels = 'A') & 
   theme(plot.tag.position = c(0.01, 0.99), 
         legend.position = 'bottom',
         legend.title = element_text(vjust = 1.25),

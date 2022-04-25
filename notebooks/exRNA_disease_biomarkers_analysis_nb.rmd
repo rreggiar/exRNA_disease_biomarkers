@@ -2262,7 +2262,7 @@ process.aware.salmon_quant$analysis_set$ctrl_panc_covid$unsplice_data.df %>%
   theme(legend.position = c(0.99,0.99)) + 
   coord_cartesian(clip = 'off') +
   ggpubr::stat_compare_means(method = 'wilcox', 
-                             comparisons = list(c('panc', 'ctrl'), c('covid', 'ctrl'),  c('panc', 'covid'))) + 
+                             comparisons = list(c('panc', 'ctrl'), c('covid', 'ctrl'))) + 
   xlab('') + ylab('detection rate of un-spliced genes') -> plt_4A.plt
 ```
 ## Fig_4B
@@ -2311,7 +2311,7 @@ pca.out %>%
   geom_vline(xintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) +
   geom_hline(yintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) + 
   scale_color_manual(values = identity_color_pal) + 
-  annotate(geom = 'text', x = -65, y = -160, label = 'size-aware', size = txt.mm_to_pts(1)) +
+  annotate(geom = 'text', x = -55, y = -160, label = 'intron-aware', size = txt.mm_to_pts(1)) +
   theme(legend.position = c(0.95,1), legend.direction = 'horizontal') -> plt_4B.plt
 ```
 ### Fig_4_patchwork

@@ -525,9 +525,9 @@ process.aware.salmon_quant$analysis_set$ctrl_panc_covid$unsplice_data.df <-
 # Fig_1
 ## Fig_flowchart
 ```{r}
-flow_chart.plt <- magick::image_read_pdf(path = file.path(figure.dir, 'fig.1', 'ip_flowchart_tiny.pdf'))
+flow_chart.plt <- magick::image_read_pdf(path = file.path(figure.dir, 'fig.1', 'plasma_schematic.pdf'))
 
-flow_chart.plt <- magick::image_read(path = file.path(figure.dir, 'fig.1', 'rer_biorender_8.08x8.3.png'))
+# flow_chart.plt <- magick::image_read(path = file.path(figure.dir, 'fig.1', 'plasma_schematic.png'))
 ```
 ## Fig_1A
 ```{r 1A}
@@ -1095,7 +1095,8 @@ BC
 EE
 "
 
-wrap_plots(wrap_plots(plot_spacer(), fig.2C.plt, widths = c(0.25, 0.75)),
+flowchart_wrap <- wrap_elements(full = magick::image_ggplot(flow_chart.plt))
+wrap_plots(wrap_plots(flowchart_wrap, fig.2C.plt, widths = c(0.25, 0.75)),
            fig.2A.plt + labs(title = 'panc'),
            fig.2B.plt + labs(title = 'covid'),
            guide_area(),

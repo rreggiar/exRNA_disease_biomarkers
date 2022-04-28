@@ -2609,6 +2609,7 @@ binomial_model_response_prob %>%
 tcga_data_path <- file.path(output_data.dir, 'tcga_gtex')
 gtex_colData <- read_csv(file.path(tcga_data_path, 'panc_gtex_colData.csv'), 
                          col_names = c('sample', 'name', 'tissue_1', 'tissue_2', 'sex', 'age'))
+
 tcga_colData <- read_tsv(file.path(tcga_data_path, 'paad_tcga_colData.tsv')) %>% 
   mutate(submitter_id.samples = str_replace_all(string = submitter_id.samples, pattern = 'TCGA', replacement = 'PAAD'),
          submitter_id.samples = str_replace_all(string = submitter_id.samples, pattern = '01A', replacement = 'TP'),
@@ -2921,5 +2922,78 @@ pca.out %>%
   # extract.meta.pca.correlates()
   
 ```
+
+## TCGA Surv
+```{r}
+tcga_paad_gene_counts %>% 
+  # merge(gtex_paad_gene_counts, by = 'gene') %>%
+  filter(gene %in% reference_meta_data$ucsc_rmsk_insert_info.df$gene) %>%
+  # filter(gene %in% filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out,
+  #                         padj < 0.05 & abs(log2FoldChange) > 0.75)$gene) %>%
+  # filter(!if_all(is.numeric, ~.x == 0)) %>% nrow()
+  # mutate(across(where(is.numeric), ~scale(log2(. + 1), center = T)[,1])) %>%
+  # mutate(across(where(is.numeric), ~scale(., center = T)[,1])) %>%
+  # filter(!gene %in% c('AluYm1', 'AluJo')) %>% 
+  # mutate(across(where(is.numeric), ~log2(. + 1))) %>%
+  column_to_rownames('gene') %>% as.matrix() %>% t() -> tcga_paad_te_counts
+
+tcga_paad_meta_data <- tibble('sample' = rownames(tcga_paad_te_counts), 'condition' = ifelse(grepl('PAAD', sample), 'PAAD', 'GTEx'))
+
+t(tcga_paad_te_counts) %>% 
+  as.data.frame() %>%
+  mutate(across(where(is.numeric), ~round(.x))) -> tcga_paad_te_count_data_for_DEseq
+
+tcga_de_dds <- DESeq2::DESeqDataSetFromMatrix(countData = tcga_paad_te_count_data_for_DEseq, 
+                                              colData = tcga_paad_meta_data, 
+                                              design = as.formula('~1'), tidy = F)
+
+tcga_de_dds <- DESeq2::estimateSizeFactors(tcga_de_dds)
+
+tcga_paad_dds_norm_counts.df <- as.data.frame(DESeq2::counts(tcga_de_dds, normalized=T))
+
+tcga_colData %>% 
+  filter(submitter_id.samples %in% colnames(tcga_paad_dds_norm_counts.df)) %>% 
+  select('sample' = submitter_id.samples, 'type' = sample_type.samples) %>% 
+  filter(type == 'Primary Tumor') -> tcga_primary_tumors
+
+tcga_padd_stratified_counts <-
+  tcga_paad_dds_norm_counts.df %>%
+  t() %>% as.data.frame()
+
+tcga_padd_stratified_counts %>% 
+  rownames_to_column('sample') %>% 
+  filter(sample %in% tcga_primary_tumors$sample) %>% 
+  gather(gene, count, -sample) %>% 
+  filter(gene %in% filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
+                          padj < 0.05, log2FoldChange > .75, !grepl('ENSG', ensg))$gene) %>%
+  select(sample, count) %>% 
+  group_by(sample) %>%
+  summarize(avg.count = mean(count)) %>%
+  mutate(gene.set = 'panc_te_signal') %>%
+  group_by(gene.set) %>%
+  mutate(stratum = ifelse(avg.count >= quantile(avg.count, 0.66),
+                          'top-third', ifelse(avg.count <= quantile(avg.count, 0.33),
+                                              'bottom-third', 'middle'))) %>%
+  filter(stratum != 'middle') %>%
+  spread(gene.set, stratum)
+
+
+## RERWIP dl survival data for PAAD from Xena
+
+surv.obj <- Surv(time = filter(luad.phenotypes.merge %>% select(sample, OS.time, OS) %>% distinct() , 
+                               sample %in% znf.avg.counts.tidy.stratified$sample)$OS.time,
+                 event = filter(luad.phenotypes.merge %>% select(sample, OS.time, OS) %>% distinct(), 
+                                sample %in% znf.avg.counts.tidy.stratified$sample)$OS)
+surv.fit <- survfit(as.formula(surv.obj ~ znf.avg.counts.tidy.stratified$aale_znf_signal), 
+                    data = znf.avg.counts.tidy.stratified)
+ggsurvplot(surv.fit,
+           pval = T, 
+           legend.title = "",
+           ggtheme = theme_set_fun() + theme(legend.position = c(0.45,0.95)),
+           pval.coord = c(0, 0.08),
+           palette = viridis(3)[c(2,1)]) -> surv.plt
+surv.plt
+```
+
 
 

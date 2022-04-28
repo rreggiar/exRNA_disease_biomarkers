@@ -2537,7 +2537,7 @@ beta %>% as.matrix() %>% as.data.frame() %>%
 doMC::registerDoMC(cores = 6)
 
 filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
-       padj < 0.01 & abs(log2FoldChange) > 0.55 & grepl('ENSG', ensg) & gene %in% colnames(tcga_x_in))$ensg ->
+       padj < 0.01 & abs(log2FoldChange) > 0.55 & !grepl('ENSG', ensg))$ensg ->
   de_ensg_names
 
 x_in <- t(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$norm_counts.df)
@@ -2588,6 +2588,18 @@ tcga_binom_test_data <- tcga_x_in[, colnames(tcga_x_in) %in% colnames(x_in_filt)
 testing_pred_matrix <- predict(binom_model, s = 'lambda.min', newx = tcga_binom_test_data, type = 'response')
 
 pROC::roc(response = tcga_y_in %>% pull(condition), predictor = testing_pred_matrix[,1])
+
+binomial_model_response_prob <- inverse.logit.calc(y_hat_matrix)
+
+
+tcga_binomial_model_response_prob %>% 
+  as.data.frame() %>% 
+  rownames_to_column('sample') %>% 
+  dplyr::rename('prob' = '.') %>% 
+  merge(tcga_y_in, by = 'sample') %>% 
+  mutate(condition = ifelse(condition == 1, 'PAAD', 'GTEx')) %>% 
+  ggplot(aes(condition, prob)) + 
+  geom_boxplot()
 
 
 ```
@@ -2653,7 +2665,7 @@ if (! file.exists(file.path(tcga_data_path, 'paad_tcga_gene_readNum_matrix.tsv')
 ```{r}
 tcga_paad_gene_counts %>% 
   merge(gtex_paad_gene_counts, by = 'gene') %>%
-  filter(!gene %in% reference_meta_data$ucsc_rmsk_insert_info.df$gene) %>%
+  filter(gene %in% reference_meta_data$ucsc_rmsk_insert_info.df$gene) %>%
   # filter(gene %in% filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out,
   #                         padj < 0.05 & abs(log2FoldChange) > 0.75)$gene) %>%
   # filter(!if_all(is.numeric, ~.x == 0)) %>% nrow()
@@ -2833,6 +2845,10 @@ testing_pred_matrix <- predict(tcga_binomial_model, s = 'lambda.min', newx = tcg
 
 pROC::roc(response = tcga_y_in_test, predictor = testing_pred_matrix[,1])
 
+
+testing_pred_matrix <- predict(tcga_binomial_model, s = 'lambda.min', newx = x_in, type = 'response')
+
+pROC::roc(response = tcga_y_in_test, predictor = testing_pred_matrix[,1])
 
 
 tcga_binomial_model_response_prob <- inverse.logit.calc(y_hat_matrix)

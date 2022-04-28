@@ -2537,7 +2537,7 @@ beta %>% as.matrix() %>% as.data.frame() %>%
 doMC::registerDoMC(cores = 6)
 
 filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
-       padj < 0.01 & abs(log2FoldChange) > 0.55 & grepl('ENSG', ensg))$ensg ->
+       padj < 0.01 & abs(log2FoldChange) > 0.55 & grepl('ENSG', ensg) & gene %in% colnames(tcga_x_in))$ensg ->
   de_ensg_names
 
 x_in <- t(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$norm_counts.df)
@@ -2582,6 +2582,13 @@ y_hat_matrix <- binom_model$fit.preval[,which(binom_model$lambda == binom_model$
 training_pred_matrix <- predict(binom_model, s = 'lambda.min', newx = x_in_filt, type = 'response')
 
 plot(pROC::roc(response = y, predictor = training_pred_matrix[,1]))
+
+tcga_binom_test_data <- tcga_x_in[, colnames(tcga_x_in) %in% colnames(x_in_filt)]
+
+testing_pred_matrix <- predict(binom_model, s = 'lambda.min', newx = tcga_binom_test_data, type = 'response')
+
+pROC::roc(response = tcga_y_in %>% pull(condition), predictor = testing_pred_matrix[,1])
+
 
 ```
 
@@ -2645,16 +2652,21 @@ if (! file.exists(file.path(tcga_data_path, 'paad_tcga_gene_readNum_matrix.tsv')
 ## TCGA GTEx Heatmap
 ```{r}
 tcga_paad_gene_counts %>% 
-  # merge(gtex_paad_gene_counts, by = 'gene') %>%
-  filter(gene %in% reference_meta_data$ucsc_rmsk_insert_info.df$gene) %>%
-  filter(gene %in% filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out,
-                          padj < 0.05 & abs(log2FoldChange) > 0.75)$gene) %>%
+  merge(gtex_paad_gene_counts, by = 'gene') %>%
+  filter(!gene %in% reference_meta_data$ucsc_rmsk_insert_info.df$gene) %>%
+  # filter(gene %in% filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out,
+  #                         padj < 0.05 & abs(log2FoldChange) > 0.75)$gene) %>%
   # filter(!if_all(is.numeric, ~.x == 0)) %>% nrow()
   # mutate(across(where(is.numeric), ~scale(log2(. + 1), center = T)[,1])) %>%
   # mutate(across(where(is.numeric), ~scale(., center = T)[,1])) %>%
   # filter(!gene %in% c('AluYm1', 'AluJo')) %>% 
   # mutate(across(where(is.numeric), ~log2(. + 1))) %>%
   column_to_rownames('gene') %>% as.matrix() %>% t() -> hm_count_data
+
+tcga_identity_color_pal <- identity_color_pal[1:2]
+names(tcga_identity_color_pal) <- c('GTEx', 'PAAD')
+
+hm_meta_data <- tibble('sample' = rownames(hm_count_data), 'condition' = ifelse(grepl('PAAD', sample), 'PAAD', 'GTEx'))
 
 t(hm_count_data) %>% 
   as.data.frame() %>%
@@ -2666,10 +2678,7 @@ tcga_de_dds <- DESeq2::estimateSizeFactors(tcga_de_dds)
 
 tcga_de_dds_norm_counts.df <- as.data.frame(DESeq2::counts(tcga_de_dds, normalized=T))
 
-tcga_identity_color_pal <- identity_color_pal[1:2]
-names(tcga_identity_color_pal) <- c('GTEx', 'PAAD')
 
-hm_meta_data <- tibble('sample' = rownames(hm_count_data), 'condition' = ifelse(grepl('PAAD', sample), 'PAAD', 'GTEx'))
 
 
 
@@ -2779,21 +2788,21 @@ doMC::registerDoMC(cores =12)
 trainSplitIndex <- 
   caret::createDataPartition(factor(model_input_meta_data$condition, levels = c('GTEx', 'PAAD')), p = .8, list = FALSE, times = 1)
 
-x_in <- hm_count_data
+tcga_x_in <- hm_count_data
 
-y_in <- hm_meta_data %>% mutate(condition = ifelse(condition == 'PAAD', 1, 0))
+tcga_y_in <- hm_meta_data %>% mutate(condition = ifelse(condition == 'PAAD', 1, 0))
 
-x_in_train <- x_in[trainSplitIndex, ,drop = F]
-y_in_train <- y_in[trainSplitIndex, ,drop = F] %>% pull(condition)
+tcga_x_in_train <- tcga_x_in[trainSplitIndex, ,drop = F]
+tcga_y_in_train <- tcga_y_in[trainSplitIndex, ,drop = F] %>% pull(condition)
 
-x_in_test <- x_in[-trainSplitIndex, ,drop = F]
-y_in_test <- y_in[-trainSplitIndex, ,drop = F] %>% pull(condition)
+tcga_x_in_test <- tcga_x_in[-trainSplitIndex, ,drop = F]
+tcga_y_in_test <- tcga_y_in[-trainSplitIndex, ,drop = F] %>% pull(condition)
 
 set.seed(123)
 
 tcga_binomial_model <- 
-  cv.glmnet(x = x_in_train,
-            y = y_in_train,
+  cv.glmnet(x = tcga_x_in_train,
+            y = tcga_y_in_train,
             family = 'binomial',
             type.measure = 'deviance',
             nfolds = 20, 
@@ -2813,16 +2822,16 @@ inverse.logit.calc <- function(y_hat) { exp(y_hat)/(1+exp(y_hat)) }
 
 y_hat_matrix <- tcga_binomial_model$fit.preval[,which(tcga_binomial_model$lambda == tcga_binomial_model$lambda.min)]
 
-# predict(tcga_binomial_model, s = 'lambda.min', newx = x_in_train, type = 'response')
+# predict(tcga_binomial_model, s = 'lambda.min', newx = tcga_x_in_train, type = 'response')
 
-training_pred_matrix <- predict(tcga_binomial_model, s = 'lambda.min', newx = x_in_train, type = 'response')
+training_pred_matrix <- predict(tcga_binomial_model, s = 'lambda.min', newx = tcga_x_in_train, type = 'response')
 
-pROC::roc(response = y_in_train, predictor = training_pred_matrix[,1])$auc
+pROC::roc(response = tcga_y_in_train, predictor = training_pred_matrix[,1])$auc
 
 
-testing_pred_matrix <- predict(tcga_binomial_model, s = 'lambda.min', newx = x_in_test, type = 'response')
+testing_pred_matrix <- predict(tcga_binomial_model, s = 'lambda.min', newx = tcga_x_in_test, type = 'response')
 
-pROC::roc(response = y_in_test, predictor = testing_pred_matrix[,1])
+pROC::roc(response = tcga_y_in_test, predictor = testing_pred_matrix[,1])
 
 
 
@@ -2833,7 +2842,7 @@ tcga_binomial_model_response_prob %>%
   as.data.frame() %>% 
   rownames_to_column('sample') %>% 
   dplyr::rename('prob' = '.') %>% 
-  merge(y_in, by = 'sample') %>% 
+  merge(tcga_y_in, by = 'sample') %>% 
   mutate(condition = ifelse(condition == 1, 'PAAD', 'GTEx')) %>% 
   ggplot(aes(condition, prob)) + 
   geom_boxplot()

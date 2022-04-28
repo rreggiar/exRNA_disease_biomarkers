@@ -72,6 +72,59 @@ ggplot2::theme_set(ggthemes::theme_foundation(base_size = base_size,
                            )
                    )
 
+theme_set_fun <- function(){
+  
+  ggplot2::theme_set(ggthemes::theme_foundation(base_size = base_size,
+                                              base_family = 'Helvetica') + 
+                     theme(plot.title = element_text(size = base_size, face = 'bold'),
+                           panel.background = element_rect(colour = NA),
+                           plot.background = element_rect(colour = NA),
+                           panel.border = element_rect(colour = NA), 
+                           axis.line = element_line(), 
+                           axis.line.x = NULL, 
+                           axis.line.y = NULL, 
+                           axis.text = element_text(size = rel(0.95)), 
+                           axis.text.x = element_text(margin = 
+                                                        margin(t = 0.8 * base_size/4)), 
+                           axis.text.x.top = element_text(margin = 
+                                                            margin(b = 0.8 * base_size/4), 
+                                                          vjust = 0), 
+                           axis.text.y = element_text(margin = 
+                                                        margin(r = 0.5 * base_size/4), 
+                                                      hjust = 1),
+                           axis.text.y.right = element_text(margin = 
+                                                              margin(l = 0.5 * base_size/4), 
+                                                            hjust = 0), 
+                           axis.ticks = element_line(), 
+                           axis.ticks.length = unit(base_size/2.5, "pt"), axis.ticks.length.x = NULL, 
+                           axis.ticks.length.x.top = NULL, axis.ticks.length.x.bottom = NULL, 
+                           axis.ticks.length.y = NULL, axis.ticks.length.y.left = NULL, 
+                           axis.ticks.length.y.right = NULL,
+                           strip.text = element_text(size = rel(0.8), face = 'bold'),
+                           strip.background = element_blank(),
+                           legend.key.size= unit(0.08, "in"),
+                           legend.spacing = unit(0, "in"),
+                           legend.key = element_rect(colour = NA),
+                           legend.title = element_text(face="italic"),
+                           legend.text = element_text(face = 'bold'),
+                           legend.justification = c("right", "top"),
+                           legend.box.just = "right",
+                           legend.margin = margin(6, 6, 6, 6),
+                           plot.tag = element_text(size = base_size, face = 'bold'),
+                           plot.margin=margin(0.04,
+                                              0.04,
+                                              0.04,
+                                              0.04,
+                                              unit = "in"),
+                           legend.box.spacing = unit(-0.02, 'in'),
+                           panel.grid.major = element_blank(),
+                           panel.grid.minor = element_blank()
+                           )
+                   )
+  
+}
+
+
 txt.mm_to_pts <- function(ratio){ base_size * ratio * (25.4 / 72.27) }
 ```
 
@@ -2927,7 +2980,7 @@ pca.out %>%
 ```{r}
 tcga_paad_gene_counts %>% 
   # merge(gtex_paad_gene_counts, by = 'gene') %>%
-  filter(gene %in% reference_meta_data$ucsc_rmsk_insert_info.df$gene) %>%
+  # filter(gene %in% reference_meta_data$ucsc_rmsk_insert_info.df$gene) %>%
   # filter(gene %in% filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out,
   #                         padj < 0.05 & abs(log2FoldChange) > 0.75)$gene) %>%
   # filter(!if_all(is.numeric, ~.x == 0)) %>% nrow()
@@ -2937,7 +2990,8 @@ tcga_paad_gene_counts %>%
   # mutate(across(where(is.numeric), ~log2(. + 1))) %>%
   column_to_rownames('gene') %>% as.matrix() %>% t() -> tcga_paad_te_counts
 
-tcga_paad_meta_data <- tibble('sample' = rownames(tcga_paad_te_counts), 'condition' = ifelse(grepl('PAAD', sample), 'PAAD', 'GTEx'))
+tcga_paad_meta_data <- tibble('sample' = rownames(tcga_paad_te_counts), 
+                              'condition' = ifelse(grepl('PAAD', sample), 'PAAD', 'GTEx'))
 
 t(tcga_paad_te_counts) %>% 
   as.data.frame() %>%
@@ -2954,7 +3008,12 @@ tcga_paad_dds_norm_counts.df <- as.data.frame(DESeq2::counts(tcga_de_dds, normal
 tcga_colData %>% 
   filter(submitter_id.samples %in% colnames(tcga_paad_dds_norm_counts.df)) %>% 
   select('sample' = submitter_id.samples, 'type' = sample_type.samples) %>% 
-  filter(type == 'Primary Tumor') -> tcga_primary_tumors
+  filter(type == 'Primary Tumor') %>% 
+  mutate(patient = str_replace_all(string = sample, 
+                                   pattern = '-TP', replacement = ''),
+         patient = str_replace_all(string = patient,
+                                   pattern = 'PAAD-',
+                                   replacement = 'TCGA-')) -> tcga_primary_tumors
 
 tcga_padd_stratified_counts <-
   tcga_paad_dds_norm_counts.df %>%
@@ -2965,7 +3024,8 @@ tcga_padd_stratified_counts %>%
   filter(sample %in% tcga_primary_tumors$sample) %>% 
   gather(gene, count, -sample) %>% 
   filter(gene %in% filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
-                          padj < 0.05, log2FoldChange > .75, !grepl('ENSG', ensg))$gene) %>%
+                          padj < 0.05, log2FoldChange > 0.75)$gene) %>%
+  filter(gene %in% msig.df$HALLMARK_MYC_TARGETS_V1) %>% 
   select(sample, count) %>% 
   group_by(sample) %>%
   summarize(avg.count = mean(count)) %>%
@@ -2975,17 +3035,23 @@ tcga_padd_stratified_counts %>%
                           'top-third', ifelse(avg.count <= quantile(avg.count, 0.33),
                                               'bottom-third', 'middle'))) %>%
   filter(stratum != 'middle') %>%
-  spread(gene.set, stratum)
+  spread(gene.set, stratum) -> tcga_paad_stratified_counts
 
 
 ## RERWIP dl survival data for PAAD from Xena
 
-surv.obj <- Surv(time = filter(luad.phenotypes.merge %>% select(sample, OS.time, OS) %>% distinct() , 
-                               sample %in% znf.avg.counts.tidy.stratified$sample)$OS.time,
-                 event = filter(luad.phenotypes.merge %>% select(sample, OS.time, OS) %>% distinct(), 
-                                sample %in% znf.avg.counts.tidy.stratified$sample)$OS)
-surv.fit <- survfit(as.formula(surv.obj ~ znf.avg.counts.tidy.stratified$aale_znf_signal), 
-                    data = znf.avg.counts.tidy.stratified)
+paad_survival <- read_tsv(file.path(output_data.dir, 'tcga_gtex', 'PAAD_survival.txt'))
+
+paad_tcga_pheno_merge <- 
+  tcga_primary_tumors %>% merge(paad_survival, by.x = 'patient', by.y = '_PATIENT')
+
+surv.obj <- Surv(time = filter(paad_tcga_pheno_merge %>% select(sample.x, OS.time, OS) %>% distinct(), 
+                               sample.x %in% tcga_paad_stratified_counts$sample)$OS.time,
+                 event = filter(paad_tcga_pheno_merge %>% select(sample.x, OS.time, OS) %>% distinct(), 
+                                sample.x %in% tcga_paad_stratified_counts$sample)$OS)
+
+surv.fit <- survfit(as.formula(surv.obj ~ panc_te_signal), 
+                    data = tcga_paad_stratified_counts)
 ggsurvplot(surv.fit,
            pval = T, 
            legend.title = "",

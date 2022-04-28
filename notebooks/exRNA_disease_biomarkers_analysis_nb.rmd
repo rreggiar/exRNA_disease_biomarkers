@@ -2592,12 +2592,12 @@ pROC::roc(response = tcga_y_in %>% pull(condition), predictor = testing_pred_mat
 binomial_model_response_prob <- inverse.logit.calc(y_hat_matrix)
 
 
-tcga_binomial_model_response_prob %>% 
+binomial_model_response_prob %>% 
   as.data.frame() %>% 
   rownames_to_column('sample') %>% 
   dplyr::rename('prob' = '.') %>% 
-  merge(tcga_y_in, by = 'sample') %>% 
-  mutate(condition = ifelse(condition == 1, 'PAAD', 'GTEx')) %>% 
+  merge(y_in %>% rownames_to_column('sample'), by = 'sample') %>% 
+  mutate(condition = ifelse(condition == 1, 'PAAD', 'CTRL')) %>% 
   ggplot(aes(condition, prob)) + 
   geom_boxplot()
 

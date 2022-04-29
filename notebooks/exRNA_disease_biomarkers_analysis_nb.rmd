@@ -2971,7 +2971,7 @@ pca.out %>%
   
 ```
 
-## TCGA Surv pre calc
+# Fig_TCGA_Surv_plt
 ```{r}
 tcga_paad_gene_counts %>% 
   column_to_rownames('gene') %>% as.matrix() %>% t() -> tcga_paad_te_counts

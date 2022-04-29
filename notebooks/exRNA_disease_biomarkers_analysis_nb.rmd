@@ -3045,7 +3045,7 @@ ggsurvplot(surv.fit,
            ylab = 'Overall Survival Probability',
            xlab = 'Overall Survival Time -- days',
            pval = T, 
-           legend.title = "", 
+           legend.title = "",
            ggtheme = theme_set_fun() + theme(legend.position = c(0.45,0.95)),
            pval.coord = c(0, 0.08),
            palette = viridis(3)[c(2,1)]) -> surv.plt

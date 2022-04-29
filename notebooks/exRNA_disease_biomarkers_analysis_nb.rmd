@@ -2583,10 +2583,12 @@ beta %>% as.matrix() %>% as.data.frame() %>%
 ```
 # Fig_Modeling -- binomial
 ```{r}
+inverse.logit.calc <- function(y_hat) { exp(y_hat)/(1+exp(y_hat)) }
+
 doMC::registerDoMC(cores = 6)
 
 filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
-       padj < 0.01 & abs(log2FoldChange) > 0.55 & !grepl('ENSG', ensg))$ensg ->
+       padj < 0.01, !grepl)$ensg ->
   de_ensg_names
 
 x_in <- t(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$norm_counts.df)
@@ -2609,49 +2611,62 @@ binom_model <-
             family = 'binomial',
             type.measure = 'deviance',
             nfolds = nrow(x_in_filt), 
-            alpha = 0.1, 
+            alpha = 0.95, 
             parallel = TRUE,
             keep = TRUE)
 
 
-coef_tmp <- cbind(coef(binom_model, s = binom_model$lambda.1se))
+coef_tmp <- cbind(coef(binom_model, s = binom_model$lambda.min))
 
 beta <- coef_tmp[apply(coef_tmp != 0, 1, any), ]
 
-colnames(beta) <- names(coef(binom_model, s = binom_model$lambda.1se))
+colnames(beta) <- names(coef(binom_model, s = binom_model$lambda.min))
 
-beta
-
-inverse.logit.calc <- function(y_hat) { exp(y_hat)/(1+exp(y_hat)) }
+beta 
+# %>% 
+#   as.matrix() %>% 
+#   as.data.frame() %>% 
+#   rownames_to_column('gene') %>% 
+#   merge(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, by = 'gene') %>% 
+#   ggplot(aes(V1, log2FoldChange, label = gene)) + 
+#   geom_point() + 
+#   ggrepel::geom_text_repel()
 
 y_hat_matrix <- binom_model$fit.preval[,which(binom_model$lambda == binom_model$lambda.min)]
 
-# predict(tcga_binomial_model, s = 'lambda.min', newx = x_in_train, type = 'response')
+binom_roc_out <- pROC::roc(response = y, predictor = y_hat_matrix)
 
-training_pred_matrix <- predict(binom_model, s = 'lambda.min', newx = x_in_filt, type = 'response')
+sens_at_spec_ROC <- function(roc, spec) { 
+  
+  sens <- coords(roc, input = 'specificity', spec)$sensitivity
+  
+  p.thresh <- inverse.logit.calc(coords(roc, input = 'specificity', spec)$threshold)
+  
+  return(list('sens' = sens, 
+              'spec' = spec, 
+              'p.thresh' = p.thresh))
+  
+}
 
-plot(pROC::roc(response = y, predictor = training_pred_matrix[,1]))
+perf_list <- sens_at_spec_ROC(binom_roc_out, 1.0)
 
-tcga_binom_test_data <- tcga_x_in[, colnames(tcga_x_in) %in% colnames(x_in_filt)]
-
-testing_pred_matrix <- predict(binom_model, s = 'lambda.min', newx = tcga_binom_test_data, type = 'response')
-
-pROC::roc(response = tcga_y_in %>% pull(condition), predictor = testing_pred_matrix[,1])
+pROC::ggroc(binom_roc_out)
 
 binomial_model_response_prob <- inverse.logit.calc(y_hat_matrix)
 
-
-binomial_model_response_prob %>% 
-  as.data.frame() %>% 
-  rownames_to_column('sample') %>% 
-  dplyr::rename('prob' = '.') %>% 
-  merge(y_in %>% rownames_to_column('sample'), by = 'sample') %>% 
-  mutate(condition = ifelse(condition == 1, 'PAAD', 'CTRL')) %>% 
-  ggplot(aes(condition, prob)) + 
-  geom_boxplot()
+binomial_model_response_prob %>%
+  as.data.frame() %>%
+  rownames_to_column('sample') %>%
+  dplyr::rename('prob' = '.') %>%
+  merge(y_in %>% rownames_to_column('sample'), by = 'sample') %>%
+  mutate(condition = ifelse(condition == 1, 'PAAD', 'CTRL')) %>%
+  ggplot(aes(condition, prob)) +
+  geom_boxplot() + 
+  geom_hline(yintercept = perf_list$p.thresh)
 
 
 ```
+
 ## tcga & gtex load
 ```{r}
 tcga_data_path <- file.path(output_data.dir, 'tcga_gtex')
@@ -3436,9 +3451,6 @@ save.manuscript.panel(figure = 's4',
                       height = figure_depth,
                       plot.in = fig.surv.patchwork)
 ```
-
-
-
 
 ## TCGA surv heatmap
 ```{r}

@@ -2652,7 +2652,6 @@ binomial_model_response_prob %>%
 
 
 ```
-
 ## tcga & gtex load
 ```{r}
 tcga_data_path <- file.path(output_data.dir, 'tcga_gtex')
@@ -3046,7 +3045,7 @@ ggsurvplot(surv.fit,
            pval.coord = c(0, 0.08),
            palette = viridis(3)[c(2,1)]) -> surv.plt
 
-paste0('panc gencode up \n (n = ',filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
+paste0('panc gencode up \n (n genes = ',filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
                         padj < 0.05, log2FoldChange > 0.75) %>% 
   filter(!gene %in% reference_meta_data$ucsc_rmsk_insert_info.df$gene) %>% nrow(), ')') -> km_title
 
@@ -3209,7 +3208,7 @@ ggsurvplot(surv.fit,
            pval.coord = c(0, 0.08),
            palette = viridis(3)[c(2,1)]) -> surv.plt
 
-paste0('panc TE down \n (n = ',filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
+paste0('panc TE down \n (n genes = ',filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
                           padj < 0.05, log2FoldChange < -1) %>% 
   filter(gene %in% reference_meta_data$ucsc_rmsk_insert_info.df$gene) %>% nrow(), ')') -> km_title
 
@@ -3319,7 +3318,7 @@ ggsurvplot(surv.fit,
            pval.coord = c(0, 0.08),
            palette = viridis(3)[c(2,1)]) -> surv.plt
 
-paste0('Ox. Phos \n (n = ',filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
+paste0('Ox. Phos \n (n genes = ',filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
                           padj < 0.05, log2FoldChange > 0.75) %>%
   filter(gene %in% msig.df$HALLMARK_OXIDATIVE_PHOSPHORYLATION) %>% nrow(), ')') -> km_title
 
@@ -3382,7 +3381,7 @@ ggsurvplot(surv.fit,
            pval.coord = c(0, 0.08),
            palette = viridis(3)[c(2,1)]) -> surv.plt
 
-paste0('MYC Targets \n (n = ',filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
+paste0('MYC Targets \n (n genes = ',filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
                           padj < 0.05, log2FoldChange > 0.75) %>%
   filter(gene %in% msig.df$HALLMARK_MYC_TARGETS_V1) %>% nrow(), ')') -> km_title
 

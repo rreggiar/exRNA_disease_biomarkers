@@ -3388,7 +3388,6 @@ panc_MYC_km_table %>%
 ```{r}
 import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer, wrap_elements)
 
-
 fig_surv_layout <- "
 AC
 BB
@@ -3397,15 +3396,15 @@ FG
 HI
 "
 
-wrap_plots(plt_surv_A.plt,
+wrap_plots(plt_surv_F.plt,
            guide_area(),
-           patchwork::wrap_elements(full = plt_surv_A.tbl, ignore_tag = F),
-           plt_surv_D.plt,
-           patchwork::wrap_elements(full = plt_surv_D.tbl, ignore_tag = F),
-           plt_surv_F.plt,
            patchwork::wrap_elements(full = plt_surv_F.tbl, ignore_tag = F),
            plt_surv_G.plt,
            patchwork::wrap_elements(full = plt_surv_G.tbl, ignore_tag = F),
+           plt_surv_A.plt,
+           patchwork::wrap_elements(full = plt_surv_A.tbl, ignore_tag = F),
+           plt_surv_D.plt,
+           patchwork::wrap_elements(full = plt_surv_D.tbl, ignore_tag = F),
            heights = c(1,0.095,1,1,1,1,1),
            guides = 'collect',
            design = fig_surv_layout) +

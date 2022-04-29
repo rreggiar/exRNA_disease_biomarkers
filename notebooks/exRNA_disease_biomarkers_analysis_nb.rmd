@@ -2429,10 +2429,6 @@ unsplice_counts_pca.df %>%
 
 ```
 
-
-
-
-
 # Fig_Modeling -- multi
 ```{r}
 # install.packages('glmnet')
@@ -3051,6 +3047,20 @@ ggsurvplot(surv.fit,
            palette = viridis(3)[c(2,1)]) -> surv.plt
 
 surv.plt$plot + ggtitle('panc gencode up') -> plt_surv_A.plt
+
+filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
+                        padj < 0.05, log2FoldChange > 0.75) %>% 
+  filter(!gene %in% reference_meta_data$ucsc_rmsk_insert_info.df$gene) %>% 
+  top_n(wt =-padj, 10) %>% 
+  arrange(padj) %>% 
+  select(gene, baseMean, log2FoldChange, padj) -> panc_up_km_table
+
+panc_up_km_table %>% 
+  gridExtra::tableGrob(theme = gridExtra::ttheme_minimal(base_size = 8,
+                                                         core = list(padding=unit(c(1, 2.5), "mm"))), 
+                       rows = NULL) -> plt_surv_A.tbl
+
+  
 ```
 ### DN Surv
 ```{r}
@@ -3196,6 +3206,18 @@ ggsurvplot(surv.fit,
            palette = viridis(3)[c(2,1)]) -> surv.plt
 
 surv.plt$plot + ggtitle('panc TE down') -> plt_surv_D.plt
+
+filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
+                          padj < 0.05, log2FoldChange < -1) %>% 
+  filter(gene %in% reference_meta_data$ucsc_rmsk_insert_info.df$gene) %>%
+  top_n(wt =-padj, 10) %>% 
+  arrange(padj) %>% 
+  select(gene, baseMean, log2FoldChange, padj) -> panc_dn_TE_km_table
+
+panc_dn_TE_km_table %>% 
+  gridExtra::tableGrob(theme = gridExtra::ttheme_minimal(base_size = 8,
+                                                         core = list(padding=unit(c(1, 2.5), "mm"))), 
+                       rows = NULL) -> plt_surv_D.tbl
 ```
 ### UP TEs
 ```{r}
@@ -3290,6 +3312,18 @@ ggsurvplot(surv.fit,
            palette = viridis(3)[c(2,1)]) -> surv.plt
 
 surv.plt$plot + ggtitle('Ox. Phos') -> plt_surv_F.plt
+
+filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
+                          padj < 0.05, log2FoldChange > 0.75) %>%
+  filter(gene %in% msig.df$HALLMARK_OXIDATIVE_PHOSPHORYLATION) %>%
+  top_n(wt =-padj, 10) %>% 
+  arrange(padj) %>% 
+  select(gene, baseMean, log2FoldChange, padj) -> panc_OX_km_table
+
+panc_OX_km_table %>% 
+  gridExtra::tableGrob(theme = gridExtra::ttheme_minimal(base_size = 8,
+                                                         core = list(padding=unit(c(1, 2.5), "mm"))), 
+                       rows = NULL) -> plt_surv_F.tbl
 ```
 ### MYC
 ```{r}
@@ -3337,6 +3371,18 @@ ggsurvplot(surv.fit,
            palette = viridis(3)[c(2,1)]) -> surv.plt
 
 surv.plt$plot + ggtitle('MYC Targets') -> plt_surv_G.plt
+
+filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
+                          padj < 0.05, log2FoldChange > 0.75) %>%
+  filter(gene %in% msig.df$HALLMARK_MYC_TARGETS_V1) %>%
+  top_n(wt =-padj, 10) %>% 
+  arrange(padj) %>% 
+  select(gene, baseMean, log2FoldChange, padj) -> panc_MYC_km_table
+
+panc_MYC_km_table %>% 
+  gridExtra::tableGrob(theme = gridExtra::ttheme_minimal(base_size = 8,
+                                                         core = list(padding=unit(c(1, 2.5), "mm"))), 
+                       rows = NULL) -> plt_surv_G.tbl
 ```
 ### plt_surv_patchwork
 ```{r}
@@ -3344,21 +3390,22 @@ import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_
 
 
 fig_surv_layout <- "
-AA
+AC
 BB
-CD
-EF
-GH
+DE
+FG
+HI
 "
 
 wrap_plots(plt_surv_A.plt,
            guide_area(),
-           plt_surv_B.plt,
-           plt_surv_C.plt,
+           patchwork::wrap_elements(full = plt_surv_A.tbl, ignore_tag = F),
            plt_surv_D.plt,
-           plt_surv_E.plt,
+           patchwork::wrap_elements(full = plt_surv_D.tbl, ignore_tag = F),
            plt_surv_F.plt,
+           patchwork::wrap_elements(full = plt_surv_F.tbl, ignore_tag = F),
            plt_surv_G.plt,
+           patchwork::wrap_elements(full = plt_surv_G.tbl, ignore_tag = F),
            heights = c(1,0.095,1,1,1,1,1),
            guides = 'collect',
            design = fig_surv_layout) +

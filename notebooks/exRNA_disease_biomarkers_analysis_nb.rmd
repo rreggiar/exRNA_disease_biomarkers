@@ -2612,7 +2612,7 @@ ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out %>%
   mutate(sample = 'panc') %>% 
   rbind(ucsc.rmsk.salmon_quant$analysis_set$covid_ctrl$deseq$de_out %>% 
           mutate(sample = 'covid')) %>% 
-  filter(ensg %in% names(beta)) %>% 
+  filter(ensg %in% rownames(beta)) %>% 
   merge(reference_meta_data$ucsc_rmsk_insert_info.df, by = 'gene', all.x = T) %>% 
   mutate(family = ifelse(ensg %in% reference_meta_data$gencode_lncRNA_gene_names.df$ensg,
                          'gencode_lncRNA', family),
@@ -2626,7 +2626,7 @@ ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out %>%
                                      'DNA',
                                      'Simple_repeat'), clade, 'other'),
          type = ifelse(grepl('gencode',family), 'GENCODE', 'TE'),
-         clade = factor(clade, levels = te_aware_annotation_levels)) %>% 
+         clade = factor(clade, levels = te_aware_annotation_levels)) %>%
   ggplot(aes(log2FoldChange, -log10(padj), color = clade, label = gene)) + 
   geom_point() + 
   scale_color_manual(values = te_color_pal) +
@@ -3048,22 +3048,45 @@ FGH
 IIJ
 "
 
-wrap_plots(wrap_elements(full = binom_roc.plt + inset_element(binomial_cm.tbl, right = 0.5, 
+# wrap_plots(wrap_elements(full = binom_roc.plt + inset_element(binomial_cm.tbl, right = 0.5, 
+#                                          bottom = 0.2, left = 0.6, top = 0.5, ignore_tag = T)),
+#            binom_prob_thresh.plt,
+#            feature_de.plt,
+#            wrap_elements(full = multi_roc.plt + inset_element(multinomial_cm.tbl, right = 0.5, 
+#                                          bottom = 0.2, left = 0.6, top = 0.5, ignore_tag = T)),
+#            multi_feature_de.plt,
+#            wrap_elements(full = gt_binom_roc.plt + inset_element(gt_binomial_cm.tbl, right = 0.5, 
+#                                          bottom = 0.2, left = 0.6, top = 0.5, ignore_tag = T)),
+#            gt_binom_prob_thresh.plt,
+#            gt_feature_de.plt,
+#            wrap_elements(full = gt_multi_roc.plt + inset_element(gt_multinomial_cm.tbl, right = 0.5, 
+#                                          bottom = 0.2, left = 0.6, top = 0.5, ignore_tag = T)),
+#            gt_multi_feature_de.plt,           
+#            guide_area(),
+#            heights = c(1,0.01,1,1,1),
+#            guides = 'collect',
+#            design = fig_surv_layout) +
+#   plot_annotation(tag_levels = 'A') &
+#   theme(plot.tag.position = c(0.01, 0.99),
+#         legend.position = 'bottom', 
+#         legend.justification = c(0.5, 0.5)) -> fig.model.patchwork
+
+fig_surv_layout <- "
+ABB
+EEE
+CDD
+FFF
+"
+
+wrap_plots(wrap_elements(full = gt_binom_roc.plt + inset_element(gt_binomial_cm.tbl, right = 0.5, 
                                          bottom = 0.2, left = 0.6, top = 0.5, ignore_tag = T)),
-           binom_prob_thresh.plt,
-           feature_de.plt,
-           wrap_elements(full = multi_roc.plt + inset_element(multinomial_cm.tbl, right = 0.5, 
-                                         bottom = 0.2, left = 0.6, top = 0.5, ignore_tag = T)),
-           multi_feature_de.plt,
-           wrap_elements(full = gt_binom_roc.plt + inset_element(gt_binomial_cm.tbl, right = 0.5, 
-                                         bottom = 0.2, left = 0.6, top = 0.5, ignore_tag = T)),
-           gt_binom_prob_thresh.plt,
            gt_feature_de.plt,
-           wrap_elements(full = gt_multi_roc.plt + inset_element(gt_multinomial_cm.tbl, right = 0.5, 
+           wrap_elements(full = binom_roc.plt + inset_element(binomial_cm.tbl, right = 0.5, 
                                          bottom = 0.2, left = 0.6, top = 0.5, ignore_tag = T)),
-           gt_multi_feature_de.plt,           
+           feature_de.plt,
            guide_area(),
-           heights = c(1,0.01,1,1,1),
+           plot_spacer(),
+           heights = c(1,0.1,1,1,1),
            guides = 'collect',
            design = fig_surv_layout) +
   plot_annotation(tag_levels = 'A') &

@@ -2375,13 +2375,12 @@ import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_
 
 
 fig_4_layout <- "
-AABB
+AAAA
 CCCC
 CCCC
 "
 
 wrap_plots(plt_4A.plt,
-           plt_4B.plt,
            plot_spacer(),
            design = fig_4_layout) +
   plot_annotation(tag_levels = 'A') -> fig.4.patchwork

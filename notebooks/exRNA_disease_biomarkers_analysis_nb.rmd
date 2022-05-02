@@ -578,7 +578,7 @@ process.aware.salmon_quant$analysis_set$ctrl_panc_covid$unsplice_data.df <-
 # Fig_1
 ## Fig_flowchart
 ```{r}
-flow_chart.plt <- magick::image_read_pdf(path = file.path(figure.dir, 'fig.1', 'plasma_schematic.pdf'))
+flow_chart.plt <- magick::image_read_pdf(path = file.path(figure.dir, 'fig.1', 'dkim_plasma_schematic.pdf'))
 
 # flow_chart.plt <- magick::image_read(path = file.path(figure.dir, 'fig.1', 'plasma_schematic.png'))
 ```
@@ -1158,7 +1158,7 @@ wrap_plots(wrap_plots(flowchart_wrap, fig.2C.plt, widths = c(0.25, 0.75)),
                                                                 width = figure_double_column_width)),
            design = fig_2_layout, 
            guides = 'collect',
-           heights = c(1,0.0937,0.75,1)) + plot_annotation(tag_levels = 'A') & 
+           heights = c(1,0.125,0.75,1)) + plot_annotation(tag_levels = 'A') & 
   theme(plot.tag.position = c(0.01, 0.99), 
         legend.position = 'bottom',
         legend.title = element_text(vjust = 0.5),

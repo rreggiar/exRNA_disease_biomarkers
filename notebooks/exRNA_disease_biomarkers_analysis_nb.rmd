@@ -2921,6 +2921,7 @@ ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out %>%
   ggplot(aes(log2FoldChange, -log10(padj), color = clade, label = gene)) + 
   geom_point() + 
   scale_color_manual(values = te_color_pal) +
+  geom_vline(xintercept = 0, linetype = 'dashed', alpha = 0.4) + 
   ggrepel::geom_text_repel(color = 'black', segment.colour = NA, size = txt.mm_to_pts(0.8)) -> feature_de.plt
 
 caret::confusionMatrix(data = as.factor(ifelse(as.factor(y_hat_predictions) == 1, 'panc', 'ctrl')),
@@ -2928,6 +2929,15 @@ caret::confusionMatrix(data = as.factor(ifelse(as.factor(y_hat_predictions) == 1
   gridExtra::tableGrob(theme = gridExtra::ttheme_minimal(base_size = 8,
                                                          core = list(padding=unit(c(1, 2.5), "mm")))) ->
   binomial_cm.tbl
+
+tg <- grid::textGrob('Reference', x=0, hjust=0, 
+                     gp = grid::gpar(fontsize = 7, fontface = 'bold'))
+lg <- grid::textGrob('Prediction\n AUC = 1', x=1, hjust=1, 
+                     gp = grid::gpar(fontsize = 7, fontface = 'italic'))
+binomial_cm.tbl <- gtable::gtable_add_rows(binomial_cm.tbl, unit(1,"line"), 0)
+binomial_cm.tbl <- gtable::gtable_add_cols(binomial_cm.tbl, grid::grobWidth(lg), 0)
+binomial_cm.tbl <- gtable::gtable_add_grob(binomial_cm.tbl, tg, t = 1, l=3, r=ncol(binomial_cm.tbl))
+binomial_cm.tbl <- gtable::gtable_add_grob(binomial_cm.tbl, lg, l = 1, t=2)
 ```
 ## Fig_modeling--gt_binom
 ```{r}
@@ -3026,6 +3036,7 @@ ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out %>%
   ggplot(aes(log2FoldChange, -log10(padj), color = clade, label = gene)) + 
   geom_point() + 
   scale_color_manual(values = te_color_pal) +
+  geom_vline(xintercept = 0, linetype = 'dashed', alpha = 0.4) + 
   ggrepel::geom_text_repel(color = 'black', segment.colour = NA, size = txt.mm_to_pts(0.8)) -> gt_feature_de.plt
 
 caret::confusionMatrix(data = as.factor(ifelse(as.factor(y_hat_predictions) == 1, 'panc', 'ctrl')),
@@ -3033,6 +3044,16 @@ caret::confusionMatrix(data = as.factor(ifelse(as.factor(y_hat_predictions) == 1
   gridExtra::tableGrob(theme = gridExtra::ttheme_minimal(base_size = 8,
                                                          core = list(padding=unit(c(1, 2.5), "mm")))) ->
   gt_binomial_cm.tbl
+
+tg <- grid::textGrob('Reference', x=0, hjust=0, 
+                     gp = grid::gpar(fontsize = 7, fontface = 'bold'))
+lg <- grid::textGrob('Prediction\n AUC = 1', x=1, hjust=1, 
+                     gp = grid::gpar(fontsize = 7, fontface = 'italic'))
+gt_binomial_cm.tbl <- gtable::gtable_add_rows(gt_binomial_cm.tbl, unit(1,"line"), 0)
+gt_binomial_cm.tbl <- gtable::gtable_add_cols(gt_binomial_cm.tbl, grid::grobWidth(lg), 0)
+gt_binomial_cm.tbl <- gtable::gtable_add_grob(gt_binomial_cm.tbl, tg, t = 1, l=3, r=ncol(gt_binomial_cm.tbl))
+gt_binomial_cm.tbl <- gtable::gtable_add_grob(gt_binomial_cm.tbl, lg, l = 1, t=2)
+
 ```
 ## Fig_Modeling -- alu_binomial
 ```{r}
@@ -3175,21 +3196,21 @@ IIJ
 #         legend.justification = c(0.5, 0.5)) -> fig.model.patchwork
 
 fig_surv_layout <- "
-ABB
-EEE
-CDD
-FFF
+AABB
+EEEE
+CCDD
+FFFF
 "
 
 wrap_plots(wrap_elements(full = gt_binom_roc.plt + inset_element(gt_binomial_cm.tbl, right = 0.5, 
                                          bottom = 0.2, left = 0.6, top = 0.5, ignore_tag = T)),
-           gt_feature_de.plt,
+           gt_feature_de.plt + annotate(geom = 'text', label = 'TE-aware', x = -1, y = 7),
            wrap_elements(full = binom_roc.plt + inset_element(binomial_cm.tbl, right = 0.5, 
                                          bottom = 0.2, left = 0.6, top = 0.5, ignore_tag = T)),
-           feature_de.plt,
+           feature_de.plt + annotate(geom = 'text', label = 'TE-alone', x = -1, y = 3.5),
            guide_area(),
            plot_spacer(),
-           heights = c(1,0.1,1,1,1),
+           heights = c(1,0.2,1,1,1),
            guides = 'collect',
            design = fig_surv_layout) +
   plot_annotation(tag_levels = 'A') &

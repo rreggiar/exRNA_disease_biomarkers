@@ -3547,6 +3547,9 @@ pca.out %>%
 
 # Fig_TCGA_Surv_plt
 ```{r}
+library(survminer)
+library(survival)
+library(viridis)
 tcga_paad_gene_counts %>% 
   column_to_rownames('gene') %>% as.matrix() %>% t() -> tcga_paad_te_counts
 
@@ -3591,7 +3594,7 @@ tcga_padd_stratified_counts %>%
   select(sample, count) %>% 
   group_by(sample) %>%
   summarize(avg.count = mean(count)) %>%
-  mutate(gene.set = 'panc_te_signal') %>%
+  mutate(gene.set = 'panc_exRNA_signal') %>%
   group_by(gene.set) %>%
   mutate(stratum = ifelse(avg.count >= quantile(avg.count, 0.66),
                           'top-third', ifelse(avg.count <= quantile(avg.count, 0.33),
@@ -3609,7 +3612,7 @@ surv.obj <- Surv(time = filter(paad_tcga_pheno_merge %>% select(sample.x, OS.tim
                  event = filter(paad_tcga_pheno_merge %>% select(sample.x, OS.time, OS) %>% distinct(), 
                                 sample.x %in% tcga_paad_stratified_counts$sample)$OS)
 
-surv.fit <- survfit(as.formula(surv.obj ~ panc_te_signal), 
+surv.fit <- survfit(as.formula(surv.obj ~ panc_exRNA_signal), 
                     data = tcga_paad_stratified_counts)
 ggsurvplot(surv.fit, 
            ylab = 'Overall Survival Probability',
@@ -3656,7 +3659,7 @@ tcga_padd_stratified_counts %>%
   select(sample, count) %>% 
   group_by(sample) %>%
   summarize(avg.count = mean(count)) %>%
-  mutate(gene.set = 'panc_te_signal') %>%
+  mutate(gene.set = 'panc_exRNA_signal') %>%
   group_by(gene.set) %>%
   mutate(stratum = ifelse(avg.count >= quantile(avg.count, 0.66),
                           'top-third', ifelse(avg.count <= quantile(avg.count, 0.33),
@@ -3674,7 +3677,7 @@ surv.obj <- Surv(time = filter(paad_tcga_pheno_merge %>% select(sample.x, OS.tim
                  event = filter(paad_tcga_pheno_merge %>% select(sample.x, OS.time, OS) %>% distinct(), 
                                 sample.x %in% tcga_paad_stratified_counts$sample)$OS)
 
-surv.fit <- survfit(as.formula(surv.obj ~ panc_te_signal), 
+surv.fit <- survfit(as.formula(surv.obj ~ panc_exRNA_signal), 
                     data = tcga_paad_stratified_counts)
 ggsurvplot(surv.fit, 
            ylab = 'Overall Survival Probability',
@@ -3707,7 +3710,7 @@ tcga_padd_stratified_counts %>%
   select(sample, count) %>% 
   group_by(sample) %>%
   summarize(avg.count = mean(count)) %>%
-  mutate(gene.set = 'panc_te_signal') %>%
+  mutate(gene.set = 'panc_exRNA_signal') %>%
   group_by(gene.set) %>%
   mutate(stratum = ifelse(avg.count >= quantile(avg.count, 0.66),
                           'top-third', ifelse(avg.count <= quantile(avg.count, 0.33),
@@ -3725,7 +3728,7 @@ surv.obj <- Surv(time = filter(paad_tcga_pheno_merge %>% select(sample.x, OS.tim
                  event = filter(paad_tcga_pheno_merge %>% select(sample.x, OS.time, OS) %>% distinct(), 
                                 sample.x %in% tcga_paad_stratified_counts$sample)$OS)
 
-surv.fit <- survfit(as.formula(surv.obj ~ panc_te_signal), 
+surv.fit <- survfit(as.formula(surv.obj ~ panc_exRNA_signal), 
                     data = tcga_paad_stratified_counts)
 ggsurvplot(surv.fit, 
            ylab = 'Overall Survival Probability',
@@ -3754,7 +3757,7 @@ tcga_padd_stratified_counts %>%
   select(sample, count) %>% 
   group_by(sample) %>%
   summarize(avg.count = mean(count)) %>%
-  mutate(gene.set = 'panc_te_signal') %>%
+  mutate(gene.set = 'panc_exRNA_signal') %>%
   group_by(gene.set) %>%
   mutate(stratum = ifelse(avg.count >= quantile(avg.count, 0.66),
                           'top-third', ifelse(avg.count <= quantile(avg.count, 0.33),
@@ -3772,7 +3775,7 @@ surv.obj <- Surv(time = filter(paad_tcga_pheno_merge %>% select(sample.x, OS.tim
                  event = filter(paad_tcga_pheno_merge %>% select(sample.x, OS.time, OS) %>% distinct(), 
                                 sample.x %in% tcga_paad_stratified_counts$sample)$OS)
 
-surv.fit <- survfit(as.formula(surv.obj ~ panc_te_signal), 
+surv.fit <- survfit(as.formula(surv.obj ~ panc_exRNA_signal), 
                     data = tcga_paad_stratified_counts)
 ggsurvplot(surv.fit, 
            ylab = 'Overall Survival Probability',
@@ -3817,7 +3820,7 @@ tcga_padd_stratified_counts %>%
   select(sample, count) %>% 
   group_by(sample) %>%
   summarize(avg.count = mean(count)) %>%
-  mutate(gene.set = 'panc_te_signal') %>%
+  mutate(gene.set = 'panc_exRNA_signal') %>%
   group_by(gene.set) %>%
   mutate(stratum = ifelse(avg.count >= quantile(avg.count, 0.66),
                           'top-third', ifelse(avg.count <= quantile(avg.count, 0.33),
@@ -3835,7 +3838,7 @@ surv.obj <- Surv(time = filter(paad_tcga_pheno_merge %>% select(sample.x, OS.tim
                  event = filter(paad_tcga_pheno_merge %>% select(sample.x, OS.time, OS) %>% distinct(), 
                                 sample.x %in% tcga_paad_stratified_counts$sample)$OS)
 
-surv.fit <- survfit(as.formula(surv.obj ~ panc_te_signal), 
+surv.fit <- survfit(as.formula(surv.obj ~ panc_exRNA_signal), 
                     data = tcga_paad_stratified_counts)
 ggsurvplot(surv.fit, 
            ylab = 'Overall Survival Probability',
@@ -3864,7 +3867,7 @@ tcga_padd_stratified_counts %>%
   select(sample, count) %>% 
   group_by(sample) %>%
   summarize(avg.count = mean(count)) %>%
-  mutate(gene.set = 'panc_te_signal') %>%
+  mutate(gene.set = 'panc_exRNA_signal') %>%
   group_by(gene.set) %>%
   mutate(stratum = ifelse(avg.count >= quantile(avg.count, 0.66),
                           'top-third', ifelse(avg.count <= quantile(avg.count, 0.33),
@@ -3882,7 +3885,7 @@ surv.obj <- Surv(time = filter(paad_tcga_pheno_merge %>% select(sample.x, OS.tim
                  event = filter(paad_tcga_pheno_merge %>% select(sample.x, OS.time, OS) %>% distinct(), 
                                 sample.x %in% tcga_paad_stratified_counts$sample)$OS)
 
-surv.fit <- survfit(as.formula(surv.obj ~ panc_te_signal), 
+surv.fit <- survfit(as.formula(surv.obj ~ panc_exRNA_signal), 
                     data = tcga_paad_stratified_counts)
 ggsurvplot(surv.fit,
            ylab = 'Overall Survival Probability',
@@ -3927,7 +3930,7 @@ tcga_padd_stratified_counts %>%
   select(sample, count) %>% 
   group_by(sample) %>%
   summarize(avg.count = mean(count)) %>%
-  mutate(gene.set = 'panc_te_signal') %>%
+  mutate(gene.set = 'panc_exRNA_signal') %>%
   group_by(gene.set) %>%
   mutate(stratum = ifelse(avg.count >= quantile(avg.count, 0.66),
                           'top-third', ifelse(avg.count <= quantile(avg.count, 0.33),
@@ -3945,7 +3948,7 @@ surv.obj <- Surv(time = filter(paad_tcga_pheno_merge %>% select(sample.x, OS.tim
                  event = filter(paad_tcga_pheno_merge %>% select(sample.x, OS.time, OS) %>% distinct(), 
                                 sample.x %in% tcga_paad_stratified_counts$sample)$OS)
 
-surv.fit <- survfit(as.formula(surv.obj ~ panc_te_signal), 
+surv.fit <- survfit(as.formula(surv.obj ~ panc_exRNA_signal), 
                     data = tcga_paad_stratified_counts)
 ggsurvplot(surv.fit, 
            ylab = 'Overall Survival Probability',

@@ -1806,7 +1806,7 @@ wrap_plots(plt_NC.plt,
            # wrap_elements(full = plt_ND_2.plt),
            design = fig_N_layout, 
            guides = 'collect',
-           heights = c(1,1,1,0.035,0.75)) +
+           heights = c(1,1,1,0.055,0.75)) +
   plot_annotation(tag_levels = 'A') &
   theme(legend.justification = 'center', legend.position = 'bottom') -> fig.N.patchwork
 
@@ -2281,17 +2281,18 @@ CC
 DD
 "
 
-wrap_plots(plt_SN2B.plt + ggtitle('panc 7 nanopore v nanopore'),
+wrap_plots(plt_SN2B.plt + ggtitle('panc 7 nanopore v illumina'),
            guide_area(),
            # plt_SN2B.plt + ggtitle('nanopore v illumina'),
-           plt_SN2C.plt + ggtitle('panc 6 nanopore v nanopore'),
-           plt_SN2D.plt + ggtitle('ctrl 6 nanopore v nanopore'),
+           plt_SN2C.plt + ggtitle('panc 6 nanopore v illumina'),
+           plt_SN2D.plt + ggtitle('ctrl 6 nanopore v illumina'),
            # plt_SN2E.plt,
            guides = 'collect',
            design = fig_SN2_layout,
            heights = c(1,0.25,1,1)) +
   plot_annotation(tag_levels = 'A') & 
-  theme(legend.position = 'bottom')-> fig.SN2.patchwork
+  theme(legend.position = 'bottom', 
+        legend.justification = c(0.5, 0.5))-> fig.SN2.patchwork
 
 save.manuscript.panel(figure = 's3',
                       figure.dir = figure.dir,

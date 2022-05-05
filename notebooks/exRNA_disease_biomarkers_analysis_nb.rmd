@@ -328,6 +328,19 @@ ucsc.rmsk.salmon_quant$bioIvt_covid_ucsc.rmsk.salmon <-
 process.aware.salmon_quant$bioIvt_covid_process.aware.salmon <- 
   subset.tximeta.se(process.aware.salmon_quant$bioIvt_covid_process.aware.salmon, 
                     filter_list = qc_fails)
+
+##
+
+ucsc.rmsk.salmon_quant$bioIvt_luad_ucsc.rmsk.salmon <- 
+  subset.tximeta.se(ucsc.rmsk.salmon_quant$bioIvt_luad_ucsc.rmsk.salmon, 
+                    filter_list = qc_fails)
+
+process.aware.salmon_quant$bioIvt_luad_ucsc.rmsk.salmon <- 
+  subset.tximeta.se(process.aware.salmon_quant$bioIvt_luad_process.aware.salmon, 
+                    filter_list = qc_fails)
+
+
+
 ```
 
 ## construct_analysis_sets
@@ -389,6 +402,41 @@ process.aware.salmon_quant$analysis_set$ctrl_panc_covid <-
                        se_1 = 'bioIvt_panc_process.aware.salmon', 
                        analysis_set_2 = process.aware.salmon_quant$analysis_set$covid_ctrl,
                        sample_meta_in = sample_meta_data$`2022.01.14_combined_meta_data.csv`)
+
+##
+
+luad_v_pitts_meta_for_ip <- read_csv(file.path(meta_data.dir, '2022.03.04_bioIVTLuadAndPitts_meta_data.csv')) %>% 
+  filter(patient %in% c(ucsc.rmsk.salmon_quant$pittsburgh_ctrl_ucsc.rmsk.salmon$quant_meta$sample,
+                        ucsc.rmsk.salmon_quant$bioIvt_luad_ucsc.rmsk.salmon$quant_meta$sample))
+
+luad_v_pitts_meta_for_ip
+
+luad_v_pitts_meta_for_ip %>% 
+  filter(!grepl('luad', patient)) %>% 
+  slice_sample(n = 7) %>% 
+  ungroup()-> luad_v_pitts_meta_for_filter
+
+luad_v_pitts_meta_for_filter
+
+ucsc.rmsk.salmon_quant$sub_sample_ctrl <-   
+  subset.tximeta.se(ucsc.rmsk.salmon_quant$pittsburgh_ctrl_ucsc.rmsk.salmon, 
+                    filter_list = luad_v_pitts_meta_for_filter$patient)
+
+luad_v_pitts_meta_for_ip %>% 
+  filter(!patient %in% luad_v_pitts_meta_for_filter$patient) -> luad_v_pitts_sample_meta_in
+
+ucsc.rmsk.salmon_quant$analysis_set$luad_ctrl <- 
+    build.analysis.set(se_list = ucsc.rmsk.salmon_quant, 
+                       se_1 = 'bioIvt_luad_ucsc.rmsk.salmon', 
+                       se_2 = 'sub_sample_ctrl',
+                       sample_meta_in = luad_v_pitts_meta_for_ip)
+
+# process.aware.salmon_quant$analysis_set$panc_ctrl <- 
+#     build.analysis.set(se_list = process.aware.salmon_quant, 
+#                        se_1 = 'bioIvt_luad_ucsc.rmsk.salmon', 
+#                        se_2 = 'pittsburgh_ctrl_process.aware.salmon',
+#                        sample_meta_in = luad_v_pitts_meta_for_ip)
+
 ```
 
 ## save memory
@@ -464,7 +512,6 @@ ucsc.rmsk.salmon_quant$analysis_set$covid_ctrl$deseq <-
                         top_level = 'covid',
                         ref_type = 'ucsc.rmsk',
                         dds_formula = as.formula('~age+condition'))
-
 
 SummarizedExperiment::assay(process.aware.salmon_quant$analysis_set$panc_ctrl$gxi.split, 'unspliced')
 
@@ -3399,7 +3446,7 @@ tcga_de_dds <- DESeq2::DESeqDataSetFromMatrix(countData = matched_samples_counts
 tcga_de_dds <- DESeq2::estimateSizeFactors(tcga_de_dds)
 
 de_filter <- rowSums(DESeq2::counts(tcga_de_dds, normalized=T) >= 10) >= ncol(DESeq2::counts(tcga_de_dds, normalized=T))*0.75
-  
+
 input_set_dds <- DESeq2::DESeq(tcga_de_dds[de_filter,])
 
 DESeq2::resultsNames(input_set_dds)
@@ -3412,6 +3459,134 @@ input_set_dds_de_out <- DESeq2::lfcShrink(input_set_dds, coef = "condition_tumor
 
 input_set_dds_de_out %>% 
   merge(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, by = 'gene')
+
+```
+### IP tables
+```{r}
+build_ip_tables <- function(analysis_set,
+                            annotated_de,
+                            zero_cutoff = 5){
+  
+  import::here(SummarizedExperiment, rowRanges, assay)
+  
+  rowRanges(analysis_set$gxi) %>% 
+    as.data.frame() %>% 
+    filter(group_name %in% filter(annotated_de, 
+                                  type == 'GENCODE',
+                                  padj < 0.001,
+                                  log2FoldChange > 1)$ensg) %>% 
+    merge(annotated_de %>% select(gene, ensg, padj, baseMean, log2FoldChange), 
+          by.x = 'group_name', by.y = 'ensg') %>% 
+    select(gene, chr = seqnames, start, end, width, baseMean, padj, log2FoldChange) %>% 
+    mutate(reference = 'hg38_gencode_v39') -> gencode_ip_table.tmp
+
+  rowRanges(analysis_set$txi) %>% 
+    as.data.frame() %>% 
+    remove_rownames() %>% 
+    filter(gene_id %in% filter(annotated_de, 
+                                  type == 'TE',
+                                  padj < 0.001,
+                                  log2FoldChange > 1)$ensg) -> rmsk_enrich_1
+  
+  assay(analysis_set$txi, 'counts') %>% 
+    as.data.frame() %>% 
+    select(contains('panc')) %>% 
+    rownames_to_column('tx') %>% 
+    filter(tx %in% rmsk_enrich_1$tx_name) -> insert_count
+  
+  insert_count %>% 
+    filter(rowSums(across(where(is.numeric)) == 0) <= zero_cutoff) -> keep_inserts
+  
+  rmsk_enrich_1 %>% 
+    filter(tx_name %in% keep_inserts$tx) %>% 
+    select(gene = gene_id, chr = seqnames, start, end, width, strand, tx_name) %>% 
+    mutate(chr = as.character(chr),
+           gene = as.character(gene)) %>% 
+    merge(annotated_de %>% 
+          select(gene, baseMean, padj, log2FoldChange), by = 'gene') %>% 
+    select(gene, tx_name, chr, start, end, width, baseMean, padj, log2FoldChange) %>% 
+    mutate(reference = 'hg38_ucscGB_rmsk')-> rmsk_ip_table.tmp
+  
+  return(list('gencode_ip_table' = gencode_ip_table.tmp,
+              'rmsk_ip_table' = rmsk_ip_table.tmp))
+}
+unique(panc_ip$rmsk_ip_table$gene)
+
+lapply(unique(panc_ip$rmsk_ip_table$gene), function(te){
+  
+  panc_ip$rmsk_ip_table %>% filter(gene == te) -> x
+  
+  write_csv(x, file = file.path(output_data.dir, 'ip_data',
+                                paste0('panc_', te, '.csv')))
+  
+})
+
+# imap(covid_ip, function(x, name){
+#   
+#   write_csv(x, file = file.path(output_data.dir,
+#                                 paste0('covid_', name, '.csv')))
+#   
+# })
+
+panc_annotated_rmsk_de %>%
+  filter(clade %in% c('gencode_coding', 'gencode_lncRNA')) %>% 
+  ggplot(aes(log2FoldChange, -log10(padj), color = clade)) + 
+  geom_point(size = 2, alpha = 0.6, show.legend = FALSE) + 
+  scale_color_manual(values = te_color_pal) + 
+  xlim(-5,5) +
+  ggrepel::geom_text_repel(aes(label = ifelse(log2FoldChange > 1.5, gene, '')),
+                             show.legend = F, color = 'black', max.overlaps = 10)
+
+luad_annotated_rmsk_de %>%
+  filter(clade %in% c('gencode_coding', 'gencode_lncRNA')) %>% 
+  ggplot(aes(log2FoldChange, -log10(padj), color = clade)) + 
+  geom_point(size = 2, alpha = 0.6, show.legend = FALSE) + 
+  scale_color_manual(values = te_color_pal) + 
+  xlim(-7.5,7.5) +
+  ggrepel::geom_text_repel(aes(label = ifelse(log2FoldChange > 1.5, gene, '')),
+                             show.legend = F, color = 'black', max.overlaps = 50)
+
+
+
+luad_annotated_rmsk_de %>%
+  filter(clade == 'gencode_coding') %>% 
+  ggplot(aes(log2FoldChange, -log10(padj), color = clade)) + 
+  geom_point(size = 2, alpha = 0.6, show.legend = FALSE) -> gencode_layer.plt
+
+gencode_layer.plt + 
+  geom_point(data = filter(luad_annotated_rmsk_de, clade != 'gencode_coding') %>% 
+               mutate(clade = factor(clade, levels = te_aware_annotation_levels)),
+             aes(log2FoldChange, -log10(padj), color = clade), size = 2, alpha = 0.8) +
+  scale_color_manual(values = te_color_pal) + 
+  xlim(-7.5,7.5) +
+  ggrepel::geom_text_repel(data = luad_annotated_rmsk_de %>% 
+               mutate(clade = factor(clade, levels = te_aware_annotation_levels)),
+                      aes(label = ifelse(log2FoldChange > 2, gene, '')), 
+                           show.legend = F, color = 'black', max.overlaps = 10) -> luad_ip.plt
+
+luad_ip.plt
+
+de_compare_list <- list('panc' = ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out,
+                        'luad' = ucsc.rmsk.salmon_quant$analysis_set$luad_ctrl$deseq$de_out)
+
+purrr::imap(de_compare_list, function(de, de_name) {
+  
+  de %>% 
+    filter(padj < 0.05,
+           log2FoldChange > 1) %>% 
+    mutate(id = de_name)
+  
+}) %>% bind_rows() -> de_upset.df
+
+de_upset.df %>% 
+  group_by(gene) %>% 
+  summarize(context = list(id)) %>% 
+  ggplot(aes(context)) + 
+  geom_bar(fill = 'white', color = 'black') + 
+  ggupset::scale_x_upset() +
+  geom_text(stat='count', aes(label=after_stat(count)), nudge_y = -2.25) + 
+  xlab('') + ylab('Enriched gene expression overlap')
+
 ```
 ## tcga_modeling
 ```{r}
@@ -3463,6 +3638,7 @@ beta
 inverse.logit.calc <- function(y_hat) { exp(y_hat)/(1+exp(y_hat)) }
 
 y_hat_matrix <- tcga_binomial_model$fit.preval[,which(tcga_binomial_model$lambda == tcga_binomial_model$lambda.min)]
+
 
 # predict(tcga_binomial_model, s = 'lambda.min', newx = tcga_x_in_train, type = 'response')
 
@@ -3995,6 +4171,7 @@ DE
 FG
 HI
 "
+
 
 wrap_plots(plt_surv_F.plt,
            guide_area(),

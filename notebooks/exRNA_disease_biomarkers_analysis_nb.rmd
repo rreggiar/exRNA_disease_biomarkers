@@ -2810,7 +2810,6 @@ ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out %>%
   gt_multi_feature_de.plt
 
 ```
-
 ## Fig_Modeling -- binomial
 ```{r}
 inverse.logit.calc <- function(y_hat) { exp(y_hat)/(1+exp(y_hat)) }
@@ -3230,8 +3229,8 @@ save.manuscript.panel(figure = 's4',
 ## tcga & gtex load
 ```{r}
 tcga_data_path <- file.path(output_data.dir, 'tcga_gtex')
-gtex_colData <- read_csv(file.path(tcga_data_path, 'panc_gtex_colData.csv'), 
-                         col_names = c('sample', 'name', 'tissue_1', 'tissue_2', 'sex', 'age'))
+# gtex_colData <- read_csv(file.path(tcga_data_path, 'panc_gtex_colData.csv'), 
+#                          col_names = c('sample', 'name', 'tissue_1', 'tissue_2', 'sex', 'age'))
 
 tcga_colData <- read_tsv(file.path(tcga_data_path, 'paad_tcga_colData.tsv')) %>% 
   mutate(submitter_id.samples = str_replace_all(string = submitter_id.samples, pattern = 'TCGA', replacement = 'PAAD'),
@@ -3280,7 +3279,7 @@ if (! file.exists(file.path(tcga_data_path, 'paad_tcga_gene_readNum_matrix.tsv')
 } else {
   message('loading....')
   tx2gene <- read_tsv(file.path(tcga_data_path, 'tcga_gtex_tx2gene.tsv'))
-  gtex_paad_gene_counts <- read_tsv(file.path(tcga_data_path, 'paad_gtex_gene_readNum_matrix.tsv'))
+  # gtex_paad_gene_counts <- read_tsv(file.path(tcga_data_path, 'paad_gtex_gene_readNum_matrix.tsv'))
   tcga_paad_gene_counts <- read_tsv(file.path(tcga_data_path, 'paad_tcga_gene_readNum_matrix.tsv'))
   
 }

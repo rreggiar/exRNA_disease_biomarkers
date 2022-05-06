@@ -2958,8 +2958,8 @@ beta %>%
   ggrepel::geom_text_repel() 
 
 ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out %>% 
-  filter(ensg %in% names(beta)) %>% 
-  merge(reference_meta_data$ucsc_rmsk_insert_info.df, by = 'gene', all.x = T) %>% 
+  filter(padj < 0.01) %>%
+  merge(reference_meta_data$ucsc_rmsk_insert_info.df, by = 'gene') %>% 
   mutate(family = ifelse(ensg %in% reference_meta_data$gencode_lncRNA_gene_names.df$ensg,
                          'gencode_lncRNA', family),
          family = ifelse(is.na(family), 'gencode_coding', family),
@@ -2976,11 +2976,11 @@ ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out %>%
 
 
 feature_de.df %>% 
-  merge(beta %>%
-  as.matrix() %>%
-  as.data.frame() %>%
-  rownames_to_column('gene') %>% select(gene, 'beta' = V1), by = 'gene') %>% 
-  write_csv(file.path(output_data.dir, 'ip_data', 'te_only_features.csv'))
+  # merge(beta %>%
+  # as.matrix() %>%
+  # as.data.frame() %>%
+  # rownames_to_column('gene') %>% select(gene, 'beta' = V1), by = 'gene') %>% 
+  write_csv(file.path(output_data.dir, 'ip_data', 'te_sig_de.csv'))
 
   
 
@@ -3085,7 +3085,8 @@ beta %>%
   ggrepel::geom_text_repel() 
 
 ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out %>% 
-  filter(ensg %in% names(beta)) %>% 
+  filter(!ensg %in%  )%>%
+  filter(padj < 0.01)
   merge(reference_meta_data$ucsc_rmsk_insert_info.df, by = 'gene', all.x = T) %>% 
   mutate(family = ifelse(ensg %in% reference_meta_data$gencode_lncRNA_gene_names.df$ensg,
                          'gencode_lncRNA', family),
@@ -3115,7 +3116,7 @@ feature_de.df %>%
   as.data.frame() %>%
   rownames_to_column('ensg') %>% select(ensg, 'beta' = V1), by = 'ensg') %>% 
   merge(range_tmp, by.x = 'ensg', by.y = 'group_name', all.x = T) %>% 
-  write_csv(file.path(output_data.dir, 'ip_data', 'te_aware_features.csv'))
+  write_csv(file.path(output_data.dir, 'ip_data', 'te_aware_sig_de.csv'))
 
   
 
@@ -3620,6 +3621,185 @@ de_upset.df %>%
   ggupset::scale_x_upset() +
   geom_text(stat='count', aes(label=after_stat(count)), nudge_y = -2.25) + 
   xlab('') + ylab('Enriched gene expression overlap')
+```
+## Final IP tables
+```{r}
+ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out %>% 
+  filter(padj < 0.01) %>%
+  merge(reference_meta_data$ucsc_rmsk_insert_info.df, by = 'gene') %>% 
+  mutate(family = ifelse(ensg %in% reference_meta_data$gencode_lncRNA_gene_names.df$ensg,
+                         'gencode_lncRNA', family),
+         family = ifelse(is.na(family), 'gencode_coding', family),
+         clade = ifelse(grepl('gencode', family), family, clade),
+         clade = ifelse(clade %in% c('gencode_coding',
+                                     'gencode_lncRNA',
+                                     'LINE',
+                                     'SINE',
+                                     'LTR',
+                                     'DNA',
+                                     'Simple_repeat'), clade, 'other'),
+         type = ifelse(grepl('gencode',family), 'GENCODE', 'TE'),
+         clade = factor(clade, levels = te_aware_annotation_levels)) -> feature_de.df
+
+feature_de.df %>% 
+  select(gene, baseMean, padj, log2FoldChange, clade, family) %>% 
+  mutate(reference = 'hg38', annotation = 'Repeat Masker') %>% 
+  write_csv(file.path(output_data.dir, 'ip_data', 'panc_te_sig_de.csv'))
+
+ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out %>% 
+  filter(!ensg %in% reference_meta_data$ucsc_rmsk_insert_info.df$gene, !ensg %in% chrM.filter.list)%>%
+  filter(padj < 0.01) %>% 
+  merge(reference_meta_data$ucsc_rmsk_insert_info.df, by = 'gene', all.x = T) %>% 
+  mutate(family = ifelse(ensg %in% reference_meta_data$gencode_lncRNA_gene_names.df$ensg,
+                         'gencode_lncRNA', family),
+         family = ifelse(is.na(family), 'gencode_coding', family),
+         clade = ifelse(grepl('gencode', family), family, clade),
+         clade = ifelse(clade %in% c('gencode_coding',
+                                     'gencode_lncRNA',
+                                     'LINE',
+                                     'SINE',
+                                     'LTR',
+                                     'DNA',
+                                     'Simple_repeat'), clade, 'other'),
+         type = ifelse(grepl('gencode',family), 'GENCODE', 'TE'),
+         clade = factor(clade, levels = te_aware_annotation_levels)) -> feature_de.df
+
+
+import::from(.from = 'SummarizedExperiment',
+             rowRanges)
+
+rowRanges(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$gxi) %>% 
+  as.data.frame() %>% 
+  filter(group_name %in% reference_meta_data$gencode_tx_to_gene.df$ensg) -> range_tmp
+
+feature_de.df %>% 
+  merge(range_tmp, by.x = 'ensg', by.y = 'group_name') %>% 
+  select(gene, 'chr' = seqnames, start, end, strand, 
+         baseMean, padj, 'biotype' = family, log2FoldChange) %>% 
+  mutate(reference = 'hg38', annotation = 'GENCODEv39') %>% 
+  write_csv(file.path(output_data.dir, 'ip_data', 'panc_gencode_sig_de.csv'))
+
+ucsc.rmsk.salmon_quant$analysis_set$covid_ctrl$deseq$de_out %>% 
+  filter(padj < 0.01) %>%
+  merge(reference_meta_data$ucsc_rmsk_insert_info.df, by = 'gene') %>% 
+  mutate(family = ifelse(ensg %in% reference_meta_data$gencode_lncRNA_gene_names.df$ensg,
+                         'gencode_lncRNA', family),
+         family = ifelse(is.na(family), 'gencode_coding', family),
+         clade = ifelse(grepl('gencode', family), family, clade),
+         clade = ifelse(clade %in% c('gencode_coding',
+                                     'gencode_lncRNA',
+                                     'LINE',
+                                     'SINE',
+                                     'LTR',
+                                     'DNA',
+                                     'Simple_repeat'), clade, 'other'),
+         type = ifelse(grepl('gencode',family), 'GENCODE', 'TE'),
+         clade = factor(clade, levels = te_aware_annotation_levels)) -> feature_de.df
+
+feature_de.df %>% 
+  select(gene, baseMean, padj, log2FoldChange, clade, family) %>% 
+  mutate(reference = 'hg38', annotation = 'Repeat Masker') %>% 
+  write_csv(file.path(output_data.dir, 'ip_data', 'covid_te_sig_de.csv'))
+
+ucsc.rmsk.salmon_quant$analysis_set$covid_ctrl$deseq$de_out %>% 
+  filter(!ensg %in% reference_meta_data$ucsc_rmsk_insert_info.df$gene, !ensg %in% chrM.filter.list)%>%
+  filter(padj < 0.01) %>% 
+  top_n(100, wt = -padj) %>% 
+  merge(reference_meta_data$ucsc_rmsk_insert_info.df, by = 'gene', all.x = T) %>% 
+  mutate(family = ifelse(ensg %in% reference_meta_data$gencode_lncRNA_gene_names.df$ensg,
+                         'gencode_lncRNA', family),
+         family = ifelse(is.na(family), 'gencode_coding', family),
+         clade = ifelse(grepl('gencode', family), family, clade),
+         clade = ifelse(clade %in% c('gencode_coding',
+                                     'gencode_lncRNA',
+                                     'LINE',
+                                     'SINE',
+                                     'LTR',
+                                     'DNA',
+                                     'Simple_repeat'), clade, 'other'),
+         type = ifelse(grepl('gencode',family), 'GENCODE', 'TE'),
+         clade = factor(clade, levels = te_aware_annotation_levels)) -> feature_de.df
+
+
+import::from(.from = 'SummarizedExperiment',
+             rowRanges)
+
+rowRanges(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$gxi) %>% 
+  as.data.frame() %>% 
+  filter(group_name %in% reference_meta_data$gencode_tx_to_gene.df$ensg) -> range_tmp
+
+feature_de.df %>% 
+  merge(range_tmp, by.x = 'ensg', by.y = 'group_name') %>% 
+  select(gene, 'chr' = seqnames, start, end, strand, 
+         baseMean, padj, 'biotype' = family, log2FoldChange) %>% 
+  mutate(reference = 'hg38', annotation = 'GENCODEv39') %>% 
+  write_csv(file.path(output_data.dir, 'ip_data', 'covid_gencode_sig_de.csv'))
+
+ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out %>% 
+  filter(!ensg %in% reference_meta_data$ucsc_rmsk_insert_info.df$gene, ensg %in% chrM.filter.list)%>%
+  filter(padj < 0.01) %>% 
+  merge(reference_meta_data$ucsc_rmsk_insert_info.df, by = 'gene', all.x = T) %>% 
+  mutate(family = ifelse(ensg %in% reference_meta_data$gencode_lncRNA_gene_names.df$ensg,
+                         'gencode_lncRNA', family),
+         family = ifelse(is.na(family), 'gencode_coding', family),
+         clade = ifelse(grepl('gencode', family), family, clade),
+         clade = ifelse(clade %in% c('gencode_coding',
+                                     'gencode_lncRNA',
+                                     'LINE',
+                                     'SINE',
+                                     'LTR',
+                                     'DNA',
+                                     'Simple_repeat'), clade, 'other'),
+         type = ifelse(grepl('gencode',family), 'GENCODE', 'TE'),
+         clade = factor(clade, levels = te_aware_annotation_levels)) -> feature_de.df
+
+
+import::from(.from = 'SummarizedExperiment',
+             rowRanges)
+
+rowRanges(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$gxi) %>% 
+  as.data.frame() %>% 
+  filter(group_name %in% reference_meta_data$gencode_tx_to_gene.df$ensg) -> range_tmp
+
+feature_de.df %>% 
+  merge(range_tmp, by.x = 'ensg', by.y = 'group_name') %>% 
+  select(gene, 'chr' = seqnames, start, end, strand, 
+         baseMean, padj, 'biotype' = family, log2FoldChange) %>% 
+  mutate(reference = 'hg38', annotation = 'GENCODEv39') %>% 
+  write_csv(file.path(output_data.dir, 'ip_data', 'panc_MT_sig_de.csv'))
+
+ucsc.rmsk.salmon_quant$analysis_set$covid_ctrl$deseq$de_out %>% 
+  filter(!ensg %in% reference_meta_data$ucsc_rmsk_insert_info.df$gene, ensg %in% chrM.filter.list)%>%
+  filter(padj < 0.01) %>% 
+  merge(reference_meta_data$ucsc_rmsk_insert_info.df, by = 'gene', all.x = T) %>% 
+  mutate(family = ifelse(ensg %in% reference_meta_data$gencode_lncRNA_gene_names.df$ensg,
+                         'gencode_lncRNA', family),
+         family = ifelse(is.na(family), 'gencode_coding', family),
+         clade = ifelse(grepl('gencode', family), family, clade),
+         clade = ifelse(clade %in% c('gencode_coding',
+                                     'gencode_lncRNA',
+                                     'LINE',
+                                     'SINE',
+                                     'LTR',
+                                     'DNA',
+                                     'Simple_repeat'), clade, 'other'),
+         type = ifelse(grepl('gencode',family), 'GENCODE', 'TE'),
+         clade = factor(clade, levels = te_aware_annotation_levels)) -> feature_de.df
+
+
+import::from(.from = 'SummarizedExperiment',
+             rowRanges)
+
+rowRanges(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$gxi) %>% 
+  as.data.frame() %>% 
+  filter(group_name %in% reference_meta_data$gencode_tx_to_gene.df$ensg) -> range_tmp
+
+feature_de.df %>% 
+  merge(range_tmp, by.x = 'ensg', by.y = 'group_name') %>% 
+  select(gene, 'chr' = seqnames, start, end, strand, 
+         baseMean, padj, 'biotype' = family, log2FoldChange) %>% 
+  mutate(reference = 'hg38', annotation = 'GENCODEv39') %>% 
+  write_csv(file.path(output_data.dir, 'ip_data', 'covid_MT_sig_de.csv'))
 
 ```
 ## tcga_modeling

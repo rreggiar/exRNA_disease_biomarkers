@@ -583,8 +583,8 @@ flow_chart.plt <- magick::image_read_pdf(path = file.path(figure.dir, 'fig.1', '
 
 # flow_chart.plt <- magick::image_read(path = file.path(figure.dir, 'fig.1', 'plasma_schematic.png'))
 ```
-## Fig_1A
-```{r 1A}
+## Fig_S1A
+```{r S1A}
 
 
 
@@ -602,8 +602,8 @@ fig.1A_2.plt <-
 #   annotate(geom = 'text', x = -105, y = -200, label = 'TE-aware', size = txt.mm_to_pts(1.5))
 
 ```
-## Fig_1B
-```{r 1B}
+## Fig_S1B
+```{r S1B}
 salmon_quant$analysis_set$ctrl_panc_covid$quant_meta %>% 
   gather(var, value, -sample, -condition, -sex, -context) %>% 
   mutate(value = as.numeric(value),
@@ -640,8 +640,8 @@ tidy_quant_meta.df %>%
 
 fig.1B.plt <- mapping_rate_dist.plt
 ```
-## Fig_1C
-```{r 1C}
+## Fig_S1C
+```{r S1C}
 
 ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$quant_meta %>% 
   gather(var, value, -sample, -condition, -sex, -context) %>% 
@@ -739,9 +739,9 @@ AA
 
 wrap_plots(biotype_count) + plot_annotation(tag_levels = 'A') -> biotype_plt
 
-save.manuscript.panel(figure = 's1',
+save.manuscript.panel(figure = '3',
                       figure.dir = figure.dir,
-                      name = 'patchwork_full_biotype_tx_S1',
+                      name = 'patchwork_full_biotype_tx_S3',
                       width = figure_double_column_width,
                       height = figure_depth,
                       plot.in = biotype_plt)
@@ -767,7 +767,7 @@ save.manuscript.panel(figure = 's1',
 # wrap_plots(plt_SN2E.plt) + plot_annotation(tag_levels = 'A') -> nanopore_biotype_plt
 # 
 # 
-# save.manuscript.panel(figure = 's1',
+# save.manuscript.panel(figure = '6',
 #                       figure.dir = figure.dir,
 #                       name = 'patchwork_full_nanopore_biotype_tx_S6',
 #                       width = figure_double_column_width,
@@ -777,11 +777,11 @@ save.manuscript.panel(figure = 's1',
 ```
 
 ### Fig_1_patchwork
-```{r Fig1}
+```{r FigS1}
 import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer, wrap_elements)
 
 
-fig_1_layout <- "
+fig_S1_layout <- "
 AC
 AC
 DC
@@ -795,21 +795,21 @@ wrap_plots(fig.1A_1.plt,
            guide_area(),
            fig.1C.plt + coord_cartesian(clip = 'off'),
            # wrap_elements(full = magick::image_ggplot(flow_chart.plt)) + labs(tag = 'A'),
-           design = fig_1_layout, 
+           design = fig_S1_layout, 
            guides = 'collect',
            heights = c(0.75,0.75,0.0825,1,1)) + plot_annotation(tag_levels = 'A') & 
   theme(plot.tag.position = c(0.01, 0.99), 
         legend.position = 'bottom',
         legend.title = element_text(vjust = 1.25),
-        legend.justification = c(0.5, 0.5)) -> fig.1.patchwork
+        legend.justification = c(0.5, 0.5)) -> fig.S1.patchwork
 
 
 save.manuscript.panel(figure = 1,
                       figure.dir = figure.dir,
-                      name = 'patchwork_full_fig_1',
+                      name = 'patchwork_full_fig_S1',
                       width = figure_double_column_width,
                       height = figure_depth,
-                      plot.in = fig.1.patchwork)
+                      plot.in = fig.S1.patchwork)
 
 
 ```

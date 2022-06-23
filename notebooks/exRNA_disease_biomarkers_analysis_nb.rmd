@@ -1797,30 +1797,30 @@ import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_
 
 
 fig_N_layout <- "
-AB
-AB
-AB
 CC
-DD
+AB
+AB
+AB
+AD
 "
 
 wrap_plots(plt_NC.plt,
            wrap_elements(full = panel.SNA.patchwork, clip = F),
            guide_area(),
-           # plt_ND_2.plt,
+           plt_ND_2.plt,
            # wrap_elements(full = plt_ND_2.plt),
            design = fig_N_layout, 
            guides = 'collect',
-           heights = c(1,1,1,0.055,0.75)) +
+           heights = c(0.055,1,1,1,0.75)) +
   plot_annotation(tag_levels = 'A') &
   theme(legend.justification = 'center', legend.position = 'bottom') -> fig.N.patchwork
 
 
 # fig.N.patchwork
 
-save.manuscript.panel(figure = 3,
+save.manuscript.panel(figure = 2,
                       figure.dir = figure.dir,
-                      name = 'patchwork_full_fig_3',
+                      name = 'patchwork_full_fig_2',
                       width = figure_double_column_width,
                       height = figure_depth,
                       plot.in = fig.N.patchwork)

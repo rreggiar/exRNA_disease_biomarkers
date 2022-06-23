@@ -578,6 +578,7 @@ process.aware.salmon_quant$analysis_set$ctrl_panc_covid$unsplice_data.df <-
 # Fig_1
 ## Fig_flowchart
 ```{r}
+install.packages('pdftools')
 flow_chart.plt <- magick::image_read_pdf(path = file.path(figure.dir, 'fig.1', 'dkim_plasma_schematic.pdf'))
 
 # flow_chart.plt <- magick::image_read(path = file.path(figure.dir, 'fig.1', 'plasma_schematic.png'))
@@ -726,22 +727,7 @@ ucsc_rmsk_biotype_summary %>%
   theme(axis.text.x = element_text(angle = 40, hjust = 1),
         legend.position = 'top', legend.direction = 'horizontal') -> biotype_count
 
-panc_compare_annotated.df %>% 
-  select('gene' = 'Gene ID', contains('nanopore'), clade) %>% 
-  gather(sample, tpm, -gene, -clade) %>% 
-  mutate(sample = str_replace(sample, '_nanopore_tpm', ''),
-         sample = str_replace(sample, '_', ' ')) %>% 
-  filter(tpm > 0.17) %>% 
-  group_by(sample, clade) %>% 
-  summarize(detected = n()) %>% 
-  ggplot(aes(sample, detected, fill = sample)) + 
-  geom_col() + 
-  ylab('detected genes/elements') + 
-  xlab('') + 
-  scale_fill_manual(values = viridisLite::plasma(20)[c(1,8,10)]) +
-  facet_wrap(~clade, scales = 'free_y', ncol = 2) + 
-  theme(axis.text.x = element_text(angle = 40, hjust = 1),
-        legend.position = 'top', legend.direction = 'horizontal') -> plt_SN2E.plt
+
 
 import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer, wrap_elements)
 
@@ -755,20 +741,38 @@ wrap_plots(biotype_count) + plot_annotation(tag_levels = 'A') -> biotype_plt
 
 save.manuscript.panel(figure = 's1',
                       figure.dir = figure.dir,
-                      name = 'patchwork_full_biotype_tx',
+                      name = 'patchwork_full_biotype_tx_S1',
                       width = figure_double_column_width,
                       height = figure_depth,
                       plot.in = biotype_plt)
 
-wrap_plots(plt_SN2E.plt) + plot_annotation(tag_levels = 'A') -> nanopore_biotype_plt
-
-
-save.manuscript.panel(figure = 's1',
-                      figure.dir = figure.dir,
-                      name = 'patchwork_full_nanopore_biotype_tx',
-                      width = figure_double_column_width,
-                      height = figure_depth,
-                      plot.in = nanopore_biotype_plt)
+## move to sensible location
+# panc_compare_annotated.df %>%
+#   select('gene' = 'Gene ID', contains('nanopore'), clade) %>%
+#   gather(sample, tpm, -gene, -clade) %>%
+#   mutate(sample = str_replace(sample, '_nanopore_tpm', ''),
+#          sample = str_replace(sample, '_', ' ')) %>%
+#   filter(tpm > 0.17) %>%
+#   group_by(sample, clade) %>%
+#   summarize(detected = n()) %>%
+#   ggplot(aes(sample, detected, fill = sample)) +
+#   geom_col() +
+#   ylab('detected genes/elements') +
+#   xlab('') +
+#   scale_fill_manual(values = viridisLite::plasma(20)[c(1,8,10)]) +
+#   facet_wrap(~clade, scales = 'free_y', ncol = 2) +
+#   theme(axis.text.x = element_text(angle = 40, hjust = 1),
+#         legend.position = 'top', legend.direction = 'horizontal') -> plt_SN2E.plt
+# 
+# wrap_plots(plt_SN2E.plt) + plot_annotation(tag_levels = 'A') -> nanopore_biotype_plt
+# 
+# 
+# save.manuscript.panel(figure = 's1',
+#                       figure.dir = figure.dir,
+#                       name = 'patchwork_full_nanopore_biotype_tx_S6',
+#                       width = figure_double_column_width,
+#                       height = figure_depth,
+#                       plot.in = nanopore_biotype_plt)
   
 ```
 

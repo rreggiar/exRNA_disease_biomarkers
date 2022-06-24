@@ -671,6 +671,17 @@ mapping_rate_compare.df %>%
 
 fig.1C.plt <- mapping_rate_compare.plt
 
+mapping_rate_compare.df %>% 
+  select(-condition, -context, -sex) %>% 
+  mutate(mapping_rate_diff = `TE-aware` - `gencode`) %>% 
+  merge(salmon_quant$analysis_set$ctrl_panc_covid$quant_meta, by = 'sample') %>% 
+  mutate(condition = factor(condition, levels = c('panc', 'ctrl', 'covid'))) %>% 
+  ggplot(aes(`TE-aware`, star_multimapped_percent, color = condition)) + 
+  geom_point() + 
+  ggforce::facet_col(~condition) + 
+  geom_smooth(method = 'lm', se = F, linetype = 'dashed') + 
+  scale_color_manual(values = identity_color_pal, guide = 'none')
+
 ```
 
 ## Fig_1stats
@@ -2331,13 +2342,21 @@ process.aware.salmon_quant$analysis_set$ctrl_panc_covid$unsplice_data.df %>%
 SummarizedExperiment::assay(process.aware.salmon_quant$analysis_set$ctrl_panc_covid$gxi.split,
                             'unspliced') %>% as.data.frame() -> unsplice_counts_pca.df
 
+gene_splice_ratio %>% 
+  select(sample, gene, unsplice_rate) %>% 
+  spread(sample, unsplice_rate) %>%
+  select(!contains(qc_fails)) %>% 
+  column_to_rownames('gene') %>% 
+  t() %>% 
+  as.data.frame() -> unsplice_rates_pca.tmp
+
 unsplice_counts_pca.df %>% 
   select(!contains(qc_fails)) %>% 
   t() %>% 
   as.data.frame() -> unsplice_counts_pca.tmp
   
-pca_tmp_in_sd <- apply(unsplice_counts_pca.tmp, 2, sd)
-pca_tmp_in_zero_sd <- unsplice_counts_pca.tmp[,pca_tmp_in_sd!=0 & !is.na(pca_tmp_in_sd)]
+pca_tmp_in_sd <- apply(unsplice_rates_pca.tmp, 2, sd)
+pca_tmp_in_zero_sd <- unsplice_rates_pca.tmp[,pca_tmp_in_sd!=0 & !is.na(pca_tmp_in_sd)]
 non_zero_pca <- prcomp(pca_tmp_in_zero_sd, center = T, scale. = T, rank. = 50)
 
 summary(non_zero_pca)
@@ -2372,28 +2391,39 @@ pca.out %>%
   geom_vline(xintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) +
   geom_hline(yintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) + 
   scale_color_manual(values = identity_color_pal) + 
-  annotate(geom = 'text', x = -55, y = -160, label = 'intron-aware', size = txt.mm_to_pts(1)) +
-  theme(legend.position = c(0.95,1), legend.direction = 'horizontal') -> plt_4B.plt
+  # annotate(geom = 'text', x = -15, y = -160, label = 'process-aware', size = txt.mm_to_pts(1)) +
+  theme(legend.position = c(0.98,1), legend.direction = 'horizontal')
+```
+
+```{r}
+import::here(SummarizedExperiment, assay)
 
 unsplice_counts_pca.df %>% 
   select(!contains(qc_fails)) -> unsplice_filt.df
 
-  import::here(SummarizedExperiment, assay)
-  split.gxi <- analysis_set$gxi.split
-  unsplice.df <- assay(split.gxi, "unspliced") %>% as.data.frame() %>% 
-    rownames_to_column("gene") %>% gather(sample, count, 
-    -gene) %>% group_by(sample) %>% summarize(unsplice_count = sum(count))
-  splice.df <- assay(split.gxi, "spliced") %>% as.data.frame() %>% 
-    rownames_to_column("gene") %>% gather(sample, count, 
-    -gene) %>% group_by(sample) %>% summarize(splice_count = sum(count))
-  merge(unsplice.df, splice.df, by = "sample") %>% mutate(unsplice_rate = unsplice_count/(unsplice_count + 
-    splice_count))
+split.gxi <- process.aware.salmon_quant$analysis_set$ctrl_panc_covid$gxi.split
 
-unsplice_filt.df %>% 
-  # slice_sample(n = 30) %>% 
-  rownames_to_column('gene') %>% 
+unsplice.df <- assay(split.gxi, "unspliced") %>% as.data.frame() %>% 
+  rownames_to_column("gene") %>% 
+  gather(sample, count, -gene) %>% 
+  group_by(sample, gene) %>% 
+  summarize(unsplice_count = sum(count))
+
+splice.df <- assay(split.gxi, "spliced") %>% as.data.frame() %>% 
+  rownames_to_column("gene") %>% 
+  gather(sample, count, -gene) %>% 
+  group_by(sample,gene) %>% 
+  summarize(splice_count = sum(count))
+
+gene_splice_ratio <- 
+  merge(unsplice.df, splice.df, by = c("sample", "gene")) %>% 
+  mutate(unsplice_rate = unsplice_count/(unsplice_count + splice_count)) %>% 
+  drop_na()
+
+gene_splice_ratio %>% 
   merge(reference_meta_data$ucsc_rmsk_insert_info.df, by = 'gene', all.x = T) %>% 
-  mutate(family = ifelse(gene %in% reference_meta_data$gencode_lncRNA_gene_names.df$ensg,
+  mutate(family = ifelse(gene %in% 
+                           reference_meta_data$gencode_lncRNA_gene_names.df$ensg,
                          'gencode_lncRNA', family),
          family = ifelse(is.na(family), 'gencode_coding', family),
          clade = ifelse(grepl('gencode', family), family, clade),
@@ -2406,12 +2436,68 @@ unsplice_filt.df %>%
                                      'Simple_repeat'), clade, 'other'),
          type = ifelse(grepl('gencode',family), 'GENCODE', 'TE'),
          clade = factor(clade, levels = te_aware_annotation_levels)) %>% 
-  gather(sample, unsplice_count, -clade, -family, -type, -gene) %>% 
-  merge(sample_meta_data$`2022.01.14_combined_meta_data.csv`, by.x = 'sample', by.y = 'patient') %>% 
-  ggplot(aes(log1p(unsplice_count))) +
-  geom_histogram() + 
-  facet_wrap(~condition+clade)
+  # gather(sample, unsplice_count, -clade, -family, -type, -gene) %>% 
+  merge(sample_meta_data$`2022.01.14_combined_meta_data.csv`, by.x = 'sample', by.y = 'patient') -> gene_splice_ratio_anno
+
+gene_splice_ratio_anno %>% 
+  filter(gene %in% filter(salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
+                          padj < 0.01 & log2FoldChange < -1)$ensg) %>% 
+  ggplot(aes(clade, unsplice_rate, color = condition)) +
+  # geom_histogram(aes(y=stat(density*width)), bins = 100) +
+  geom_boxplot() +
+  # geom_jitter() +
+  # facet_wrap(~clade+condition, ncol = 3) +
+  scale_color_manual(values = identity_color_pal)
+
+
+gene_splice_ratio_anno %>% 
+  filter(!condition == 'covid') %>% 
+  group_by(gene, condition, clade) %>% 
+  summarize(mean_unsplice_rate = mean(unsplice_rate)) %>% 
+  merge(salmon_quant$analysis_set$panc_ctrl$deseq$de_out, by.x = 'gene', by.y = 'ensg') %>% 
+  spread(condition, mean_unsplice_rate) %>% 
+  mutate(delta_unsplice_rate = panc - ctrl) %>% 
+  filter(delta_unsplice_rate != 0) %>% 
+  ggplot(aes(delta_unsplice_rate, log2FoldChange)) + 
+  geom_point() + 
+  geom_hline(yintercept = 0, color = 'white', linetype = 'dashed') + 
+  geom_vline(xintercept = 0, color = 'white', linetype = 'dashed')
+
 ```
+
+```{r}
+salmon_quant$analysis_set$ctrl_panc_covid$quant_meta %>% 
+  gather(var, value, -sample, -condition, -sex, -context) %>% 
+  mutate(value = as.numeric(value),
+         condition = factor(condition, levels = c('panc', 'ctrl', 'covid'))) -> tidy_quant_meta.df
+
+process.aware.salmon_quant$analysis_set$ctrl_panc_covid$quant_meta %>% 
+  gather(var, value, -sample, -condition, -sex, -context) %>% 
+  mutate(value = as.numeric(value),
+         condition = factor(condition, levels = c('panc', 'ctrl', 'covid'))) %>% 
+  filter(var == 'salmon_percent_mapped') %>% 
+  dplyr::rename('Process-aware' = value) %>% 
+  merge(tidy_quant_meta.df %>% select(sample, var, value) %>% 
+        filter(var == 'salmon_percent_mapped') %>% 
+               dplyr::rename('gencode' = value) %>% 
+          select(-var), by = 'sample') -> mapping_rate_compare.df
+
+mapping_rate_compare.df %>% 
+  gather(var, value, -sample, -context, -sex, -condition, -var) %>% 
+  # filter(condition == 'panc') %>% 
+  ggplot(aes(var, value, color = condition)) + 
+  geom_boxplot(fill = NA, outlier.colour = NA, show.legend = F) + 
+  geom_point(size = rel(2), alpha = 1) +
+  geom_line(aes(group = sample), alpha = 0.2, show.legend = F) +
+  # scale_shape_manual(values = c(21,25)) +
+  ylab('% mapped') + xlab('') + 
+  ggforce::facet_row(~condition, strip.position = 'bottom') +
+  scale_color_manual(values = identity_color_pal) + 
+  ggpubr::stat_compare_means(comparisons = list(c('gencode', 'Process-aware')), 
+                             method = 'wilcox', size = 2.5, 
+                             method.args = list(exact = TRUE, paired = T))
+```
+
 ### Fig_4_patchwork
 ```{r}
 import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer, wrap_elements)

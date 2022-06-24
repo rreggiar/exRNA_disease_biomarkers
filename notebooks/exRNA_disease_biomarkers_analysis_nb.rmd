@@ -1797,11 +1797,11 @@ import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_
 
 
 fig_N_layout <- "
-CC
 AB
 AB
 AB
 AD
+CC
 "
 
 wrap_plots(plt_NC.plt,
@@ -1811,7 +1811,7 @@ wrap_plots(plt_NC.plt,
            # wrap_elements(full = plt_ND_2.plt),
            design = fig_N_layout, 
            guides = 'collect',
-           heights = c(0.055,1,1,1,0.75)) +
+           heights = c(1,1,1,1,0.055)) +
   plot_annotation(tag_levels = 'A') &
   theme(legend.justification = 'center', legend.position = 'bottom') -> fig.N.patchwork
 

@@ -1625,7 +1625,7 @@ panc_nanopore_read_length.df %>%
   ggforce::facet_col(~biolabel, scales = 'free') +
   scale_fill_manual(values = viridisLite::plasma(20)[c(1,8,10)]) +
   coord_cartesian(clip = 'off') +
-  ylab('proportion of nanopore biotype/clade fragment lengths') + xlab('nanopore fragment size (bp)') +
+  ylab('proportion of nanopore reads') + xlab('nanopore read length (bp)') +
   theme(legend.position = c(0.55,0.99), legend.direction = 'horizontal', plot.margin = margin(r = 3, unit = 'mm')) -> plt_NC.plt
 ```
 ## Fig_ND
@@ -1700,7 +1700,7 @@ ctrl.6.1.5_nanopore_hex_to.plt %>%
   xlim(130,315) +
   scale_color_manual(values = viridisLite::plasma(20)[c(1,8,10)], guide = 'none') +
   ylab('cumulative prop. (99% CI)') + 
-  xlab('nanopore SINE fragment size (bp)') + 
+  xlab('nanopore SINE read length (bp)') + 
   theme(legend.position = c(0.25, 0.99)) -> plt_ND_2.plt
 
 # p4 <- ggplot(data.frame(l = plt_ND_2.plt$labels$y, x = 1, y = 1)) +
@@ -1721,7 +1721,7 @@ ctrl.6.1.5_nanopore_hex_to.plt %>%
 ```
 ## Fig_NE
 ```{r}
-install.packages('hexbin')
+# install.packages('hexbin')
 panc.6.1.1_nanopore_hex_to.plt %>% 
   group_by(tx, len, biotype.x, sample) %>% 
   summarize(read_length = mean(read_length)) %>% 
@@ -1733,7 +1733,7 @@ panc.6.1.1_nanopore_hex_to.plt %>%
   geom_hex(bins = 120) +
   # geom_vline(xintercept = median(panc.6.1.1_nanopore_hex_to.plt$read_length), color = 'grey', linetype = 'dashed') +
   # annotate(geom = 'text', x = 275, y = 120, label = 'panc 6') +
-  xlab('avg. observed SINE fragment size (bp)') + ylab('expected SINE insert size (bp)') +
+  xlab('avg. observed SINE read length (bp)') + ylab('expected SINE insert length (bp)') +
   # ggforce::facet_col(~sample) +
   ggtitle('panc 6') + 
   scale_fill_viridis_c(option = 'viridis', direction = 1, name = 'scaled cpm', breaks = c(0,1)) +
@@ -1753,7 +1753,7 @@ ctrl.6.1.5_nanopore_hex_to.plt %>%
   # annotate(geom = 'text', x = 275, y = 150, label = 'ctrl 6') +
   # geom_vline(xintercept = median(ctrl.6.1.5_nanopore_hex_to.plt$read_length), 
   #            color = 'grey', linetype = 'dashed') +
-  xlab('avg. observed fragment size (bp)') + ylab('expected SINE insert size (bp)') +
+  xlab('avg. observed read length (bp)') + ylab('expected SINE insert length (bp)') +
   # ggforce::facet_col(~sample) +
   ggtitle('ctrl 6') + 
   scale_fill_viridis_c(option = 'viridis', direction = 1, name = 'scaled cpm', guide = 'none') +
@@ -1772,7 +1772,7 @@ panc.7.1.1_nanopore_hex_to.plt %>%
   geom_hex(bins = 120) +
   # geom_vline(xintercept = median(panc.7.1.1_nanopore_hex_to.plt$read_length), color = 'grey', linetype = 'dashed') +
   # annotate(geom = 'text', x = 275, y = 150, label = 'panc 7') +
-  xlab('avg. observed SINE fragment size (bp)') + ylab('expected SINE insert size (bp)') +
+  xlab('avg. observed SINE read length (bp)') + ylab('expected SINE insert length (bp)') +
   # ggforce::facet_col(~sample) +
   ggtitle('panc 7') + 
   scale_fill_viridis_c(option = 'viridis', direction = 1, name = 'scaled cpm', guide = 'none') +

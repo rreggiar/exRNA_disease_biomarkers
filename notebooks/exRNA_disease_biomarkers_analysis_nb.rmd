@@ -2378,6 +2378,17 @@ pca.out %>%
 unsplice_counts_pca.df %>% 
   select(!contains(qc_fails)) -> unsplice_filt.df
 
+  import::here(SummarizedExperiment, assay)
+  split.gxi <- analysis_set$gxi.split
+  unsplice.df <- assay(split.gxi, "unspliced") %>% as.data.frame() %>% 
+    rownames_to_column("gene") %>% gather(sample, count, 
+    -gene) %>% group_by(sample) %>% summarize(unsplice_count = sum(count))
+  splice.df <- assay(split.gxi, "spliced") %>% as.data.frame() %>% 
+    rownames_to_column("gene") %>% gather(sample, count, 
+    -gene) %>% group_by(sample) %>% summarize(splice_count = sum(count))
+  merge(unsplice.df, splice.df, by = "sample") %>% mutate(unsplice_rate = unsplice_count/(unsplice_count + 
+    splice_count))
+
 unsplice_filt.df %>% 
   # slice_sample(n = 30) %>% 
   rownames_to_column('gene') %>% 

@@ -2374,6 +2374,32 @@ pca.out %>%
   scale_color_manual(values = identity_color_pal) + 
   annotate(geom = 'text', x = -55, y = -160, label = 'intron-aware', size = txt.mm_to_pts(1)) +
   theme(legend.position = c(0.95,1), legend.direction = 'horizontal') -> plt_4B.plt
+
+unsplice_counts_pca.df %>% 
+  select(!contains(qc_fails)) -> unsplice_filt.df
+
+unsplice_filt.df %>% 
+  # slice_sample(n = 30) %>% 
+  rownames_to_column('gene') %>% 
+  merge(reference_meta_data$ucsc_rmsk_insert_info.df, by = 'gene', all.x = T) %>% 
+  mutate(family = ifelse(gene %in% reference_meta_data$gencode_lncRNA_gene_names.df$ensg,
+                         'gencode_lncRNA', family),
+         family = ifelse(is.na(family), 'gencode_coding', family),
+         clade = ifelse(grepl('gencode', family), family, clade),
+         clade = ifelse(clade %in% c('gencode_coding',
+                                     'gencode_lncRNA',
+                                     'LINE',
+                                     'SINE',
+                                     'LTR',
+                                     'DNA',
+                                     'Simple_repeat'), clade, 'other'),
+         type = ifelse(grepl('gencode',family), 'GENCODE', 'TE'),
+         clade = factor(clade, levels = te_aware_annotation_levels)) %>% 
+  gather(sample, unsplice_count, -clade, -family, -type, -gene) %>% 
+  merge(sample_meta_data$`2022.01.14_combined_meta_data.csv`, by.x = 'sample', by.y = 'patient') %>% 
+  ggplot(aes(log1p(unsplice_count))) +
+  geom_histogram() + 
+  facet_wrap(~condition+clade)
 ```
 ### Fig_4_patchwork
 ```{r}

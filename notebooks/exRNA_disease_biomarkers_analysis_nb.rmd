@@ -695,112 +695,6 @@ save.manuscript.panel(figure = 1,
 
 ```
 
-
-## Fig_1stats
-```{r}
-SummarizedExperiment::assay(ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$gxi, 
-                            'counts') %>% as.data.frame() -> ucsc_rmsk_counts
-
-ucsc_rmsk_counts <- ucsc_rmsk_counts[, !colnames(ucsc_rmsk_counts) %in% qc_fails]
-
-ucsc_rmsk_counts %>% 
-  rownames_to_column('gene') %>% 
-  merge(reference_meta_data$ucsc_rmsk_insert_info.df, by = 'gene', all.x = T) %>% 
-  mutate(family = ifelse(gene %in% reference_meta_data$gencode_lncRNA_gene_names.df$ensg,
-                         'gencode_lncRNA', family),
-         family = ifelse(is.na(family), 'gencode_coding', family),
-         clade = ifelse(grepl('gencode', family), family, clade),
-         clade = ifelse(clade %in% c('gencode_coding',
-                                     'gencode_lncRNA',
-                                     'LINE',
-                                     'SINE',
-                                     'LTR',
-                                     'DNA',
-                                     'Simple_repeat'), clade, 'other'),
-         type = ifelse(grepl('gencode',family), 'GENCODE', 'TE'),
-         clade = factor(clade, levels = te_aware_annotation_levels)) %>% 
-    distinct() -> ucsc_rmsk_counts
-
-
-## how you counting?
-
-ucsc_rmsk_counts %>% 
-  pivot_longer(cols = panc.1.2.3:ctrl.9.1.2, names_to = 'sample', values_to = 'count') %>% 
-  mutate(condition = case_when(grepl('panc', sample) ~ 'panc',
-                               grepl('covid', sample) ~ 'covid',
-                               grepl('ctrl', sample) ~ 'ctrl')) %>% 
-  group_by(sample, clade, condition) %>% 
-  filter(count >= 5) %>% 
-  summarize(count = n()) -> ucsc_rmsk_biotype_summary
-
-
-ucsc_rmsk_biotype_summary %>% 
-  group_by(clade) %>% 
-  filter(!grepl('\\?', clade)) %>% 
-  ggplot(aes(condition, count, color = condition)) + 
-  geom_boxplot(fill = NA, outlier.colour = NA) + 
-  geom_jitter(width = 0.25) +
-  ylab('detected genes/elements') + 
-  xlab('') +
-  # scale_y_continuous(labels = scales::number_format(accuracy = 0.01)) +
-  scale_color_manual(values = identity_color_pal) + 
-  facet_wrap(~clade, scales = 'free_y', ncol = 2) +
-  coord_cartesian(clip = 'off') +
-  ggpubr::stat_compare_means(method = 'wilcox', comparisons = list(c('covid', 'ctrl'), c('panc', 'ctrl'))) +
-  theme(axis.text.x = element_text(angle = 40, hjust = 1),
-        legend.position = 'top', legend.direction = 'horizontal') -> biotype_count
-
-
-
-import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer, wrap_elements)
-
-
-fig_1_layout <- "
-AA
-AA
-"
-
-wrap_plots(biotype_count) + plot_annotation(tag_levels = 'A') -> biotype_plt
-
-save.manuscript.panel(figure = '3',
-                      figure.dir = figure.dir,
-                      name = 'patchwork_full_biotype_tx_S3',
-                      width = figure_double_column_width,
-                      height = figure_depth,
-                      plot.in = biotype_plt)
-
-## move to sensible location
-# panc_compare_annotated.df %>%
-#   select('gene' = 'Gene ID', contains('nanopore'), clade) %>%
-#   gather(sample, tpm, -gene, -clade) %>%
-#   mutate(sample = str_replace(sample, '_nanopore_tpm', ''),
-#          sample = str_replace(sample, '_', ' ')) %>%
-#   filter(tpm > 0.17) %>%
-#   group_by(sample, clade) %>%
-#   summarize(detected = n()) %>%
-#   ggplot(aes(sample, detected, fill = sample)) +
-#   geom_col() +
-#   ylab('detected genes/elements') +
-#   xlab('') +
-#   scale_fill_manual(values = viridisLite::plasma(20)[c(1,8,10)]) +
-#   facet_wrap(~clade, scales = 'free_y', ncol = 2) +
-#   theme(axis.text.x = element_text(angle = 40, hjust = 1),
-#         legend.position = 'top', legend.direction = 'horizontal') -> plt_SN2E.plt
-# 
-# wrap_plots(plt_SN2E.plt) + plot_annotation(tag_levels = 'A') -> nanopore_biotype_plt
-# 
-# 
-# save.manuscript.panel(figure = '6',
-#                       figure.dir = figure.dir,
-#                       name = 'patchwork_full_nanopore_biotype_tx_S6',
-#                       width = figure_double_column_width,
-#                       height = figure_depth,
-#                       plot.in = nanopore_biotype_plt)
-  
-```
-
-
-
 # Fig_S2
 ## Fig_S2A
 ```{r S2A}
@@ -883,6 +777,79 @@ save.manuscript.panel(figure = 2,
 
 
 ```
+
+# Fig_S3
+```{r}
+SummarizedExperiment::assay(ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$gxi, 
+                            'counts') %>% as.data.frame() -> ucsc_rmsk_counts
+
+ucsc_rmsk_counts <- ucsc_rmsk_counts[, !colnames(ucsc_rmsk_counts) %in% qc_fails]
+
+ucsc_rmsk_counts %>% 
+  rownames_to_column('gene') %>% 
+  merge(reference_meta_data$ucsc_rmsk_insert_info.df, by = 'gene', all.x = T) %>% 
+  mutate(family = ifelse(gene %in% reference_meta_data$gencode_lncRNA_gene_names.df$ensg,
+                         'gencode_lncRNA', family),
+         family = ifelse(is.na(family), 'gencode_coding', family),
+         clade = ifelse(grepl('gencode', family), family, clade),
+         clade = ifelse(clade %in% c('gencode_coding',
+                                     'gencode_lncRNA',
+                                     'LINE',
+                                     'SINE',
+                                     'LTR',
+                                     'DNA',
+                                     'Simple_repeat'), clade, 'other'),
+         type = ifelse(grepl('gencode',family), 'GENCODE', 'TE'),
+         clade = factor(clade, levels = te_aware_annotation_levels)) %>% 
+    distinct() -> ucsc_rmsk_counts
+
+ucsc_rmsk_counts %>% 
+  pivot_longer(cols = panc.1.2.3:ctrl.9.1.2, names_to = 'sample', values_to = 'count') %>% 
+  mutate(condition = case_when(grepl('panc', sample) ~ 'panc',
+                               grepl('covid', sample) ~ 'covid',
+                               grepl('ctrl', sample) ~ 'ctrl')) %>% 
+  group_by(sample, clade, condition) %>% 
+  filter(count >= 5) %>% 
+  summarize(count = n()) -> ucsc_rmsk_biotype_summary
+
+
+ucsc_rmsk_biotype_summary %>% 
+  group_by(clade) %>% 
+  filter(!grepl('\\?', clade)) %>% 
+  ggplot(aes(condition, count, color = condition)) + 
+  geom_boxplot(fill = NA, outlier.colour = NA) + 
+  geom_jitter(width = 0.25) +
+  ylab('detected genes/elements') + 
+  xlab('') +
+  scale_color_manual(values = identity_color_pal) + 
+  facet_wrap(~clade, scales = 'free_y', ncol = 2, strip.position = 'bottom') +
+  coord_cartesian(clip = 'off') +
+  ggpubr::stat_compare_means(method = 'wilcox', 
+                             comparisons = list(c('covid', 'ctrl'), c('panc', 'ctrl')),
+                             size = txt.mm_to_pts(1)) +
+  theme(axis.text.x = element_text(angle = 40, hjust = 1),
+        legend.position = 'bottom', legend.direction = 'horizontal') -> biotype_count_fig_S3
+
+
+```
+### Fig_S3_patchwork
+```{r}
+import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer, wrap_elements)
+
+wrap_plots(biotype_count_fig_S3) + plot_annotation(tag_levels = 'A') -> patchwork_fig_S3
+
+save.manuscript.panel(figure = 3,
+                      figure.dir = figure.dir,
+                      name = 'patchwork_full_biotype_tx_S3',
+                      width = figure_double_column_width,
+                      height = figure_depth,
+                      plot.in = patchwork_fig_S3)
+
+```
+
+
+
+
 
 # Fig_2
 ## Fig_2A

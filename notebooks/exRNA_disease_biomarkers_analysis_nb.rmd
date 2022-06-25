@@ -574,6 +574,7 @@ process.aware.salmon_quant$analysis_set$ctrl_panc_covid$unsplice_data.df <-
 ```
 
 # Figures
+# Fig_1
 ## Fig_flowchart
 ```{r}
 # install.packages('pdftools')
@@ -800,14 +801,9 @@ save.manuscript.panel(figure = '3',
 
 
 
-# Fig_S1
-## Fig_S1A
-```{r S1A}
-fig.S1A.plt <- 
-  salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_3v4.plt
-```
-## Fig_S1B
-```{r S1A}
+# Fig_S2
+## Fig_S2A
+```{r S2A}
 salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_corr_out.df %>% 
   group_by(pc) %>% 
   mutate(pc = paste0('PC', pc)) %>% 
@@ -821,7 +817,6 @@ salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_corr_out.df %>%
 ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_corr_out.df %>% 
   group_by(pc) %>% 
   mutate(pc = paste0('PC', pc)) %>%
-  # filter(var %in% salmon_pca_corr_top_7.df$var) %>% 
   mutate(var = ifelse(var == 'salmon_percent_mapped', 'salmon_mapped_percent', var)) %>% 
   dplyr::rename('TE-aware' = 'cor') -> ucsc.rmsk.salmon_pca_corr_compare.df
 
@@ -839,38 +834,10 @@ salmon_pca_corr_top_7.df %>%
         axis.text.x = element_text(angle = 60, hjust = 1)) + 
   scale_fill_manual(values = c('black', 'grey')) -> pca_correlation_top7.plt
   
-  
-  
-fig.S1B.plt <- pca_correlation_top7.plt
-
-# save.manuscript.panel(figure = 's1',
-#                       figure.dir = figure.dir,
-#                       name = 'pca_correlation_s1A',
-#                       width = figure_single_column_width,
-#                       height = figure_depth,
-#                       plot.in = pca_correlation_top7.plt)
+fig.S2A.plt <- pca_correlation_top7.plt
 ```
-## Fig_S1C
-```{r 1B}
-# tidy_quant_meta.df %>% 
-#   filter(var %in% c('age')) %>%  
-#   ggplot(aes(condition, value, color = condition)) + 
-#   geom_boxplot(fill = NA, outlier.colour = NA, show.legend = F) + 
-#   geom_point(size = rel(2), alpha = 1) +
-#   # scale_shape_manual(values = c(21,25)) +
-#   scale_color_manual(values = identity_color_pal) + 
-#   ylab('Age -- years') + xlab('') -> fig.S1C.plt
-# 
-# tidy_quant_meta.df %>% 
-#   filter(var %in% c('input_vol')) %>%  
-#   ggplot(aes(condition, value, color = condition)) + 
-#   geom_boxplot(fill = NA, outlier.colour = NA, show.legend = F) + 
-#   geom_point(size = rel(2), alpha = 1) +
-#   # scale_shape_manual(values = c(21,25)) +
-#   scale_color_manual(values = identity_color_pal) + 
-#   ylab('Input Volume -- mL') + xlab('') -> fig.S1D.plt
-
-
+## Fig_S2B
+```{r S2B}
 salmon_quant$analysis_set$ctrl_panc_covid$quant_meta %>% 
   gather(var, value, -sample, -condition, -sex, -context) %>% 
   mutate(value = as.numeric(value),
@@ -888,31 +855,31 @@ salmon_quant$analysis_set$ctrl_panc_covid$quant_meta %>%
 meta_grob_input_table %>% 
   select(-num, -old_name) %>% 
   gridExtra::tableGrob(theme = gridExtra::ttheme_minimal(base_size = 8,
-                                                         core = list(padding=unit(c(1, 5.5), "mm"))), 
-                       rows = NULL) -> fig.S1C.meta_table.grob
+                                                         core = list(padding=unit(c(1, 3.25), "mm"))), 
+                       rows = NULL) -> fig.S2B.meta_table.grob
 
 ```
-### Fig_S1_patchwork
+### Fig_S2_patchwork
 ```{r Fig1}
 import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer)
 
 
-fig_S1_layout <- "
+fig_S2_layout <- "
 AB
 AB
 "
 
-wrap_plots(fig.S1B.plt,
-           patchwork::wrap_elements(full = fig.S1C.meta_table.grob, ignore_tag = F),
-           design = fig_S1_layout, 
-           widths = c(1,1)) + plot_annotation(tag_levels = 'A') -> fig.S1.patchwork
+wrap_plots(fig.S2A.plt,
+           patchwork::wrap_elements(full = fig.S2B.meta_table.grob, ignore_tag = F),
+           design = fig_S2_layout, 
+           widths = c(1,1)) + plot_annotation(tag_levels = 'A') -> fig.S2.patchwork
 
-save.manuscript.panel(figure = 's1',
+save.manuscript.panel(figure = 2,
                       figure.dir = figure.dir,
-                      name = 'patchwork_full_fig_s1',
+                      name = 'patchwork_full_fig_S2',
                       width = figure_double_column_width,
                       height = figure_depth,
-                      plot.in = fig.S1.patchwork)
+                      plot.in = fig.S2.patchwork)
 
 
 ```

@@ -899,9 +899,7 @@ tidy_total_annotated_rmsk_counts %>%
   ggforce::facet_row(~condition, scales = 'free_x') +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5)) +
   scale_y_continuous(expand = c(0,0)) +
-  xlab('') + ylab('normalized count fraction') -> fig.2C.plt
-
-
+  xlab('') + ylab('normalized count fraction')
 ```
 
 

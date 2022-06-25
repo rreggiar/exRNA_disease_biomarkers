@@ -639,8 +639,7 @@ tidy_quant_meta.df %>%
 
 fig.1D.plt <- mapping_rate_dist.plt
 ```
-
-### Fig_S1_patchwork
+### Fig_1_patchwork
 ```{r Fig1}
 import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer, wrap_elements)
 
@@ -675,6 +674,14 @@ save.manuscript.panel(figure = 1,
 
 
 ```
+
+# Fig_S1
+## Fig_S1A
+```{r}
+flow_chart.plt <- magick::image_read_pdf(path = file.path(figure.dir, 'fig.1', 'plasma_schematic_v4.pdf'))
+flowchart_wrap_fig1A.plt <- wrap_elements(full = magick::image_ggplot(flow_chart.plt))
+```
+
 ## Fig_S1B
 ```{r S1B}
 

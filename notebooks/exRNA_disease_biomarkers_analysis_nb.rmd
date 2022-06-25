@@ -574,12 +574,13 @@ process.aware.salmon_quant$analysis_set$ctrl_panc_covid$unsplice_data.df <-
 ```
 
 # Figures
-# Fig_1
 ## Fig_flowchart
 ```{r}
 # install.packages('pdftools')
 flow_chart.plt <- magick::image_read_pdf(path = file.path(figure.dir, 'fig.1', 'plasma_schematic_v4.pdf'))
 ```
+
+# Fig_S1
 ## Fig_S1A
 ```{r S1A}
 
@@ -656,7 +657,6 @@ mapping_rate_compare.df %>%
 fig.S1C.plt <- mapping_rate_compare.plt
 
 ```
-
 ### Fig_S1_patchwork
 ```{r FigS1}
 import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer, wrap_elements)
@@ -675,7 +675,6 @@ wrap_plots(fig.S1A_1.plt,
            fig.S1B.plt + coord_cartesian(clip = 'off'),
            guide_area(),
            fig.S1C.plt + coord_cartesian(clip = 'off'),
-           # wrap_elements(full = magick::image_ggplot(flow_chart.plt)) + labs(tag = 'A'),
            design = fig_S1_layout, 
            guides = 'collect',
            heights = c(0.75,0.75,0.0825,1,1)) + plot_annotation(tag_levels = 'A') & 
@@ -694,6 +693,8 @@ save.manuscript.panel(figure = 1,
 
 
 ```
+
+
 ## Fig_1stats
 ```{r}
 SummarizedExperiment::assay(ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$gxi, 

@@ -12,7 +12,6 @@ editor_options:
 ```{r, setup, include=FALSE}
 knitr::opts_chunk$set(fig.width = 8, collapse = T)
 knitr::opts_chunk$set(message = F)
-# here::set_here('/home/rreggiar/')
 here::here()
 suppressPackageStartupMessages(library(tidyverse))
 ```
@@ -22,7 +21,7 @@ suppressPackageStartupMessages(library(tidyverse))
 ```{r}
 library(ggplot2)
 library(ggthemes)
-base_size = 10
+base_size = 7
 
 ggplot2::theme_set(ggthemes::theme_foundation(base_size = base_size,
                                               base_family = 'Helvetica') + 
@@ -51,7 +50,7 @@ ggplot2::theme_set(ggthemes::theme_foundation(base_size = base_size,
                            axis.ticks.length.y = NULL, axis.ticks.length.y.left = NULL, 
                            axis.ticks.length.y.right = NULL,
                            strip.text = element_text(size = rel(0.8), face = 'bold'),
-                           strip.background = element_blank(),
+                           strip.background = element_rect(size = 0.5),
                            legend.key.size= unit(0.08, "in"),
                            legend.spacing = unit(0, "in"),
                            legend.key = element_rect(colour = NA),
@@ -141,10 +140,10 @@ r_code.dir <- here::here('R')
 
 ## figure_export
 ```{r}
-figure_single_column_width = unit(89, 'mm')
-figure_double_column_width = unit(183, 'mm')
-figure_depth = unit(247, 'mm')
-panel_height_1 = unit(247/3, 'mm')
+figure_single_column_width = unit(90, 'mm')
+figure_double_column_width = unit(180, 'mm')
+figure_depth = unit(170, 'mm')
+panel_height_1 = unit(170/3, 'mm')
 
 # install.packages("import")
 

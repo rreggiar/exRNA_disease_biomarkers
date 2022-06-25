@@ -587,30 +587,29 @@ rowRanges(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$gxi) %>%
 
 # Figures
 # Fig_1
-## Fig_flowchart
-```{r}
+## Fig_flowchart_1A
+```{r 1A}
 # install.packages('pdftools')
 flow_chart.plt <- magick::image_read_pdf(path = file.path(figure.dir, 'fig.1', 'plasma_schematic_v4.pdf'))
-flowchart_wrap <- wrap_elements(full = magick::image_ggplot(flow_chart.plt))
+flowchart_wrap_fig1A.plt <- wrap_elements(full = magick::image_ggplot(flow_chart.plt))
 
 ```
+## Fig_1B/C
+```{r 1B/C}
 
-# Fig_S1
-## Fig_S1A
-```{r S1A}
-
-fig.S1A_1.plt <- 
+fig.1B.plt <- 
   salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_1v2.plt +
   annotate(geom = 'text', x = -175, y = -100, label = 'Repeat-aware', size = txt.mm_to_pts(1.25)) + coord_flip() 
   
-fig.S1A_2.plt <- 
+fig.1C.plt <- 
   salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_2v3.plt +
-  xlim(layer_scales(fig.1A_1.plt)$y$range$range) 
+  annotate(geom = 'text', x = -100, y = -175, label = 'Repeat-aware', size = txt.mm_to_pts(1.25)) +
+  xlim(layer_scales(fig.1A_1.plt)$y$range$range)
 
 
 ```
-## Fig_S1B
-```{r S1B}
+## Fig_1D
+```{r 1D}
 salmon_quant$analysis_set$ctrl_panc_covid$quant_meta %>% 
   gather(var, value, -sample, -condition, -sex, -context) %>% 
   mutate(value = as.numeric(value),
@@ -630,18 +629,54 @@ tidy_quant_meta.df %>%
   geom_point(position = position_jitter(width = 0.2), size = rel(2), alpha = 1) +
   # scale_shape_manual(values = c(21,25)) +
   ylab('percent mapped') + xlab('') +
-  ggforce::facet_col(~var, scales = 'free_y', strip.position = 'bottom') + 
+  ggforce::facet_row(~var, scales = 'free_y', strip.position = 'bottom') + 
   scale_color_manual(values = identity_color_pal) + 
   theme(legend.position = 'right', legend.justification = 'center') +
   ggpubr::stat_compare_means(comparisons = list(c('panc', 'covid'),
                                                 c('ctrl', 'covid'), 
                                                 c('ctrl', 'panc')), 
-                             method = 'wilcox', size = 2.5, method.args = list(exact =T)) -> mapping_rate_dist.plt
+                             method = 'wilcox.test', size = 2.5, method.args = list(exact =T)) -> mapping_rate_dist.plt
 
-fig.S1B.plt <- mapping_rate_dist.plt
+fig.1D.plt <- mapping_rate_dist.plt
 ```
-## Fig_S1C
-```{r S1C}
+
+### Fig_S1_patchwork
+```{r Fig1}
+import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer, wrap_elements)
+
+
+fig_S1_layout <- "
+AB
+AC
+EE
+DD
+"
+
+wrap_plots(flowchart_wrap_fig1A.plt,
+           fig.1B.plt,
+           fig.1C.plt,
+           fig.1D.plt + coord_cartesian(clip = 'off'),
+           guide_area(),
+           design = fig_S1_layout, 
+           guides = 'collect',
+           heights = c(1,1,0.125,1)) + plot_annotation(tag_levels = 'A') & 
+  theme(plot.tag.position = c(0.01, 0.99), 
+        legend.position = 'bottom',
+        legend.title = element_text(vjust = 1.25),
+        legend.justification = c(0.5, 0.5)) -> fig.S1.patchwork
+
+
+save.manuscript.panel(figure = 1,
+                      figure.dir = figure.dir,
+                      name = 'patchwork_full_fig_S1',
+                      width = figure_double_column_width,
+                      height = figure_depth,
+                      plot.in = fig.S1.patchwork)
+
+
+```
+## Fig_S1B
+```{r S1B}
 
 ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$quant_meta %>% 
   gather(var, value, -sample, -condition, -sex, -context) %>% 
@@ -670,194 +705,6 @@ mapping_rate_compare.df %>%
                              method.args = list(exact = TRUE, paired = T)) -> mapping_rate_compare.plt
 
 fig.S1C.plt <- mapping_rate_compare.plt
-
-```
-### Fig_S1_patchwork
-```{r FigS1}
-import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer, wrap_elements)
-
-
-fig_S1_layout <- "
-AC
-AC
-DC
-BC
-EE
-"
-
-wrap_plots(fig.S1A_1.plt,
-           wrap_elements(full = fig.S1A_2.plt),
-           fig.S1B.plt + coord_cartesian(clip = 'off'),
-           guide_area(),
-           fig.S1C.plt + coord_cartesian(clip = 'off'),
-           design = fig_S1_layout, 
-           guides = 'collect',
-           heights = c(0.75,0.75,0.0825,1,1)) + plot_annotation(tag_levels = 'A') & 
-  theme(plot.tag.position = c(0.01, 0.99), 
-        legend.position = 'bottom',
-        legend.title = element_text(vjust = 1.25),
-        legend.justification = c(0.5, 0.5)) -> fig.S1.patchwork
-
-
-save.manuscript.panel(figure = 1,
-                      figure.dir = figure.dir,
-                      name = 'patchwork_full_fig_S1',
-                      width = figure_double_column_width,
-                      height = figure_depth,
-                      plot.in = fig.S1.patchwork)
-
-
-```
-
-# Fig_S2
-## Fig_S2A
-```{r S2A}
-salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_corr_out.df %>% 
-  group_by(pc) %>% 
-  mutate(pc = paste0('PC', pc)) %>% 
-  filter(!grepl('num', var),
-         ! var %in% c('input_vol', 'age'),
-         grepl('map', var), grepl('percent', var)) %>% 
-  top_n(7, wt = abs(cor)) %>% 
-  mutate(var = ifelse(var == 'salmon_percent_mapped', 'salmon_mapped_percent', var)) %>% 
-  dplyr::rename('gencode' = 'cor') -> salmon_pca_corr_top_7.df
-
-ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_corr_out.df %>% 
-  group_by(pc) %>% 
-  mutate(pc = paste0('PC', pc)) %>%
-  mutate(var = ifelse(var == 'salmon_percent_mapped', 'salmon_mapped_percent', var)) %>% 
-  dplyr::rename('TE-aware' = 'cor') -> ucsc.rmsk.salmon_pca_corr_compare.df
-
-salmon_pca_corr_top_7.df %>% 
-  merge(ucsc.rmsk.salmon_pca_corr_compare.df, by = c('pc', 'var')) %>% 
-  gather(reference, cor, -pc, -var) %>% 
-  filter(reference == 'TE-aware') %>% 
-  ggplot(aes(reorder(var, -abs(cor)),cor, fill = reference)) + 
-  geom_col(color = 'white', position = position_dodge()) +
-  # coord_flip() + 
-  ggforce::facet_col(~pc) + 
-  xlab('') + ylab('correlation between metric and PC (pearson)') + 
-  geom_hline(yintercept = c(-0.5, 0.5), linetype = 'dashed', alpha = 0.4) + 
-  theme(legend.position = 'top', legend.justification = 'center', 
-        axis.text.x = element_text(angle = 60, hjust = 1)) + 
-  scale_fill_manual(values = c('black', 'grey')) -> pca_correlation_top7.plt
-  
-fig.S2A.plt <- pca_correlation_top7.plt
-```
-## Fig_S2B
-```{r S2B}
-salmon_quant$analysis_set$ctrl_panc_covid$quant_meta %>% 
-  gather(var, value, -sample, -condition, -sex, -context) %>% 
-  mutate(value = as.numeric(value),
-         condition = factor(condition, levels = c('panc', 'ctrl', 'covid'))) %>% 
-  filter(var %in% c('age', 'input_vol')) %>% 
-  spread(var, value) %>% 
-  filter(! sample %in% qc_fails) %>% 
-  select(-context, -input_vol) %>% 
-  mutate(num = ifelse(grepl('covid', sample),
-                      row_number(),
-                      str_split_fixed(string = sample, pattern = '[.]', n = 4)[, 2]),
-         old_name = sample,
-         sample = paste0(condition, ' ', num)) -> meta_grob_input_table
-
-meta_grob_input_table %>% 
-  select(-num, -old_name) %>% 
-  gridExtra::tableGrob(theme = gridExtra::ttheme_minimal(base_size = 8,
-                                                         core = list(padding=unit(c(1, 3.25), "mm"))), 
-                       rows = NULL) -> fig.S2B.meta_table.grob
-
-```
-### Fig_S2_patchwork
-```{r Fig1}
-import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer)
-
-
-fig_S2_layout <- "
-AB
-AB
-"
-
-wrap_plots(fig.S2A.plt,
-           patchwork::wrap_elements(full = fig.S2B.meta_table.grob, ignore_tag = F),
-           design = fig_S2_layout, 
-           widths = c(1,1)) + plot_annotation(tag_levels = 'A') -> fig.S2.patchwork
-
-save.manuscript.panel(figure = 2,
-                      figure.dir = figure.dir,
-                      name = 'patchwork_full_fig_S2',
-                      width = figure_double_column_width,
-                      height = figure_depth,
-                      plot.in = fig.S2.patchwork)
-
-
-```
-
-# Fig_S3
-```{r}
-SummarizedExperiment::assay(ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$gxi, 
-                            'counts') %>% as.data.frame() -> ucsc_rmsk_counts
-
-ucsc_rmsk_counts <- ucsc_rmsk_counts[, !colnames(ucsc_rmsk_counts) %in% qc_fails]
-
-ucsc_rmsk_counts %>% 
-  rownames_to_column('gene') %>% 
-  merge(reference_meta_data$ucsc_rmsk_insert_info.df, by = 'gene', all.x = T) %>% 
-  mutate(family = ifelse(gene %in% reference_meta_data$gencode_lncRNA_gene_names.df$ensg,
-                         'gencode_lncRNA', family),
-         family = ifelse(is.na(family), 'gencode_coding', family),
-         clade = ifelse(grepl('gencode', family), family, clade),
-         clade = ifelse(clade %in% c('gencode_coding',
-                                     'gencode_lncRNA',
-                                     'LINE',
-                                     'SINE',
-                                     'LTR',
-                                     'DNA',
-                                     'Simple_repeat'), clade, 'other'),
-         type = ifelse(grepl('gencode',family), 'GENCODE', 'TE'),
-         clade = factor(clade, levels = te_aware_annotation_levels)) %>% 
-    distinct() -> ucsc_rmsk_counts
-
-ucsc_rmsk_counts %>% 
-  pivot_longer(cols = panc.1.2.3:ctrl.9.1.2, names_to = 'sample', values_to = 'count') %>% 
-  mutate(condition = case_when(grepl('panc', sample) ~ 'panc',
-                               grepl('covid', sample) ~ 'covid',
-                               grepl('ctrl', sample) ~ 'ctrl')) %>% 
-  group_by(sample, clade, condition) %>% 
-  filter(count >= 5) %>% 
-  summarize(count = n()) -> ucsc_rmsk_biotype_summary
-
-
-ucsc_rmsk_biotype_summary %>% 
-  group_by(clade) %>% 
-  filter(!grepl('\\?', clade)) %>% 
-  ggplot(aes(condition, count, color = condition)) + 
-  geom_boxplot(fill = NA, outlier.colour = NA) + 
-  geom_jitter(width = 0.25) +
-  ylab('detected genes/elements') + 
-  xlab('') +
-  scale_color_manual(values = identity_color_pal) + 
-  facet_wrap(~clade, scales = 'free_y', ncol = 2, strip.position = 'bottom') +
-  coord_cartesian(clip = 'off') +
-  ggpubr::stat_compare_means(method = 'wilcox', 
-                             comparisons = list(c('covid', 'ctrl'), c('panc', 'ctrl')),
-                             size = txt.mm_to_pts(1)) +
-  theme(axis.text.x = element_text(angle = 40, hjust = 1),
-        legend.position = 'bottom', legend.direction = 'horizontal') -> biotype_count_fig_S3
-
-
-```
-### Fig_S3_patchwork
-```{r}
-import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer, wrap_elements)
-
-wrap_plots(biotype_count_fig_S3) + plot_annotation(tag_levels = 'A') -> patchwork_fig_S3
-
-save.manuscript.panel(figure = 3,
-                      figure.dir = figure.dir,
-                      name = 'patchwork_full_biotype_tx_S3',
-                      width = figure_double_column_width,
-                      height = figure_depth,
-                      plot.in = patchwork_fig_S3)
 
 ```
 
@@ -1093,6 +940,160 @@ save.manuscript.panel(figure = 2,
 ```
 
 # Fig_S2
+## Fig_S2A
+```{r S2A}
+salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_corr_out.df %>% 
+  group_by(pc) %>% 
+  mutate(pc = paste0('PC', pc)) %>% 
+  filter(!grepl('num', var),
+         ! var %in% c('input_vol', 'age'),
+         grepl('map', var), grepl('percent', var)) %>% 
+  top_n(7, wt = abs(cor)) %>% 
+  mutate(var = ifelse(var == 'salmon_percent_mapped', 'salmon_mapped_percent', var)) %>% 
+  dplyr::rename('gencode' = 'cor') -> salmon_pca_corr_top_7.df
+
+ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_corr_out.df %>% 
+  group_by(pc) %>% 
+  mutate(pc = paste0('PC', pc)) %>%
+  mutate(var = ifelse(var == 'salmon_percent_mapped', 'salmon_mapped_percent', var)) %>% 
+  dplyr::rename('TE-aware' = 'cor') -> ucsc.rmsk.salmon_pca_corr_compare.df
+
+salmon_pca_corr_top_7.df %>% 
+  merge(ucsc.rmsk.salmon_pca_corr_compare.df, by = c('pc', 'var')) %>% 
+  gather(reference, cor, -pc, -var) %>% 
+  filter(reference == 'TE-aware') %>% 
+  ggplot(aes(reorder(var, -abs(cor)),cor, fill = reference)) + 
+  geom_col(color = 'white', position = position_dodge()) +
+  # coord_flip() + 
+  ggforce::facet_col(~pc) + 
+  xlab('') + ylab('correlation between metric and PC (pearson)') + 
+  geom_hline(yintercept = c(-0.5, 0.5), linetype = 'dashed', alpha = 0.4) + 
+  theme(legend.position = 'top', legend.justification = 'center', 
+        axis.text.x = element_text(angle = 60, hjust = 1)) + 
+  scale_fill_manual(values = c('black', 'grey')) -> pca_correlation_top7.plt
+  
+fig.S2A.plt <- pca_correlation_top7.plt
+```
+## Fig_S2B
+```{r S2B}
+salmon_quant$analysis_set$ctrl_panc_covid$quant_meta %>% 
+  gather(var, value, -sample, -condition, -sex, -context) %>% 
+  mutate(value = as.numeric(value),
+         condition = factor(condition, levels = c('panc', 'ctrl', 'covid'))) %>% 
+  filter(var %in% c('age', 'input_vol')) %>% 
+  spread(var, value) %>% 
+  filter(! sample %in% qc_fails) %>% 
+  select(-context, -input_vol) %>% 
+  mutate(num = ifelse(grepl('covid', sample),
+                      row_number(),
+                      str_split_fixed(string = sample, pattern = '[.]', n = 4)[, 2]),
+         old_name = sample,
+         sample = paste0(condition, ' ', num)) -> meta_grob_input_table
+
+meta_grob_input_table %>% 
+  select(-num, -old_name) %>% 
+  gridExtra::tableGrob(theme = gridExtra::ttheme_minimal(base_size = 8,
+                                                         core = list(padding=unit(c(1, 3.25), "mm"))), 
+                       rows = NULL) -> fig.S2B.meta_table.grob
+
+```
+### Fig_S2_patchwork
+```{r Fig1}
+import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer)
+
+
+fig_S2_layout <- "
+AB
+AB
+"
+
+wrap_plots(fig.S2A.plt,
+           patchwork::wrap_elements(full = fig.S2B.meta_table.grob, ignore_tag = F),
+           design = fig_S2_layout, 
+           widths = c(1,1)) + plot_annotation(tag_levels = 'A') -> fig.S2.patchwork
+
+save.manuscript.panel(figure = 2,
+                      figure.dir = figure.dir,
+                      name = 'patchwork_full_fig_S2',
+                      width = figure_double_column_width,
+                      height = figure_depth,
+                      plot.in = fig.S2.patchwork)
+
+
+```
+
+# Fig_S3
+```{r}
+SummarizedExperiment::assay(ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$gxi, 
+                            'counts') %>% as.data.frame() -> ucsc_rmsk_counts
+
+ucsc_rmsk_counts <- ucsc_rmsk_counts[, !colnames(ucsc_rmsk_counts) %in% qc_fails]
+
+ucsc_rmsk_counts %>% 
+  rownames_to_column('gene') %>% 
+  merge(reference_meta_data$ucsc_rmsk_insert_info.df, by = 'gene', all.x = T) %>% 
+  mutate(family = ifelse(gene %in% reference_meta_data$gencode_lncRNA_gene_names.df$ensg,
+                         'gencode_lncRNA', family),
+         family = ifelse(is.na(family), 'gencode_coding', family),
+         clade = ifelse(grepl('gencode', family), family, clade),
+         clade = ifelse(clade %in% c('gencode_coding',
+                                     'gencode_lncRNA',
+                                     'LINE',
+                                     'SINE',
+                                     'LTR',
+                                     'DNA',
+                                     'Simple_repeat'), clade, 'other'),
+         type = ifelse(grepl('gencode',family), 'GENCODE', 'TE'),
+         clade = factor(clade, levels = te_aware_annotation_levels)) %>% 
+    distinct() -> ucsc_rmsk_counts
+
+ucsc_rmsk_counts %>% 
+  pivot_longer(cols = panc.1.2.3:ctrl.9.1.2, names_to = 'sample', values_to = 'count') %>% 
+  mutate(condition = case_when(grepl('panc', sample) ~ 'panc',
+                               grepl('covid', sample) ~ 'covid',
+                               grepl('ctrl', sample) ~ 'ctrl')) %>% 
+  group_by(sample, clade, condition) %>% 
+  filter(count >= 5) %>% 
+  summarize(count = n()) -> ucsc_rmsk_biotype_summary
+
+
+ucsc_rmsk_biotype_summary %>% 
+  group_by(clade) %>% 
+  filter(!grepl('\\?', clade)) %>% 
+  ggplot(aes(condition, count, color = condition)) + 
+  geom_boxplot(fill = NA, outlier.colour = NA) + 
+  geom_jitter(width = 0.25) +
+  ylab('detected genes/elements') + 
+  xlab('') +
+  scale_color_manual(values = identity_color_pal) + 
+  facet_wrap(~clade, scales = 'free_y', ncol = 2, strip.position = 'bottom') +
+  coord_cartesian(clip = 'off') +
+  ggpubr::stat_compare_means(method = 'wilcox', 
+                             comparisons = list(c('covid', 'ctrl'), c('panc', 'ctrl')),
+                             size = txt.mm_to_pts(1)) +
+  theme(axis.text.x = element_text(angle = 40, hjust = 1),
+        legend.position = 'bottom', legend.direction = 'horizontal') -> biotype_count_fig_S3
+
+
+```
+### Fig_S3_patchwork
+```{r}
+import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer, wrap_elements)
+
+wrap_plots(biotype_count_fig_S3) + plot_annotation(tag_levels = 'A') -> patchwork_fig_S3
+
+save.manuscript.panel(figure = 3,
+                      figure.dir = figure.dir,
+                      name = 'patchwork_full_biotype_tx_S3',
+                      width = figure_double_column_width,
+                      height = figure_depth,
+                      plot.in = patchwork_fig_S3)
+
+```
+
+
+
+# Fig_S4
 ## Fig_S2A
 ```{r}
 bind_rows(list('panc' = salmon_quant$analysis_set$ctrl_panc_covid$deseq$fgsea$panc_v_ctrl,

@@ -603,7 +603,7 @@ fig.1B.plt <-
   
 fig.1C.plt <- 
   ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_2v3.plt +
-  annotate(geom = 'text', x = 200, y = -175, label = 'Repeat-aware', size = txt.mm_to_pts(1.25))
+  annotate(geom = 'text', x = 125, y = -175, label = 'Repeat-aware', size = txt.mm_to_pts(1.25))
 
 
 ```
@@ -675,7 +675,7 @@ save.manuscript.panel(figure = 1,
 
 # Fig_S1
 ## Fig_S1A
-```{r S1B}
+```{r S1A}
 salmon_quant$analysis_set$ctrl_panc_covid$quant_meta %>% 
   gather(var, value, -sample, -condition, -sex, -context) %>% 
   mutate(value = as.numeric(value),
@@ -708,7 +708,7 @@ fig.S1A.plt <- mapping_rate_dist.plt
 
 ```
 ## Fig_S1B
-```{r}
+```{r S1B}
 s1_flow_chart.plt <- magick::image_read_pdf(path = file.path(figure.dir, 'fig.1', 'complete-seq-diagram-no-process.pdf'))
 flowchart_wrap_figS1B.plt <- wrap_elements(full = magick::image_ggplot(s1_flow_chart.plt))
 ```
@@ -991,12 +991,12 @@ ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_corr_out.df %>
   group_by(pc) %>% 
   mutate(pc = paste0('PC', pc)) %>%
   mutate(var = ifelse(var == 'salmon_percent_mapped', 'salmon_mapped_percent', var)) %>% 
-  dplyr::rename('TE-aware' = 'cor') -> ucsc.rmsk.salmon_pca_corr_compare.df
+  dplyr::rename('Repeat-aware' = 'cor') -> ucsc.rmsk.salmon_pca_corr_compare.df
 
 salmon_pca_corr_top_7.df %>% 
   merge(ucsc.rmsk.salmon_pca_corr_compare.df, by = c('pc', 'var')) %>% 
   gather(reference, cor, -pc, -var) %>% 
-  filter(reference == 'TE-aware') %>% 
+  filter(reference == 'Repeat-aware') %>% 
   ggplot(aes(reorder(var, -abs(cor)),cor, fill = reference)) + 
   geom_col(color = 'white', position = position_dodge()) +
   # coord_flip() + 
@@ -1055,6 +1055,477 @@ save.manuscript.panel(figure = 2,
                       plot.in = fig.S2.patchwork)
 
 
+```
+
+# Fig_3
+## Fig_TCGA_Surv_plt
+```{r 3 prep}
+library(survminer)
+library(survival)
+library(viridis)
+tcga_paad_gene_counts %>% 
+  column_to_rownames('gene') %>% as.matrix() %>% t() -> tcga_paad_te_counts
+
+tcga_paad_meta_data <- tibble('sample' = rownames(tcga_paad_te_counts), 
+                              'condition' = ifelse(grepl('PAAD', sample), 'PAAD', 'GTEx'))
+
+t(tcga_paad_te_counts) %>% 
+  as.data.frame() %>%
+  mutate(across(where(is.numeric), ~round(.x))) -> tcga_paad_te_count_data_for_DEseq
+
+tcga_de_dds <- DESeq2::DESeqDataSetFromMatrix(countData = tcga_paad_te_count_data_for_DEseq, 
+                                              colData = tcga_paad_meta_data, 
+                                              design = as.formula('~1'), tidy = F)
+
+tcga_de_dds <- DESeq2::estimateSizeFactors(tcga_de_dds)
+
+tcga_paad_dds_norm_counts.df <- as.data.frame(DESeq2::counts(tcga_de_dds, normalized=T))
+
+tcga_colData %>% 
+  filter(submitter_id.samples %in% colnames(tcga_paad_dds_norm_counts.df)) %>% 
+  select('sample' = submitter_id.samples, 'type' = sample_type.samples) %>% 
+  filter(type == 'Primary Tumor') %>% 
+  mutate(patient = str_replace_all(string = sample, 
+                                   pattern = '-TP', replacement = ''),
+         patient = str_replace_all(string = patient,
+                                   pattern = 'PAAD-',
+                                   replacement = 'TCGA-')) -> tcga_primary_tumors
+```
+### UP Surv
+```{r 3A}
+tcga_padd_stratified_counts <-
+  tcga_paad_dds_norm_counts.df %>%
+  t() %>% as.data.frame()
+
+tcga_padd_stratified_counts %>% 
+  rownames_to_column('sample') %>% 
+  filter(sample %in% tcga_primary_tumors$sample) %>% 
+  gather(gene, count, -sample) %>% 
+  filter(gene %in% filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
+                          padj < 0.05, log2FoldChange > 0.75)$gene) %>% 
+  filter(!gene %in% reference_meta_data$ucsc_rmsk_insert_info.df$gene) %>%
+  select(sample, count) %>% 
+  group_by(sample) %>%
+  summarize(avg.count = mean(count)) %>%
+  mutate(gene.set = 'panc_exRNA_signal') %>%
+  group_by(gene.set) %>%
+  mutate(stratum = ifelse(avg.count >= quantile(avg.count, 0.66),
+                          'top-third', ifelse(avg.count <= quantile(avg.count, 0.33),
+                                              'bottom-third', 'middle'))) %>%
+  filter(stratum != 'middle') %>%
+  spread(gene.set, stratum) -> tcga_paad_stratified_counts
+
+paad_survival <- read_tsv(file.path(output_data.dir, 'tcga_gtex', 'PAAD_survival.txt'))
+
+paad_tcga_pheno_merge <- 
+  tcga_primary_tumors %>% merge(paad_survival, by.x = 'patient', by.y = '_PATIENT')
+
+surv.obj <- Surv(time = filter(paad_tcga_pheno_merge %>% select(sample.x, OS.time, OS) %>% distinct(), 
+                               sample.x %in% tcga_paad_stratified_counts$sample)$OS.time,
+                 event = filter(paad_tcga_pheno_merge %>% select(sample.x, OS.time, OS) %>% distinct(), 
+                                sample.x %in% tcga_paad_stratified_counts$sample)$OS)
+
+surv.fit <- survfit(as.formula(surv.obj ~ panc_exRNA_signal), 
+                    data = tcga_paad_stratified_counts)
+ggsurvplot(surv.fit, 
+           ylab = 'Overall Survival Probability',
+           xlab = 'Overall Survival Time -- days',
+           pval = T, 
+           legend.title = "",
+           ggtheme = theme_set_fun() + theme(legend.position = c(0.45,0.95)),
+           pval.coord = c(0, 0.08),
+           palette = viridis(3)[c(2,1)]) -> surv.plt
+
+paste0('panc gencode up \n (n genes = ',filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
+                        padj < 0.05, log2FoldChange > 0.75) %>% 
+  filter(!gene %in% reference_meta_data$ucsc_rmsk_insert_info.df$gene) %>% nrow(), ')') -> km_title
+
+surv.plt$plot + ggtitle(km_title) -> plt_surv_A.plt
+
+filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
+                        padj < 0.05, log2FoldChange > 0.75) %>% 
+  filter(!gene %in% reference_meta_data$ucsc_rmsk_insert_info.df$gene) %>% 
+  top_n(wt =-padj, 10) %>% 
+  arrange(padj) %>% 
+  select(gene, baseMean, log2FoldChange, padj) -> panc_up_km_table
+
+panc_up_km_table %>% 
+  gridExtra::tableGrob(theme = gridExtra::ttheme_minimal(base_size = 8,
+                                                         core = list(padding=unit(c(1, 2.5), "mm"))), 
+                       rows = NULL) -> plt_surv_A.tbl
+
+  
+```
+### DN Surv
+```{r}
+tcga_padd_stratified_counts <-
+  tcga_paad_dds_norm_counts.df %>%
+  t() %>% as.data.frame()
+
+tcga_padd_stratified_counts %>% 
+  rownames_to_column('sample') %>% 
+  filter(sample %in% tcga_primary_tumors$sample) %>% 
+  gather(gene, count, -sample) %>% 
+  filter(gene %in% filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
+                          padj < 0.05, log2FoldChange < -0.75)$gene) %>% 
+  filter(!gene %in% reference_meta_data$ucsc_rmsk_insert_info.df$gene) %>%
+  select(sample, count) %>% 
+  group_by(sample) %>%
+  summarize(avg.count = mean(count)) %>%
+  mutate(gene.set = 'panc_exRNA_signal') %>%
+  group_by(gene.set) %>%
+  mutate(stratum = ifelse(avg.count >= quantile(avg.count, 0.66),
+                          'top-third', ifelse(avg.count <= quantile(avg.count, 0.33),
+                                              'bottom-third', 'middle'))) %>%
+  filter(stratum != 'middle') %>%
+  spread(gene.set, stratum) -> tcga_paad_stratified_counts
+
+paad_survival <- read_tsv(file.path(output_data.dir, 'tcga_gtex', 'PAAD_survival.txt'))
+
+paad_tcga_pheno_merge <- 
+  tcga_primary_tumors %>% merge(paad_survival, by.x = 'patient', by.y = '_PATIENT')
+
+surv.obj <- Surv(time = filter(paad_tcga_pheno_merge %>% select(sample.x, OS.time, OS) %>% distinct(), 
+                               sample.x %in% tcga_paad_stratified_counts$sample)$OS.time,
+                 event = filter(paad_tcga_pheno_merge %>% select(sample.x, OS.time, OS) %>% distinct(), 
+                                sample.x %in% tcga_paad_stratified_counts$sample)$OS)
+
+surv.fit <- survfit(as.formula(surv.obj ~ panc_exRNA_signal), 
+                    data = tcga_paad_stratified_counts)
+ggsurvplot(surv.fit, 
+           ylab = 'Overall Survival Probability',
+           xlab = 'Overall Survival Time -- days',
+           pval = T, 
+           legend.title = "", 
+           ggtheme = theme_set_fun() + theme(legend.position = c(0.45,0.95)),
+           pval.coord = c(0, 0.08),
+           palette = viridis(3)[c(2,1)]) -> surv.plt
+
+surv.plt$plot + ggtitle('panc gencode down') -> plt_surv_B.plt
+```
+### DN lncRNA
+```{r}
+reference_meta_data$gencode_lncRNA_gene_names.df %>% 
+  select(-biotype) %>% 
+  merge(reference_meta_data$total_tx_to_gene.df, by ='ensg') -> lncRNA_tx_to_gene
+
+tcga_padd_stratified_counts <-
+  tcga_paad_dds_norm_counts.df %>%
+  t() %>% as.data.frame()
+
+tcga_padd_stratified_counts %>% 
+  rownames_to_column('sample') %>% 
+  filter(sample %in% tcga_primary_tumors$sample) %>% 
+  gather(gene, count, -sample) %>% 
+  filter(gene %in% filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
+                          padj < 0.05, log2FoldChange < -1)$gene) %>% 
+  filter(gene %in% lncRNA_tx_to_gene$gene) %>%
+  select(sample, count) %>% 
+  group_by(sample) %>%
+  summarize(avg.count = mean(count)) %>%
+  mutate(gene.set = 'panc_exRNA_signal') %>%
+  group_by(gene.set) %>%
+  mutate(stratum = ifelse(avg.count >= quantile(avg.count, 0.66),
+                          'top-third', ifelse(avg.count <= quantile(avg.count, 0.33),
+                                              'bottom-third', 'middle'))) %>%
+  filter(stratum != 'middle') %>%
+  spread(gene.set, stratum) -> tcga_paad_stratified_counts
+
+paad_survival <- read_tsv(file.path(output_data.dir, 'tcga_gtex', 'PAAD_survival.txt'))
+
+paad_tcga_pheno_merge <- 
+  tcga_primary_tumors %>% merge(paad_survival, by.x = 'patient', by.y = '_PATIENT')
+
+surv.obj <- Surv(time = filter(paad_tcga_pheno_merge %>% select(sample.x, OS.time, OS) %>% distinct(), 
+                               sample.x %in% tcga_paad_stratified_counts$sample)$OS.time,
+                 event = filter(paad_tcga_pheno_merge %>% select(sample.x, OS.time, OS) %>% distinct(), 
+                                sample.x %in% tcga_paad_stratified_counts$sample)$OS)
+
+surv.fit <- survfit(as.formula(surv.obj ~ panc_exRNA_signal), 
+                    data = tcga_paad_stratified_counts)
+ggsurvplot(surv.fit, 
+           ylab = 'Overall Survival Probability',
+           xlab = 'Overall Survival Time -- days',
+           pval = T, 
+           legend.title = "", 
+           ggtheme = theme_set_fun() + theme(legend.position = c(0.45,0.95)),
+           pval.coord = c(0, 0.08),
+           palette = viridis(3)[c(2,1)]) -> surv.plt
+
+surv.plt$plot + ggtitle('panc lncRNA down') -> plt_surv_C.plt
+```
+### DN TEs
+```{r}
+tcga_padd_stratified_counts <-
+  tcga_paad_dds_norm_counts.df %>%
+  t() %>% as.data.frame()
+
+tcga_padd_stratified_counts %>% 
+  rownames_to_column('sample') %>% 
+  filter(sample %in% tcga_primary_tumors$sample) %>% 
+  gather(gene, count, -sample) %>% 
+  filter(gene %in% filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
+                          padj < 0.05, log2FoldChange < -1)$gene) %>% 
+  filter(gene %in% reference_meta_data$ucsc_rmsk_insert_info.df$gene) %>%
+  select(sample, count) %>% 
+  group_by(sample) %>%
+  summarize(avg.count = mean(count)) %>%
+  mutate(gene.set = 'panc_exRNA_signal') %>%
+  group_by(gene.set) %>%
+  mutate(stratum = ifelse(avg.count >= quantile(avg.count, 0.66),
+                          'top-third', ifelse(avg.count <= quantile(avg.count, 0.33),
+                                              'bottom-third', 'middle'))) %>%
+  filter(stratum != 'middle') %>%
+  spread(gene.set, stratum) -> tcga_paad_stratified_counts
+
+paad_survival <- read_tsv(file.path(output_data.dir, 'tcga_gtex', 'PAAD_survival.txt'))
+
+paad_tcga_pheno_merge <- 
+  tcga_primary_tumors %>% merge(paad_survival, by.x = 'patient', by.y = '_PATIENT')
+
+surv.obj <- Surv(time = filter(paad_tcga_pheno_merge %>% select(sample.x, OS.time, OS) %>% distinct(), 
+                               sample.x %in% tcga_paad_stratified_counts$sample)$OS.time,
+                 event = filter(paad_tcga_pheno_merge %>% select(sample.x, OS.time, OS) %>% distinct(), 
+                                sample.x %in% tcga_paad_stratified_counts$sample)$OS)
+
+surv.fit <- survfit(as.formula(surv.obj ~ panc_exRNA_signal), 
+                    data = tcga_paad_stratified_counts)
+ggsurvplot(surv.fit, 
+           ylab = 'Overall Survival Probability',
+           xlab = 'Overall Survival Time -- days',
+           pval = T, 
+           legend.title = "", 
+           ggtheme = theme_set_fun() + theme(legend.position = c(0.45,0.95)),
+           pval.coord = c(0, 0.08),
+           palette = viridis(3)[c(2,1)]) -> surv.plt
+
+paste0('panc TE down \n (n genes = ',filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
+                          padj < 0.05, log2FoldChange < -1) %>% 
+  filter(gene %in% reference_meta_data$ucsc_rmsk_insert_info.df$gene) %>% nrow(), ')') -> km_title
+
+surv.plt$plot + ggtitle(km_title) -> plt_surv_D.plt
+
+filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
+                          padj < 0.05, log2FoldChange < -1) %>% 
+  filter(gene %in% reference_meta_data$ucsc_rmsk_insert_info.df$gene) %>%
+  top_n(wt =-padj, 10) %>% 
+  arrange(padj) %>% 
+  select(gene, baseMean, log2FoldChange, padj) -> panc_dn_TE_km_table
+
+panc_dn_TE_km_table %>% 
+  gridExtra::tableGrob(theme = gridExtra::ttheme_minimal(base_size = 8,
+                                                         core = list(padding=unit(c(1, 2.5), "mm"))), 
+                       rows = NULL) -> plt_surv_D.tbl
+```
+### UP TEs
+```{r}
+tcga_padd_stratified_counts <-
+  tcga_paad_dds_norm_counts.df %>%
+  t() %>% as.data.frame()
+
+tcga_padd_stratified_counts %>% 
+  rownames_to_column('sample') %>% 
+  filter(sample %in% tcga_primary_tumors$sample) %>% 
+  gather(gene, count, -sample) %>% 
+  filter(gene %in% filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
+                          padj < 0.05, log2FoldChange > 0.5)$gene) %>% 
+  filter(gene %in% reference_meta_data$ucsc_rmsk_insert_info.df$gene) %>%
+  select(sample, count) %>% 
+  group_by(sample) %>%
+  summarize(avg.count = mean(count)) %>%
+  mutate(gene.set = 'panc_exRNA_signal') %>%
+  group_by(gene.set) %>%
+  mutate(stratum = ifelse(avg.count >= quantile(avg.count, 0.66),
+                          'top-third', ifelse(avg.count <= quantile(avg.count, 0.33),
+                                              'bottom-third', 'middle'))) %>%
+  filter(stratum != 'middle') %>%
+  spread(gene.set, stratum) -> tcga_paad_stratified_counts
+
+paad_survival <- read_tsv(file.path(output_data.dir, 'tcga_gtex', 'PAAD_survival.txt'))
+
+paad_tcga_pheno_merge <- 
+  tcga_primary_tumors %>% merge(paad_survival, by.x = 'patient', by.y = '_PATIENT')
+
+surv.obj <- Surv(time = filter(paad_tcga_pheno_merge %>% select(sample.x, OS.time, OS) %>% distinct(), 
+                               sample.x %in% tcga_paad_stratified_counts$sample)$OS.time,
+                 event = filter(paad_tcga_pheno_merge %>% select(sample.x, OS.time, OS) %>% distinct(), 
+                                sample.x %in% tcga_paad_stratified_counts$sample)$OS)
+
+surv.fit <- survfit(as.formula(surv.obj ~ panc_exRNA_signal), 
+                    data = tcga_paad_stratified_counts)
+ggsurvplot(surv.fit, 
+           ylab = 'Overall Survival Probability',
+           xlab = 'Overall Survival Time -- days',
+           pval = T, 
+           legend.title = "", 
+           ggtheme = theme_set_fun() + theme(legend.position = c(0.45,0.95)),
+           pval.coord = c(0, 0.08),
+           palette = viridis(3)[c(2,1)]) -> surv.plt
+
+surv.plt$plot + ggtitle('panc TE up') -> plt_surv_E.plt
+```
+### OX PHOS
+```{r}
+tcga_padd_stratified_counts <-
+  tcga_paad_dds_norm_counts.df %>%
+  t() %>% as.data.frame()
+
+tcga_padd_stratified_counts %>% 
+  rownames_to_column('sample') %>% 
+  filter(sample %in% tcga_primary_tumors$sample) %>% 
+  gather(gene, count, -sample) %>% 
+  filter(gene %in% filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
+                          padj < 0.05, log2FoldChange > 0.75)$gene) %>%
+  filter(gene %in% msig.df$HALLMARK_OXIDATIVE_PHOSPHORYLATION) %>%
+  select(sample, count) %>% 
+  group_by(sample) %>%
+  summarize(avg.count = mean(count)) %>%
+  mutate(gene.set = 'panc_exRNA_signal') %>%
+  group_by(gene.set) %>%
+  mutate(stratum = ifelse(avg.count >= quantile(avg.count, 0.66),
+                          'top-third', ifelse(avg.count <= quantile(avg.count, 0.33),
+                                              'bottom-third', 'middle'))) %>%
+  filter(stratum != 'middle') %>%
+  spread(gene.set, stratum) -> tcga_paad_stratified_counts
+
+paad_survival <- read_tsv(file.path(output_data.dir, 'tcga_gtex', 'PAAD_survival.txt'))
+
+paad_tcga_pheno_merge <- 
+  tcga_primary_tumors %>% merge(paad_survival, by.x = 'patient', by.y = '_PATIENT')
+
+surv.obj <- Surv(time = filter(paad_tcga_pheno_merge %>% select(sample.x, OS.time, OS) %>% distinct(), 
+                               sample.x %in% tcga_paad_stratified_counts$sample)$OS.time,
+                 event = filter(paad_tcga_pheno_merge %>% select(sample.x, OS.time, OS) %>% distinct(), 
+                                sample.x %in% tcga_paad_stratified_counts$sample)$OS)
+
+surv.fit <- survfit(as.formula(surv.obj ~ panc_exRNA_signal), 
+                    data = tcga_paad_stratified_counts)
+ggsurvplot(surv.fit,
+           ylab = 'Overall Survival Probability',
+           xlab = 'Overall Survival Time -- days',
+           pval = T, 
+           legend.title = "", 
+           ggtheme = theme_set_fun() + theme(legend.position = c(0.45,0.95)),
+           pval.coord = c(0, 0.08),
+           palette = viridis(3)[c(2,1)]) -> surv.plt
+
+paste0('Ox. Phos \n (n genes = ',filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
+                          padj < 0.05, log2FoldChange > 0.75) %>%
+  filter(gene %in% msig.df$HALLMARK_OXIDATIVE_PHOSPHORYLATION) %>% nrow(), ')') -> km_title
+
+surv.plt$plot + ggtitle(km_title) -> plt_surv_F.plt
+
+filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
+                          padj < 0.05, log2FoldChange > 0.75) %>%
+  filter(gene %in% msig.df$HALLMARK_OXIDATIVE_PHOSPHORYLATION) %>%
+  top_n(wt =-padj, 10) %>% 
+  arrange(padj) %>% 
+  select(gene, baseMean, log2FoldChange, padj) -> panc_OX_km_table
+
+panc_OX_km_table %>% 
+  gridExtra::tableGrob(theme = gridExtra::ttheme_minimal(base_size = 8,
+                                                         core = list(padding=unit(c(1, 2.5), "mm"))), 
+                       rows = NULL) -> plt_surv_F.tbl
+```
+### MYC
+```{r}
+tcga_padd_stratified_counts <-
+  tcga_paad_dds_norm_counts.df %>%
+  t() %>% as.data.frame()
+
+tcga_padd_stratified_counts %>% 
+  rownames_to_column('sample') %>% 
+  filter(sample %in% tcga_primary_tumors$sample) %>% 
+  gather(gene, count, -sample) %>% 
+  filter(gene %in% filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
+                          padj < 0.05, log2FoldChange > 0.75)$gene) %>%
+  filter(gene %in% msig.df$HALLMARK_MYC_TARGETS_V1) %>%
+  select(sample, count) %>% 
+  group_by(sample) %>%
+  summarize(avg.count = mean(count)) %>%
+  mutate(gene.set = 'panc_exRNA_signal') %>%
+  group_by(gene.set) %>%
+  mutate(stratum = ifelse(avg.count >= quantile(avg.count, 0.66),
+                          'top-third', ifelse(avg.count <= quantile(avg.count, 0.33),
+                                              'bottom-third', 'middle'))) %>%
+  filter(stratum != 'middle') %>%
+  spread(gene.set, stratum) -> tcga_paad_stratified_counts
+
+paad_survival <- read_tsv(file.path(output_data.dir, 'tcga_gtex', 'PAAD_survival.txt'))
+
+paad_tcga_pheno_merge <- 
+  tcga_primary_tumors %>% merge(paad_survival, by.x = 'patient', by.y = '_PATIENT')
+
+surv.obj <- Surv(time = filter(paad_tcga_pheno_merge %>% select(sample.x, OS.time, OS) %>% distinct(), 
+                               sample.x %in% tcga_paad_stratified_counts$sample)$OS.time,
+                 event = filter(paad_tcga_pheno_merge %>% select(sample.x, OS.time, OS) %>% distinct(), 
+                                sample.x %in% tcga_paad_stratified_counts$sample)$OS)
+
+surv.fit <- survfit(as.formula(surv.obj ~ panc_exRNA_signal), 
+                    data = tcga_paad_stratified_counts)
+ggsurvplot(surv.fit, 
+           ylab = 'Overall Survival Probability',
+           xlab = 'Overall Survival Time -- days',
+           pval = T, 
+           legend.title = "", 
+           ggtheme = theme_set_fun() + theme(legend.position = c(0.45,0.95)),
+           pval.coord = c(0, 0.08),
+           palette = viridis(3)[c(2,1)]) -> surv.plt
+
+paste0('MYC Targets \n (n genes = ',filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
+                          padj < 0.05, log2FoldChange > 0.75) %>%
+  filter(gene %in% msig.df$HALLMARK_MYC_TARGETS_V1) %>% nrow(), ')') -> km_title
+
+surv.plt$plot + ggtitle(km_title) -> plt_surv_G.plt
+
+filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
+                          padj < 0.05, log2FoldChange > 0.75) %>%
+  filter(gene %in% msig.df$HALLMARK_MYC_TARGETS_V1) %>%
+  top_n(wt =-padj, 10) %>% 
+  arrange(padj) %>% 
+  select(gene, baseMean, log2FoldChange, padj) -> panc_MYC_km_table
+
+panc_MYC_km_table %>% 
+  gridExtra::tableGrob(theme = gridExtra::ttheme_minimal(base_size = 8,
+                                                         core = list(padding=unit(c(1, 2.5), "mm"))), 
+                       rows = NULL) -> plt_surv_G.tbl
+```
+### plt_surv_patchwork
+```{r}
+import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer, wrap_elements)
+
+fig_surv_layout <- "
+AC
+BB
+DE
+FG
+HI
+"
+
+wrap_plots(plt_surv_F.plt,
+           guide_area(),
+           patchwork::wrap_elements(full = plt_surv_F.tbl, ignore_tag = F),
+           plt_surv_G.plt,
+           patchwork::wrap_elements(full = plt_surv_G.tbl, ignore_tag = F),
+           plt_surv_A.plt,
+           patchwork::wrap_elements(full = plt_surv_A.tbl, ignore_tag = F),
+           plt_surv_D.plt,
+           patchwork::wrap_elements(full = plt_surv_D.tbl, ignore_tag = F),
+           heights = c(1,0.095,1,1,1,1,1),
+           guides = 'collect',
+           design = fig_surv_layout) +
+  plot_annotation(tag_levels = 'A') &
+  theme(plot.tag.position = c(0.01, 0.99), 
+        legend.position = 'bottom',
+        legend.title = element_text(vjust = 0.5),
+        legend.justification = c(0.5, 0.5)) -> fig.surv.patchwork
+
+save.manuscript.panel(figure = 3,
+                      figure.dir = figure.dir,
+                      name = 'patchwork_full_fig_surv',
+                      width = figure_double_column_width,
+                      height = figure_depth,
+                      plot.in = fig.surv.patchwork)
 ```
 
 # Fig_S3
@@ -2384,6 +2855,7 @@ unsplice_counts_pca.df %>%
   merge(reference_meta_data$gencode_tx_to_gene.df %>% select(ensg, gene) %>% distinct(), by = 'ensg')
 
 ```
+
 # Fig_modeling
 ## Fig_Modeling -- multi_te
 ```{r}
@@ -3500,475 +3972,7 @@ pca.out %>%
   
 ```
 
-# Fig_TCGA_Surv_plt
-```{r}
-library(survminer)
-library(survival)
-library(viridis)
-tcga_paad_gene_counts %>% 
-  column_to_rownames('gene') %>% as.matrix() %>% t() -> tcga_paad_te_counts
 
-tcga_paad_meta_data <- tibble('sample' = rownames(tcga_paad_te_counts), 
-                              'condition' = ifelse(grepl('PAAD', sample), 'PAAD', 'GTEx'))
-
-t(tcga_paad_te_counts) %>% 
-  as.data.frame() %>%
-  mutate(across(where(is.numeric), ~round(.x))) -> tcga_paad_te_count_data_for_DEseq
-
-tcga_de_dds <- DESeq2::DESeqDataSetFromMatrix(countData = tcga_paad_te_count_data_for_DEseq, 
-                                              colData = tcga_paad_meta_data, 
-                                              design = as.formula('~1'), tidy = F)
-
-tcga_de_dds <- DESeq2::estimateSizeFactors(tcga_de_dds)
-
-tcga_paad_dds_norm_counts.df <- as.data.frame(DESeq2::counts(tcga_de_dds, normalized=T))
-
-tcga_colData %>% 
-  filter(submitter_id.samples %in% colnames(tcga_paad_dds_norm_counts.df)) %>% 
-  select('sample' = submitter_id.samples, 'type' = sample_type.samples) %>% 
-  filter(type == 'Primary Tumor') %>% 
-  mutate(patient = str_replace_all(string = sample, 
-                                   pattern = '-TP', replacement = ''),
-         patient = str_replace_all(string = patient,
-                                   pattern = 'PAAD-',
-                                   replacement = 'TCGA-')) -> tcga_primary_tumors
-```
-### UP Surv
-```{r}
-tcga_padd_stratified_counts <-
-  tcga_paad_dds_norm_counts.df %>%
-  t() %>% as.data.frame()
-
-tcga_padd_stratified_counts %>% 
-  rownames_to_column('sample') %>% 
-  filter(sample %in% tcga_primary_tumors$sample) %>% 
-  gather(gene, count, -sample) %>% 
-  filter(gene %in% filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
-                          padj < 0.05, log2FoldChange > 0.75)$gene) %>% 
-  filter(!gene %in% reference_meta_data$ucsc_rmsk_insert_info.df$gene) %>%
-  select(sample, count) %>% 
-  group_by(sample) %>%
-  summarize(avg.count = mean(count)) %>%
-  mutate(gene.set = 'panc_exRNA_signal') %>%
-  group_by(gene.set) %>%
-  mutate(stratum = ifelse(avg.count >= quantile(avg.count, 0.66),
-                          'top-third', ifelse(avg.count <= quantile(avg.count, 0.33),
-                                              'bottom-third', 'middle'))) %>%
-  filter(stratum != 'middle') %>%
-  spread(gene.set, stratum) -> tcga_paad_stratified_counts
-
-paad_survival <- read_tsv(file.path(output_data.dir, 'tcga_gtex', 'PAAD_survival.txt'))
-
-paad_tcga_pheno_merge <- 
-  tcga_primary_tumors %>% merge(paad_survival, by.x = 'patient', by.y = '_PATIENT')
-
-surv.obj <- Surv(time = filter(paad_tcga_pheno_merge %>% select(sample.x, OS.time, OS) %>% distinct(), 
-                               sample.x %in% tcga_paad_stratified_counts$sample)$OS.time,
-                 event = filter(paad_tcga_pheno_merge %>% select(sample.x, OS.time, OS) %>% distinct(), 
-                                sample.x %in% tcga_paad_stratified_counts$sample)$OS)
-
-surv.fit <- survfit(as.formula(surv.obj ~ panc_exRNA_signal), 
-                    data = tcga_paad_stratified_counts)
-ggsurvplot(surv.fit, 
-           ylab = 'Overall Survival Probability',
-           xlab = 'Overall Survival Time -- days',
-           pval = T, 
-           legend.title = "",
-           ggtheme = theme_set_fun() + theme(legend.position = c(0.45,0.95)),
-           pval.coord = c(0, 0.08),
-           palette = viridis(3)[c(2,1)]) -> surv.plt
-
-paste0('panc gencode up \n (n genes = ',filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
-                        padj < 0.05, log2FoldChange > 0.75) %>% 
-  filter(!gene %in% reference_meta_data$ucsc_rmsk_insert_info.df$gene) %>% nrow(), ')') -> km_title
-
-surv.plt$plot + ggtitle(km_title) -> plt_surv_A.plt
-
-filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
-                        padj < 0.05, log2FoldChange > 0.75) %>% 
-  filter(!gene %in% reference_meta_data$ucsc_rmsk_insert_info.df$gene) %>% 
-  top_n(wt =-padj, 10) %>% 
-  arrange(padj) %>% 
-  select(gene, baseMean, log2FoldChange, padj) -> panc_up_km_table
-
-panc_up_km_table %>% 
-  gridExtra::tableGrob(theme = gridExtra::ttheme_minimal(base_size = 8,
-                                                         core = list(padding=unit(c(1, 2.5), "mm"))), 
-                       rows = NULL) -> plt_surv_A.tbl
-
-  
-```
-### DN Surv
-```{r}
-tcga_padd_stratified_counts <-
-  tcga_paad_dds_norm_counts.df %>%
-  t() %>% as.data.frame()
-
-tcga_padd_stratified_counts %>% 
-  rownames_to_column('sample') %>% 
-  filter(sample %in% tcga_primary_tumors$sample) %>% 
-  gather(gene, count, -sample) %>% 
-  filter(gene %in% filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
-                          padj < 0.05, log2FoldChange < -0.75)$gene) %>% 
-  filter(!gene %in% reference_meta_data$ucsc_rmsk_insert_info.df$gene) %>%
-  select(sample, count) %>% 
-  group_by(sample) %>%
-  summarize(avg.count = mean(count)) %>%
-  mutate(gene.set = 'panc_exRNA_signal') %>%
-  group_by(gene.set) %>%
-  mutate(stratum = ifelse(avg.count >= quantile(avg.count, 0.66),
-                          'top-third', ifelse(avg.count <= quantile(avg.count, 0.33),
-                                              'bottom-third', 'middle'))) %>%
-  filter(stratum != 'middle') %>%
-  spread(gene.set, stratum) -> tcga_paad_stratified_counts
-
-paad_survival <- read_tsv(file.path(output_data.dir, 'tcga_gtex', 'PAAD_survival.txt'))
-
-paad_tcga_pheno_merge <- 
-  tcga_primary_tumors %>% merge(paad_survival, by.x = 'patient', by.y = '_PATIENT')
-
-surv.obj <- Surv(time = filter(paad_tcga_pheno_merge %>% select(sample.x, OS.time, OS) %>% distinct(), 
-                               sample.x %in% tcga_paad_stratified_counts$sample)$OS.time,
-                 event = filter(paad_tcga_pheno_merge %>% select(sample.x, OS.time, OS) %>% distinct(), 
-                                sample.x %in% tcga_paad_stratified_counts$sample)$OS)
-
-surv.fit <- survfit(as.formula(surv.obj ~ panc_exRNA_signal), 
-                    data = tcga_paad_stratified_counts)
-ggsurvplot(surv.fit, 
-           ylab = 'Overall Survival Probability',
-           xlab = 'Overall Survival Time -- days',
-           pval = T, 
-           legend.title = "", 
-           ggtheme = theme_set_fun() + theme(legend.position = c(0.45,0.95)),
-           pval.coord = c(0, 0.08),
-           palette = viridis(3)[c(2,1)]) -> surv.plt
-
-surv.plt$plot + ggtitle('panc gencode down') -> plt_surv_B.plt
-```
-### DN lncRNA
-```{r}
-reference_meta_data$gencode_lncRNA_gene_names.df %>% 
-  select(-biotype) %>% 
-  merge(reference_meta_data$total_tx_to_gene.df, by ='ensg') -> lncRNA_tx_to_gene
-
-tcga_padd_stratified_counts <-
-  tcga_paad_dds_norm_counts.df %>%
-  t() %>% as.data.frame()
-
-tcga_padd_stratified_counts %>% 
-  rownames_to_column('sample') %>% 
-  filter(sample %in% tcga_primary_tumors$sample) %>% 
-  gather(gene, count, -sample) %>% 
-  filter(gene %in% filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
-                          padj < 0.05, log2FoldChange < -1)$gene) %>% 
-  filter(gene %in% lncRNA_tx_to_gene$gene) %>%
-  select(sample, count) %>% 
-  group_by(sample) %>%
-  summarize(avg.count = mean(count)) %>%
-  mutate(gene.set = 'panc_exRNA_signal') %>%
-  group_by(gene.set) %>%
-  mutate(stratum = ifelse(avg.count >= quantile(avg.count, 0.66),
-                          'top-third', ifelse(avg.count <= quantile(avg.count, 0.33),
-                                              'bottom-third', 'middle'))) %>%
-  filter(stratum != 'middle') %>%
-  spread(gene.set, stratum) -> tcga_paad_stratified_counts
-
-paad_survival <- read_tsv(file.path(output_data.dir, 'tcga_gtex', 'PAAD_survival.txt'))
-
-paad_tcga_pheno_merge <- 
-  tcga_primary_tumors %>% merge(paad_survival, by.x = 'patient', by.y = '_PATIENT')
-
-surv.obj <- Surv(time = filter(paad_tcga_pheno_merge %>% select(sample.x, OS.time, OS) %>% distinct(), 
-                               sample.x %in% tcga_paad_stratified_counts$sample)$OS.time,
-                 event = filter(paad_tcga_pheno_merge %>% select(sample.x, OS.time, OS) %>% distinct(), 
-                                sample.x %in% tcga_paad_stratified_counts$sample)$OS)
-
-surv.fit <- survfit(as.formula(surv.obj ~ panc_exRNA_signal), 
-                    data = tcga_paad_stratified_counts)
-ggsurvplot(surv.fit, 
-           ylab = 'Overall Survival Probability',
-           xlab = 'Overall Survival Time -- days',
-           pval = T, 
-           legend.title = "", 
-           ggtheme = theme_set_fun() + theme(legend.position = c(0.45,0.95)),
-           pval.coord = c(0, 0.08),
-           palette = viridis(3)[c(2,1)]) -> surv.plt
-
-surv.plt$plot + ggtitle('panc lncRNA down') -> plt_surv_C.plt
-```
-### DN TEs
-```{r}
-tcga_padd_stratified_counts <-
-  tcga_paad_dds_norm_counts.df %>%
-  t() %>% as.data.frame()
-
-tcga_padd_stratified_counts %>% 
-  rownames_to_column('sample') %>% 
-  filter(sample %in% tcga_primary_tumors$sample) %>% 
-  gather(gene, count, -sample) %>% 
-  filter(gene %in% filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
-                          padj < 0.05, log2FoldChange < -1)$gene) %>% 
-  filter(gene %in% reference_meta_data$ucsc_rmsk_insert_info.df$gene) %>%
-  select(sample, count) %>% 
-  group_by(sample) %>%
-  summarize(avg.count = mean(count)) %>%
-  mutate(gene.set = 'panc_exRNA_signal') %>%
-  group_by(gene.set) %>%
-  mutate(stratum = ifelse(avg.count >= quantile(avg.count, 0.66),
-                          'top-third', ifelse(avg.count <= quantile(avg.count, 0.33),
-                                              'bottom-third', 'middle'))) %>%
-  filter(stratum != 'middle') %>%
-  spread(gene.set, stratum) -> tcga_paad_stratified_counts
-
-paad_survival <- read_tsv(file.path(output_data.dir, 'tcga_gtex', 'PAAD_survival.txt'))
-
-paad_tcga_pheno_merge <- 
-  tcga_primary_tumors %>% merge(paad_survival, by.x = 'patient', by.y = '_PATIENT')
-
-surv.obj <- Surv(time = filter(paad_tcga_pheno_merge %>% select(sample.x, OS.time, OS) %>% distinct(), 
-                               sample.x %in% tcga_paad_stratified_counts$sample)$OS.time,
-                 event = filter(paad_tcga_pheno_merge %>% select(sample.x, OS.time, OS) %>% distinct(), 
-                                sample.x %in% tcga_paad_stratified_counts$sample)$OS)
-
-surv.fit <- survfit(as.formula(surv.obj ~ panc_exRNA_signal), 
-                    data = tcga_paad_stratified_counts)
-ggsurvplot(surv.fit, 
-           ylab = 'Overall Survival Probability',
-           xlab = 'Overall Survival Time -- days',
-           pval = T, 
-           legend.title = "", 
-           ggtheme = theme_set_fun() + theme(legend.position = c(0.45,0.95)),
-           pval.coord = c(0, 0.08),
-           palette = viridis(3)[c(2,1)]) -> surv.plt
-
-paste0('panc TE down \n (n genes = ',filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
-                          padj < 0.05, log2FoldChange < -1) %>% 
-  filter(gene %in% reference_meta_data$ucsc_rmsk_insert_info.df$gene) %>% nrow(), ')') -> km_title
-
-surv.plt$plot + ggtitle(km_title) -> plt_surv_D.plt
-
-filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
-                          padj < 0.05, log2FoldChange < -1) %>% 
-  filter(gene %in% reference_meta_data$ucsc_rmsk_insert_info.df$gene) %>%
-  top_n(wt =-padj, 10) %>% 
-  arrange(padj) %>% 
-  select(gene, baseMean, log2FoldChange, padj) -> panc_dn_TE_km_table
-
-panc_dn_TE_km_table %>% 
-  gridExtra::tableGrob(theme = gridExtra::ttheme_minimal(base_size = 8,
-                                                         core = list(padding=unit(c(1, 2.5), "mm"))), 
-                       rows = NULL) -> plt_surv_D.tbl
-```
-### UP TEs
-```{r}
-tcga_padd_stratified_counts <-
-  tcga_paad_dds_norm_counts.df %>%
-  t() %>% as.data.frame()
-
-tcga_padd_stratified_counts %>% 
-  rownames_to_column('sample') %>% 
-  filter(sample %in% tcga_primary_tumors$sample) %>% 
-  gather(gene, count, -sample) %>% 
-  filter(gene %in% filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
-                          padj < 0.05, log2FoldChange > 0.5)$gene) %>% 
-  filter(gene %in% reference_meta_data$ucsc_rmsk_insert_info.df$gene) %>%
-  select(sample, count) %>% 
-  group_by(sample) %>%
-  summarize(avg.count = mean(count)) %>%
-  mutate(gene.set = 'panc_exRNA_signal') %>%
-  group_by(gene.set) %>%
-  mutate(stratum = ifelse(avg.count >= quantile(avg.count, 0.66),
-                          'top-third', ifelse(avg.count <= quantile(avg.count, 0.33),
-                                              'bottom-third', 'middle'))) %>%
-  filter(stratum != 'middle') %>%
-  spread(gene.set, stratum) -> tcga_paad_stratified_counts
-
-paad_survival <- read_tsv(file.path(output_data.dir, 'tcga_gtex', 'PAAD_survival.txt'))
-
-paad_tcga_pheno_merge <- 
-  tcga_primary_tumors %>% merge(paad_survival, by.x = 'patient', by.y = '_PATIENT')
-
-surv.obj <- Surv(time = filter(paad_tcga_pheno_merge %>% select(sample.x, OS.time, OS) %>% distinct(), 
-                               sample.x %in% tcga_paad_stratified_counts$sample)$OS.time,
-                 event = filter(paad_tcga_pheno_merge %>% select(sample.x, OS.time, OS) %>% distinct(), 
-                                sample.x %in% tcga_paad_stratified_counts$sample)$OS)
-
-surv.fit <- survfit(as.formula(surv.obj ~ panc_exRNA_signal), 
-                    data = tcga_paad_stratified_counts)
-ggsurvplot(surv.fit, 
-           ylab = 'Overall Survival Probability',
-           xlab = 'Overall Survival Time -- days',
-           pval = T, 
-           legend.title = "", 
-           ggtheme = theme_set_fun() + theme(legend.position = c(0.45,0.95)),
-           pval.coord = c(0, 0.08),
-           palette = viridis(3)[c(2,1)]) -> surv.plt
-
-surv.plt$plot + ggtitle('panc TE up') -> plt_surv_E.plt
-```
-### OX PHOS
-```{r}
-tcga_padd_stratified_counts <-
-  tcga_paad_dds_norm_counts.df %>%
-  t() %>% as.data.frame()
-
-tcga_padd_stratified_counts %>% 
-  rownames_to_column('sample') %>% 
-  filter(sample %in% tcga_primary_tumors$sample) %>% 
-  gather(gene, count, -sample) %>% 
-  filter(gene %in% filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
-                          padj < 0.05, log2FoldChange > 0.75)$gene) %>%
-  filter(gene %in% msig.df$HALLMARK_OXIDATIVE_PHOSPHORYLATION) %>%
-  select(sample, count) %>% 
-  group_by(sample) %>%
-  summarize(avg.count = mean(count)) %>%
-  mutate(gene.set = 'panc_exRNA_signal') %>%
-  group_by(gene.set) %>%
-  mutate(stratum = ifelse(avg.count >= quantile(avg.count, 0.66),
-                          'top-third', ifelse(avg.count <= quantile(avg.count, 0.33),
-                                              'bottom-third', 'middle'))) %>%
-  filter(stratum != 'middle') %>%
-  spread(gene.set, stratum) -> tcga_paad_stratified_counts
-
-paad_survival <- read_tsv(file.path(output_data.dir, 'tcga_gtex', 'PAAD_survival.txt'))
-
-paad_tcga_pheno_merge <- 
-  tcga_primary_tumors %>% merge(paad_survival, by.x = 'patient', by.y = '_PATIENT')
-
-surv.obj <- Surv(time = filter(paad_tcga_pheno_merge %>% select(sample.x, OS.time, OS) %>% distinct(), 
-                               sample.x %in% tcga_paad_stratified_counts$sample)$OS.time,
-                 event = filter(paad_tcga_pheno_merge %>% select(sample.x, OS.time, OS) %>% distinct(), 
-                                sample.x %in% tcga_paad_stratified_counts$sample)$OS)
-
-surv.fit <- survfit(as.formula(surv.obj ~ panc_exRNA_signal), 
-                    data = tcga_paad_stratified_counts)
-ggsurvplot(surv.fit,
-           ylab = 'Overall Survival Probability',
-           xlab = 'Overall Survival Time -- days',
-           pval = T, 
-           legend.title = "", 
-           ggtheme = theme_set_fun() + theme(legend.position = c(0.45,0.95)),
-           pval.coord = c(0, 0.08),
-           palette = viridis(3)[c(2,1)]) -> surv.plt
-
-paste0('Ox. Phos \n (n genes = ',filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
-                          padj < 0.05, log2FoldChange > 0.75) %>%
-  filter(gene %in% msig.df$HALLMARK_OXIDATIVE_PHOSPHORYLATION) %>% nrow(), ')') -> km_title
-
-surv.plt$plot + ggtitle(km_title) -> plt_surv_F.plt
-
-filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
-                          padj < 0.05, log2FoldChange > 0.75) %>%
-  filter(gene %in% msig.df$HALLMARK_OXIDATIVE_PHOSPHORYLATION) %>%
-  top_n(wt =-padj, 10) %>% 
-  arrange(padj) %>% 
-  select(gene, baseMean, log2FoldChange, padj) -> panc_OX_km_table
-
-panc_OX_km_table %>% 
-  gridExtra::tableGrob(theme = gridExtra::ttheme_minimal(base_size = 8,
-                                                         core = list(padding=unit(c(1, 2.5), "mm"))), 
-                       rows = NULL) -> plt_surv_F.tbl
-```
-### MYC
-```{r}
-tcga_padd_stratified_counts <-
-  tcga_paad_dds_norm_counts.df %>%
-  t() %>% as.data.frame()
-
-tcga_padd_stratified_counts %>% 
-  rownames_to_column('sample') %>% 
-  filter(sample %in% tcga_primary_tumors$sample) %>% 
-  gather(gene, count, -sample) %>% 
-  filter(gene %in% filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
-                          padj < 0.05, log2FoldChange > 0.75)$gene) %>%
-  filter(gene %in% msig.df$HALLMARK_MYC_TARGETS_V1) %>%
-  select(sample, count) %>% 
-  group_by(sample) %>%
-  summarize(avg.count = mean(count)) %>%
-  mutate(gene.set = 'panc_exRNA_signal') %>%
-  group_by(gene.set) %>%
-  mutate(stratum = ifelse(avg.count >= quantile(avg.count, 0.66),
-                          'top-third', ifelse(avg.count <= quantile(avg.count, 0.33),
-                                              'bottom-third', 'middle'))) %>%
-  filter(stratum != 'middle') %>%
-  spread(gene.set, stratum) -> tcga_paad_stratified_counts
-
-paad_survival <- read_tsv(file.path(output_data.dir, 'tcga_gtex', 'PAAD_survival.txt'))
-
-paad_tcga_pheno_merge <- 
-  tcga_primary_tumors %>% merge(paad_survival, by.x = 'patient', by.y = '_PATIENT')
-
-surv.obj <- Surv(time = filter(paad_tcga_pheno_merge %>% select(sample.x, OS.time, OS) %>% distinct(), 
-                               sample.x %in% tcga_paad_stratified_counts$sample)$OS.time,
-                 event = filter(paad_tcga_pheno_merge %>% select(sample.x, OS.time, OS) %>% distinct(), 
-                                sample.x %in% tcga_paad_stratified_counts$sample)$OS)
-
-surv.fit <- survfit(as.formula(surv.obj ~ panc_exRNA_signal), 
-                    data = tcga_paad_stratified_counts)
-ggsurvplot(surv.fit, 
-           ylab = 'Overall Survival Probability',
-           xlab = 'Overall Survival Time -- days',
-           pval = T, 
-           legend.title = "", 
-           ggtheme = theme_set_fun() + theme(legend.position = c(0.45,0.95)),
-           pval.coord = c(0, 0.08),
-           palette = viridis(3)[c(2,1)]) -> surv.plt
-
-paste0('MYC Targets \n (n genes = ',filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
-                          padj < 0.05, log2FoldChange > 0.75) %>%
-  filter(gene %in% msig.df$HALLMARK_MYC_TARGETS_V1) %>% nrow(), ')') -> km_title
-
-surv.plt$plot + ggtitle(km_title) -> plt_surv_G.plt
-
-filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
-                          padj < 0.05, log2FoldChange > 0.75) %>%
-  filter(gene %in% msig.df$HALLMARK_MYC_TARGETS_V1) %>%
-  top_n(wt =-padj, 10) %>% 
-  arrange(padj) %>% 
-  select(gene, baseMean, log2FoldChange, padj) -> panc_MYC_km_table
-
-panc_MYC_km_table %>% 
-  gridExtra::tableGrob(theme = gridExtra::ttheme_minimal(base_size = 8,
-                                                         core = list(padding=unit(c(1, 2.5), "mm"))), 
-                       rows = NULL) -> plt_surv_G.tbl
-```
-### plt_surv_patchwork
-```{r}
-import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer, wrap_elements)
-
-fig_surv_layout <- "
-AC
-BB
-DE
-FG
-HI
-"
-
-wrap_plots(plt_surv_F.plt,
-           guide_area(),
-           patchwork::wrap_elements(full = plt_surv_F.tbl, ignore_tag = F),
-           plt_surv_G.plt,
-           patchwork::wrap_elements(full = plt_surv_G.tbl, ignore_tag = F),
-           plt_surv_A.plt,
-           patchwork::wrap_elements(full = plt_surv_A.tbl, ignore_tag = F),
-           plt_surv_D.plt,
-           patchwork::wrap_elements(full = plt_surv_D.tbl, ignore_tag = F),
-           heights = c(1,0.095,1,1,1,1,1),
-           guides = 'collect',
-           design = fig_surv_layout) +
-  plot_annotation(tag_levels = 'A') &
-  theme(plot.tag.position = c(0.01, 0.99), 
-        legend.position = 'bottom',
-        legend.title = element_text(vjust = 0.5),
-        legend.justification = c(0.5, 0.5)) -> fig.surv.patchwork
-
-save.manuscript.panel(figure = 's4',
-                      figure.dir = figure.dir,
-                      name = 'patchwork_full_fig_surv',
-                      width = figure_double_column_width,
-                      height = figure_depth,
-                      plot.in = fig.surv.patchwork)
-```
 
 ## TCGA surv heatmap
 ```{r}

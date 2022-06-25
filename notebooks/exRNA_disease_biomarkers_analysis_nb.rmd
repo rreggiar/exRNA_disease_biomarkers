@@ -578,7 +578,7 @@ process.aware.salmon_quant$analysis_set$ctrl_panc_covid$unsplice_data.df <-
 ## Fig_flowchart
 ```{r}
 install.packages('pdftools')
-flow_chart.plt <- magick::image_read_pdf(path = file.path(figure.dir, 'fig.1', 'dkim_plasma_schematic.pdf'))
+flow_chart.plt <- magick::image_read_pdf(path = file.path(figure.dir, 'fig.1', 'plasma_schematic_v4.pdf'))
 
 # flow_chart.plt <- magick::image_read(path = file.path(figure.dir, 'fig.1', 'plasma_schematic.png'))
 ```

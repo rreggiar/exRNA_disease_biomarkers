@@ -605,6 +605,34 @@ fig.1C.plt <-
   ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_2v3.plt +
   annotate(geom = 'text', x = 200, y = -175, label = 'Repeat-aware', size = txt.mm_to_pts(1.25))
 
+install.packages('lfda')
+
+ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$deseq$vst_counts.df[! rownames(ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$deseq$vst_counts.df) %in% 
+                         c(ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$deseq$age_filter.df$ensg,
+                           ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$deseq$sex_filter.df$gene_id), ] %>% 
+  t() -> pca_tmp_in 
+
+pca_tmp_in_sd <- apply(pca_tmp_in, 2, sd)
+pca_tmp_in_zero_sd <- pca_tmp_in[,pca_tmp_in_sd!=0]
+
+# Y <- ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$quant_meta$condition
+
+# lfda_tmp <- lfda::self(X = pca_tmp_in_zero_sd, Y = Y, metric = 'plain', r = 3, beta = 0.5)
+
+pam_tmp <- cluster::pam(x = pca_tmp_in_zero_sd, k = 3)
+
+merge(ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_out.df,
+      pam_tmp$clustering %>% 
+        as.data.frame() %>% 
+        dplyr::rename('pam_cluster' = '.') %>% 
+        rownames_to_column('sample'),
+      by = 'sample') %>% 
+  ggplot(aes(PC1, PC2, color = condition, shape = as.factor(pam_cluster))) + 
+  geom_point(size = 2, alpha = 1) + 
+  stat_ellipse(aes(group = as.factor(pam_cluster)), type = 'norm') + 
+  scale_color_manual(values = identity_color_pal) + 
+  scale_shape_manual(values = c(23,24,25))
+
 
 ```
 ## Fig_1D

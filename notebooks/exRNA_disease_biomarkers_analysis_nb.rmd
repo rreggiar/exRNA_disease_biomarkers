@@ -598,18 +598,84 @@ flowchart_wrap_fig1A.plt <- wrap_elements(full = magick::image_ggplot(flow_chart
 ```{r 1B/C}
 
 fig.1B.plt <- 
-  salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_1v2.plt +
-  annotate(geom = 'text', x = -175, y = -100, label = 'Repeat-aware', size = txt.mm_to_pts(1.25)) + coord_flip() 
+  ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_1v2.plt + xlim(-280,280) +
+  annotate(geom = 'text', x = 200, y = -100, label = 'Repeat-aware', size = txt.mm_to_pts(1.25))
   
 fig.1C.plt <- 
-  salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_2v3.plt +
-  annotate(geom = 'text', x = -100, y = -175, label = 'Repeat-aware', size = txt.mm_to_pts(1.25)) +
-  xlim(layer_scales(fig.1A_1.plt)$y$range$range)
+  ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_2v3.plt +
+  annotate(geom = 'text', x = 200, y = -175, label = 'Repeat-aware', size = txt.mm_to_pts(1.25))
 
 
 ```
 ## Fig_1D
 ```{r 1D}
+
+
+ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$quant_meta %>% 
+  gather(var, value, -sample, -condition, -sex, -context) %>% 
+  mutate(value = as.numeric(value),
+         condition = factor(condition, levels = c('panc', 'ctrl', 'covid'))) %>% 
+  filter(var == 'salmon_percent_mapped') %>% 
+  dplyr::rename('Repeat-aware' = value) %>% 
+  merge(tidy_quant_meta.df %>% select(sample, var, value) %>% 
+        filter(var == 'salmon_percent_mapped') %>% 
+               dplyr::rename('Gencode' = value) %>% 
+          select(-var), by = 'sample') -> mapping_rate_compare.df
+
+mapping_rate_compare.df %>% 
+  gather(var, value, -sample, -context, -sex, -condition, -var) %>% 
+  ggplot(aes(var, value, color = condition)) + 
+  geom_boxplot(fill = NA, outlier.colour = NA, show.legend = F) + 
+  geom_point(size = rel(2), alpha = 1) +
+  geom_line(aes(group = sample), alpha = 0.2, show.legend = F) +
+  ylab('% mapped') + xlab('') + 
+  ggforce::facet_row(~condition, strip.position = 'bottom') +
+  scale_color_manual(values = identity_color_pal) + 
+  ggpubr::stat_compare_means(comparisons = list(c('Gencode', 'Repeat-aware')), 
+                             method = 'wilcox', size = 2.5, 
+                             method.args = list(exact = TRUE, paired = T)) -> mapping_rate_compare.plt
+
+fig.1D.plt <- mapping_rate_compare.plt
+```
+### Fig_1_patchwork
+```{r Fig1}
+import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer, wrap_elements)
+
+
+fig_1_layout <- "
+AB
+AC
+EE
+DD
+"
+
+wrap_plots(flowchart_wrap_fig1A.plt,
+           fig.1B.plt,
+           fig.1C.plt,
+           fig.1D.plt + coord_cartesian(clip = 'off'),
+           guide_area(),
+           design = fig_1_layout, 
+           guides = 'collect',
+           heights = c(1,1,0.125,1)) + plot_annotation(tag_levels = 'A') & 
+  theme(plot.tag.position = c(0.01, 0.99), 
+        legend.position = 'bottom',
+        legend.title = element_text(vjust = 1.25),
+        legend.justification = c(0.5, 0.5)) -> fig.1.patchwork
+
+
+save.manuscript.panel(figure = 1,
+                      figure.dir = figure.dir,
+                      name = 'patchwork_full_fig_1',
+                      width = figure_double_column_width,
+                      height = figure_depth,
+                      plot.in = fig.1.patchwork)
+
+
+```
+
+# Fig_S1
+## Fig_S1A
+```{r S1B}
 salmon_quant$analysis_set$ctrl_panc_covid$quant_meta %>% 
   gather(var, value, -sample, -condition, -sex, -context) %>% 
   mutate(value = as.numeric(value),
@@ -637,28 +703,32 @@ tidy_quant_meta.df %>%
                                                 c('ctrl', 'panc')), 
                              method = 'wilcox.test', size = 2.5, method.args = list(exact =T)) -> mapping_rate_dist.plt
 
-fig.1D.plt <- mapping_rate_dist.plt
+fig.S1A.plt <- mapping_rate_dist.plt
+
+
 ```
-### Fig_1_patchwork
-```{r Fig1}
+## Fig_S1B
+```{r}
+s1_flow_chart.plt <- magick::image_read_pdf(path = file.path(figure.dir, 'fig.1', 'complete-seq-diagram-no-process.pdf'))
+flowchart_wrap_figS1B.plt <- wrap_elements(full = magick::image_ggplot(s1_flow_chart.plt))
+```
+### Fig_S1_patchwork
+```{r}
 import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer, wrap_elements)
 
 
 fig_S1_layout <- "
-AB
-AC
-EE
-DD
+AA
+CC
+BB
 "
 
-wrap_plots(flowchart_wrap_fig1A.plt,
-           fig.1B.plt,
-           fig.1C.plt,
-           fig.1D.plt + coord_cartesian(clip = 'off'),
+wrap_plots(fig.S1A.plt,
+           flowchart_wrap_figS1B.plt,
            guide_area(),
            design = fig_S1_layout, 
            guides = 'collect',
-           heights = c(1,1,0.125,1)) + plot_annotation(tag_levels = 'A') & 
+           heights = c(1,0.125,1)) + plot_annotation(tag_levels = 'A') & 
   theme(plot.tag.position = c(0.01, 0.99), 
         legend.position = 'bottom',
         legend.title = element_text(vjust = 1.25),
@@ -671,48 +741,6 @@ save.manuscript.panel(figure = 1,
                       width = figure_double_column_width,
                       height = figure_depth,
                       plot.in = fig.S1.patchwork)
-
-
-```
-
-# Fig_S1
-## Fig_S1A
-```{r}
-flow_chart.plt <- magick::image_read_pdf(path = file.path(figure.dir, 'fig.1', 'plasma_schematic_v4.pdf'))
-flowchart_wrap_fig1A.plt <- wrap_elements(full = magick::image_ggplot(flow_chart.plt))
-```
-
-## Fig_S1B
-```{r S1B}
-
-ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$quant_meta %>% 
-  gather(var, value, -sample, -condition, -sex, -context) %>% 
-  mutate(value = as.numeric(value),
-         condition = factor(condition, levels = c('panc', 'ctrl', 'covid'))) %>% 
-  filter(var == 'salmon_percent_mapped') %>% 
-  dplyr::rename('Repeat-aware' = value) %>% 
-  merge(tidy_quant_meta.df %>% select(sample, var, value) %>% 
-        filter(var == 'salmon_percent_mapped') %>% 
-               dplyr::rename('Gencode' = value) %>% 
-          select(-var), by = 'sample') -> mapping_rate_compare.df
-
-mapping_rate_compare.df %>% 
-  gather(var, value, -sample, -context, -sex, -condition, -var) %>% 
-  # filter(condition == 'panc') %>% 
-  ggplot(aes(var, value, color = condition)) + 
-  geom_boxplot(fill = NA, outlier.colour = NA, show.legend = F) + 
-  geom_point(size = rel(2), alpha = 1) +
-  geom_line(aes(group = sample), alpha = 0.2, show.legend = F) +
-  # scale_shape_manual(values = c(21,25)) +
-  ylab('% mapped') + xlab('') + 
-  ggforce::facet_row(~condition, strip.position = 'bottom') +
-  scale_color_manual(values = identity_color_pal) + 
-  ggpubr::stat_compare_means(comparisons = list(c('Gencode', 'Repeat-aware')), 
-                             method = 'wilcox', size = 2.5, 
-                             method.args = list(exact = TRUE, paired = T)) -> mapping_rate_compare.plt
-
-fig.S1C.plt <- mapping_rate_compare.plt
-
 ```
 
 # Fig_2

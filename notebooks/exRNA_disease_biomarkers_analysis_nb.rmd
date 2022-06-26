@@ -600,7 +600,7 @@ flowchart_wrap_fig1A.plt <- wrap_elements(full = magick::image_ggplot(flow_chart
 ```{r 1B/C}
 
 fig.1B.plt <- 
-  ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_1v2.plt + xlim(-280,280) + theme(legend.background = element_rect(size = 0.5))
+  ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_1v2.plt + xlim(-280,280)
   
 fig.1C.plt <- 
   ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_2v3.plt
@@ -630,7 +630,7 @@ mapping_rate_compare.df %>%
   scale_color_manual(values = identity_color_pal) + 
   ggpubr::stat_compare_means(comparisons = list(c('GENCODE', 'Repeat-aware')), 
                              method = 'wilcox', size = 2.5, 
-                             method.args = list(exact = TRUE, paired = T)) -> mapping_rate_compare.plt
+                             method.args = list(exact = TRUE, paired = T), label = 'p.signif') -> mapping_rate_compare.plt
 
 fig.1D.plt <- mapping_rate_compare.plt
 ```

@@ -2222,7 +2222,7 @@ save.manuscript.panel(figure = 4,
 ```
 
 # Fig_S4
-## Fig_S2A
+## Fig_S4A
 ```{r}
 bind_rows(list('panc' = salmon_quant$analysis_set$ctrl_panc_covid$deseq$fgsea$panc_v_ctrl,
           'covid' = salmon_quant$analysis_set$ctrl_panc_covid$deseq$fgsea$covid_v_ctrl),
@@ -2234,7 +2234,7 @@ bind_rows(list('panc' = salmon_quant$analysis_set$ctrl_panc_covid$deseq$fgsea$pa
   gridExtra::tableGrob(theme = gridExtra::ttheme_minimal(), rows = NULL) -> fig.S2A.fgsea_table.grob
 
 ```
-## Fig_S2B
+## Fig_S4B
 ```{r}
 de_compare_list <- list('panc' = ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out,
                         'covid' = ucsc.rmsk.salmon_quant$analysis_set$covid_ctrl$deseq$de_out)
@@ -2280,7 +2280,7 @@ de_upset.df %>%
   ggrepel::geom_text_repel() -> fig.S2B_2.plt
 
 ```
-## Fig_S2C
+## Fig_S4C
 ```{r}
 import::from(.from = 'SummarizedExperiment',
              rowRanges)
@@ -2331,7 +2331,7 @@ gencode_layer.plt +
 
 fig.S2C.plt
 ```
-## Fig_S2D
+## Fig_S4D
 ```{r}
 ucsc.rmsk.salmon_quant$analysis_set$covid_ctrl$deseq$de_out %>% 
   merge(reference_meta_data$ucsc_rmsk_insert_info.df, by = 'gene', all.x = T) %>% 
@@ -2372,7 +2372,7 @@ gencode_layer.plt +
 
 fig.S2D.plt
 ```
-### Fig_S2_patchwork
+### Fig_S4_patchwork
 ```{r Fig1}
 import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer)
 
@@ -2392,15 +2392,15 @@ wrap_plots(patchwork::wrap_elements(fig.S2A.fgsea_table.grob, ignore_tag = F),
            fig.S2D.plt,
            design = fig_S2_layout, 
            guides = 'collect',
-           heights = c(0.35,1,0.0937,1,1)) + plot_annotation(tag_levels = 'A') & 
+           heights = c(0.6,0.9,0.0937,1,1)) + plot_annotation(tag_levels = 'A') & 
   theme(plot.tag.position = c(0.01, 0.99), 
         legend.position = 'bottom',
         legend.title = element_text(vjust = 0.5),
         legend.justification = c(0.5, 0.5)) -> fig.S2.patchwork
 
-save.manuscript.panel(figure = 's2',
+save.manuscript.panel(figure = 4,
                       figure.dir = figure.dir,
-                      name = 'patchwork_full_fig_S2',
+                      name = 'patchwork_full_fig_S4',
                       width = figure_double_column_width,
                       height = figure_depth,
                       plot.in = fig.S2.patchwork)
@@ -2408,8 +2408,8 @@ save.manuscript.panel(figure = 's2',
 
 ```
 
-# Fig_S2_2
-## Fig_S2_2_patchwork
+# Fig_S5
+## Fig_S5_patchwork
 ```{r}
 
 panc_annotated_rmsk_de %>% 
@@ -2452,9 +2452,9 @@ wrap_plots(plt_S2_2A,
         legend.title = element_text(vjust = 0.5),
         legend.justification = c(0.5, 0.5)) -> fig.S2_2.patchwork
 
-save.manuscript.panel(figure = 's2',
+save.manuscript.panel(figure = 5,
                       figure.dir = figure.dir,
-                      name = 'patchwork_full_fig_S2_2',
+                      name = 'patchwork_full_fig_S5',
                       width = figure_double_column_width,
                       height = figure_depth,
                       plot.in = fig.S2_2.patchwork)
@@ -2464,7 +2464,7 @@ save.manuscript.panel(figure = 's2',
 
 
 
-# Fig_supp_nanopore
+# Fig_S6
 ## Fig_SNA
 ```{r}
 import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer)
@@ -2722,7 +2722,6 @@ pca.out %>%
   annotate(geom = 'text', x = -5.5, y = 2.25, label = 'size-aware', size = txt.mm_to_pts(1)) +
   theme(legend.position ='top', legend.direction = 'horizontal') -> plt_SND.plt
 ```
-
 ### Fig_SNanopore_patchwork
 ```{r}
 import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer, wrap_elements)
@@ -2743,9 +2742,9 @@ wrap_plots(wrap_elements(full = panel.SNA.patchwork),
            design = fig_SN_layout) +
   plot_annotation(tag_levels = 'A') -> fig.SN.patchwork
 
-save.manuscript.panel(figure = 's3',
+save.manuscript.panel(figure = 6,
                       figure.dir = figure.dir,
-                      name = 'patchwork_full_fig_S3',
+                      name = 'patchwork_full_fig_S6',
                       width = figure_double_column_width,
                       height = figure_depth,
                       plot.in = fig.SN.patchwork)

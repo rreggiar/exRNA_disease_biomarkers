@@ -1814,250 +1814,7 @@ save.manuscript.panel(figure = 3,
 
 ```
 
-
-
-# Fig_S4
-## Fig_S2A
-```{r}
-bind_rows(list('panc' = salmon_quant$analysis_set$ctrl_panc_covid$deseq$fgsea$panc_v_ctrl,
-          'covid' = salmon_quant$analysis_set$ctrl_panc_covid$deseq$fgsea$covid_v_ctrl),
-          .id = 'condition') %>% 
-  select(condition, 'enriched pathway' = pathway, padj, NES) %>% 
-  mutate(padj = round(padj, 10),
-         NES = round(NES, 3)) %>% 
-  dplyr::rename('GSEA padj' = padj, 'GSEA NES' = NES) %>% 
-  gridExtra::tableGrob(theme = gridExtra::ttheme_minimal(), rows = NULL) -> fig.S2A.fgsea_table.grob
-
-```
-## Fig_S2B
-```{r}
-de_compare_list <- list('panc' = ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out,
-                        'covid' = ucsc.rmsk.salmon_quant$analysis_set$covid_ctrl$deseq$de_out)
-
-purrr::imap(de_compare_list, function(de, de_name) {
-  
-  de %>% 
-    filter(gene %in% msig.df$HALLMARK_MYC_TARGETS_V1,
-           padj < 0.05,
-           abs(log2FoldChange) > 0.5) %>% 
-    mutate(id = de_name)
-  
-}) %>% bind_rows() -> de_upset.df
-
-de_upset.df %>% 
-  group_by(gene) %>% 
-  summarize(context = list(id)) %>% 
-  ggplot(aes(context)) + 
-  geom_bar(fill = 'white', color = 'black') + 
-  ggupset::scale_x_upset() +
-  geom_text(stat='count', aes(label=after_stat(count)), nudge_y = -2) + 
-  xlab('') + ylab('shared DE MYC Target V1 genes') -> fig.S2B.plt
-
-
-de_upset.df %>% 
-  group_by(id) %>% 
-  top_n(5, wt = log2FoldChange) %>% 
-  ggplot(aes(reorder(gene, -log2FoldChange), log2FoldChange)) + 
-  geom_col(fill = NA, color = 'black') + 
-  coord_flip() + 
-  ggforce::facet_col(~id, scales = 'free_y') + 
-  geom_hline(yintercept = 1.0, linetype = 'dashed', alpha = 0.6) + 
-  xlab('')
-
-de_upset.df %>% 
-  select(gene, log2FoldChange, id) %>% 
-  spread(id, log2FoldChange) %>% 
-  ggplot(aes(covid, panc, label = gene)) + 
-  geom_point() + 
-  geom_hline(yintercept = 0, linetype = 'dashed', alpha = 0.6) +
-  geom_vline(xintercept = 0, linetype = 'dashed', alpha = 0.6) + 
-  xlab('covid MYC Targets V1 log2FoldChange') + ylab('panc MYC Targets V1 log2FoldChange') +
-  ggrepel::geom_text_repel() -> fig.S2B_2.plt
-
-```
-## Fig_S2C
-```{r}
-import::from(.from = 'SummarizedExperiment',
-             rowRanges)
-
-rowRanges(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$gxi) %>% 
-  as.data.frame() %>% 
-  filter(seqnames == 'chrM') %>% 
-  select(group_name) %>% 
-  unlist() %>% unname() -> chrM.filter.list
-
-ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out %>% 
-# ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$deseq$panc_vs_ctrl %>% 
-  merge(reference_meta_data$ucsc_rmsk_insert_info.df, by = 'gene', all.x = T) %>% 
-  mutate(family = ifelse(ensg %in% reference_meta_data$gencode_lncRNA_gene_names.df$ensg,
-                         'gencode_lncRNA', family),
-         family = ifelse(is.na(family), 'gencode_coding', family),
-         clade = ifelse(grepl('gencode', family), family, clade),
-         clade = ifelse(clade %in% c('gencode_coding',
-                                     'gencode_lncRNA',
-                                     'LINE',
-                                     'SINE',
-                                     'LTR',
-                                     'DNA',
-                                     'Simple_repeat'), clade, 'other'),
-         type = ifelse(grepl('gencode',family), 'GENCODE', 'TE'),
-         clade = factor(clade, levels = te_aware_annotation_levels[c(1,8)])) %>% 
-  filter(ensg %in% chrM.filter.list | grepl('^MT', gene)) -> mt_panc_annotated_rmsk_de
-
-mt_panc_label_list <- mt_panc_annotated_rmsk_de %>% 
-  top_n(6, wt = abs(log2FoldChange))
-
-mt_panc_annotated_rmsk_de %>%
-  filter(clade == 'gencode_coding') %>% 
-  ggplot(aes(log2FoldChange, -log10(padj), color = clade)) + 
-  geom_point(size = 2, alpha = 0.6, show.legend = FALSE) -> gencode_layer.plt
-
-gencode_layer.plt + 
-  geom_point(data = filter(mt_panc_annotated_rmsk_de, clade != 'gencode_coding') %>% 
-               mutate(clade = factor(clade, levels = te_aware_annotation_levels[c(1,8)])),
-             aes(log2FoldChange, -log10(padj), color = clade), size = 2, alpha = 0.8) +
-  scale_color_manual(values = te_color_pal[c(1,8)], name = 'biotype/clade') + 
-  ggrepel::geom_text_repel(data = mt_panc_annotated_rmsk_de %>% 
-             mutate(clade = factor(clade, levels = te_aware_annotation_levels[c(1,8)])),
-                    aes(label = ifelse(gene %in% mt_panc_label_list$gene, gene, '')), 
-                         show.legend = F, color = 'black', max.overlaps = 1000) + 
-  xlim(-8.5,8.5) + 
-  ggtitle('chrM panc DE') -> fig.S2C.plt
-
-fig.S2C.plt
-```
-## Fig_S2D
-```{r}
-ucsc.rmsk.salmon_quant$analysis_set$covid_ctrl$deseq$de_out %>% 
-  merge(reference_meta_data$ucsc_rmsk_insert_info.df, by = 'gene', all.x = T) %>% 
-  mutate(family = ifelse(ensg %in% reference_meta_data$gencode_lncRNA_gene_names.df$ensg,
-                         'gencode_lncRNA', family),
-         family = ifelse(is.na(family), 'gencode_coding', family),
-         clade = ifelse(grepl('gencode', family), family, clade),
-         clade = ifelse(clade %in% c('gencode_coding',
-                                     'gencode_lncRNA',
-                                     'LINE',
-                                     'SINE',
-                                     'LTR',
-                                     'DNA',
-                                     'Simple_repeat'), clade, 'other'),
-         type = ifelse(grepl('gencode',family), 'GENCODE', 'TE'),
-         clade = factor(clade, levels = te_aware_annotation_levels)) %>% 
-  filter(ensg %in% chrM.filter.list | grepl('^MT', gene)) -> mt_covid_annotated_rmsk_de
-
-mt_covid_label_list <- mt_covid_annotated_rmsk_de %>% 
-  top_n(6, wt = abs(log2FoldChange))
-
-mt_covid_annotated_rmsk_de %>%
-  filter(clade == 'gencode_coding') %>% 
-  ggplot(aes(log2FoldChange, -log10(padj), color = clade)) + 
-  geom_point(size = 2, alpha = 0.6, show.legend = FALSE) -> gencode_layer.plt
-
-gencode_layer.plt + 
-  geom_point(data = filter(mt_covid_annotated_rmsk_de, clade != 'gencode_coding') %>% 
-               mutate(clade = factor(clade, levels = te_aware_annotation_levels)),
-             aes(log2FoldChange, -log10(padj), color = clade), size = 2, alpha = 0.8) +
-  scale_color_manual(values = te_color_pal[c(1,8)], name = 'biotype/clade') + 
-  ggrepel::geom_text_repel(data = mt_covid_annotated_rmsk_de %>% 
-             mutate(clade = factor(clade, levels = te_aware_annotation_levels)),
-                    aes(label = ifelse(gene %in% mt_covid_label_list$gene, gene, '')), 
-                         show.legend = F, color = 'black', max.overlaps = 1000) + 
-  xlim(-7.5,7.5) + 
-  ggtitle('chrM covid DE') -> fig.S2D.plt
-
-fig.S2D.plt
-```
-### Fig_S2_patchwork
-```{r Fig1}
-import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer)
-
-
-fig_S2_layout <- "
-AA
-BC
-DD
-EF
-"
-
-wrap_plots(patchwork::wrap_elements(fig.S2A.fgsea_table.grob, ignore_tag = F),
-           patchwork::wrap_elements(full = fig.S2B.plt),
-           fig.S2B_2.plt,
-           guide_area(),
-           fig.S2C.plt,
-           fig.S2D.plt,
-           design = fig_S2_layout, 
-           guides = 'collect',
-           heights = c(0.35,1,0.0937,1,1)) + plot_annotation(tag_levels = 'A') & 
-  theme(plot.tag.position = c(0.01, 0.99), 
-        legend.position = 'bottom',
-        legend.title = element_text(vjust = 0.5),
-        legend.justification = c(0.5, 0.5)) -> fig.S2.patchwork
-
-save.manuscript.panel(figure = 's2',
-                      figure.dir = figure.dir,
-                      name = 'patchwork_full_fig_S2',
-                      width = figure_double_column_width,
-                      height = figure_depth,
-                      plot.in = fig.S2.patchwork)
-
-
-```
-
-# Fig_S2_2
-## Fig_S2_2_patchwork
-```{r}
-
-panc_annotated_rmsk_de %>% 
-  filter(clade %in% c('gencode_coding', 'gencode_lncRNA')) %>% 
-  ggplot(aes(log2FoldChange, -log10(padj), color = clade)) + 
-  geom_point(size = 2, alpha = 0.6) + 
-  scale_color_manual(values = te_color_pal[1:2], name = 'biotype') + 
-  ggtitle('panc GENCODE DE') +
-  ggrepel::geom_text_repel(aes(label = ifelse(-log10(padj) > 2.5, gene, '')), 
-                         show.legend = F, color = 'black', 
-             max.overlaps = 30, box.padding = unit(4.5, 'mm'), segment.colour = 'grey') -> plt_S2_2A
-
-covid_annotated_rmsk_de %>% 
-  filter(clade %in% c('gencode_coding', 'gencode_lncRNA')) %>% 
-  ggplot(aes(log2FoldChange, -log10(padj), color = clade)) + 
-  geom_point(size = 2, alpha = 0.6) + 
-  scale_color_manual(values = te_color_pal[1:2], name = 'biotype') + 
-  ggtitle('covid GENCODE DE') +
-  ggrepel::geom_text_repel(aes(label = ifelse(-log10(padj) > 2.5, gene, '')), 
-                         show.legend = F, color = 'black', 
-             max.overlaps = 60, box.padding = unit(4.5, 'mm'), segment.colour = 'grey') -> plt_S2_2B
-
-import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer)
-
-
-fig_S2_2_layout <- "
-AA
-BB
-CC
-"
-
-wrap_plots(plt_S2_2A,
-           guide_area(),
-           plt_S2_2B,
-           design = fig_S2_2_layout, 
-           guides = 'collect',
-           heights = c(1,0.05,1)) + plot_annotation(tag_levels = 'A') & 
-  theme(plot.tag.position = c(0.01, 0.99), 
-        legend.position = 'bottom',
-        legend.title = element_text(vjust = 0.5),
-        legend.justification = c(0.5, 0.5)) -> fig.S2_2.patchwork
-
-save.manuscript.panel(figure = 's2',
-                      figure.dir = figure.dir,
-                      name = 'patchwork_full_fig_S2_2',
-                      width = figure_double_column_width,
-                      height = figure_depth,
-                      plot.in = fig.S2_2.patchwork)
-
-
-```
-
-# Fig_Nanopore
+# Fig_4
 ## read_len load
 ```{r}
 panc.7.1.1_read_len <- read_csv(file.path(output_data.dir, 'nanopore', 
@@ -2456,13 +2213,256 @@ wrap_plots(plt_NC.plt,
 
 # fig.N.patchwork
 
-save.manuscript.panel(figure = 2,
+save.manuscript.panel(figure = 4,
                       figure.dir = figure.dir,
-                      name = 'patchwork_full_fig_2',
+                      name = 'patchwork_full_fig_4',
                       width = figure_double_column_width,
                       height = figure_depth,
                       plot.in = fig.N.patchwork)
 ```
+
+# Fig_S4
+## Fig_S2A
+```{r}
+bind_rows(list('panc' = salmon_quant$analysis_set$ctrl_panc_covid$deseq$fgsea$panc_v_ctrl,
+          'covid' = salmon_quant$analysis_set$ctrl_panc_covid$deseq$fgsea$covid_v_ctrl),
+          .id = 'condition') %>% 
+  select(condition, 'enriched pathway' = pathway, padj, NES) %>% 
+  mutate(padj = round(padj, 10),
+         NES = round(NES, 3)) %>% 
+  dplyr::rename('GSEA padj' = padj, 'GSEA NES' = NES) %>% 
+  gridExtra::tableGrob(theme = gridExtra::ttheme_minimal(), rows = NULL) -> fig.S2A.fgsea_table.grob
+
+```
+## Fig_S2B
+```{r}
+de_compare_list <- list('panc' = ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out,
+                        'covid' = ucsc.rmsk.salmon_quant$analysis_set$covid_ctrl$deseq$de_out)
+
+purrr::imap(de_compare_list, function(de, de_name) {
+  
+  de %>% 
+    filter(gene %in% msig.df$HALLMARK_MYC_TARGETS_V1,
+           padj < 0.05,
+           abs(log2FoldChange) > 0.5) %>% 
+    mutate(id = de_name)
+  
+}) %>% bind_rows() -> de_upset.df
+
+de_upset.df %>% 
+  group_by(gene) %>% 
+  summarize(context = list(id)) %>% 
+  ggplot(aes(context)) + 
+  geom_bar(fill = 'white', color = 'black') + 
+  ggupset::scale_x_upset() +
+  geom_text(stat='count', aes(label=after_stat(count)), nudge_y = -2) + 
+  xlab('') + ylab('shared DE MYC Target V1 genes') -> fig.S2B.plt
+
+
+de_upset.df %>% 
+  group_by(id) %>% 
+  top_n(5, wt = log2FoldChange) %>% 
+  ggplot(aes(reorder(gene, -log2FoldChange), log2FoldChange)) + 
+  geom_col(fill = NA, color = 'black') + 
+  coord_flip() + 
+  ggforce::facet_col(~id, scales = 'free_y') + 
+  geom_hline(yintercept = 1.0, linetype = 'dashed', alpha = 0.6) + 
+  xlab('')
+
+de_upset.df %>% 
+  select(gene, log2FoldChange, id) %>% 
+  spread(id, log2FoldChange) %>% 
+  ggplot(aes(covid, panc, label = gene)) + 
+  geom_point() + 
+  geom_hline(yintercept = 0, linetype = 'dashed', alpha = 0.6) +
+  geom_vline(xintercept = 0, linetype = 'dashed', alpha = 0.6) + 
+  xlab('covid MYC Targets V1 log2FoldChange') + ylab('panc MYC Targets V1 log2FoldChange') +
+  ggrepel::geom_text_repel() -> fig.S2B_2.plt
+
+```
+## Fig_S2C
+```{r}
+import::from(.from = 'SummarizedExperiment',
+             rowRanges)
+
+rowRanges(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$gxi) %>% 
+  as.data.frame() %>% 
+  filter(seqnames == 'chrM') %>% 
+  select(group_name) %>% 
+  unlist() %>% unname() -> chrM.filter.list
+
+ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out %>% 
+# ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$deseq$panc_vs_ctrl %>% 
+  merge(reference_meta_data$ucsc_rmsk_insert_info.df, by = 'gene', all.x = T) %>% 
+  mutate(family = ifelse(ensg %in% reference_meta_data$gencode_lncRNA_gene_names.df$ensg,
+                         'gencode_lncRNA', family),
+         family = ifelse(is.na(family), 'gencode_coding', family),
+         clade = ifelse(grepl('gencode', family), family, clade),
+         clade = ifelse(clade %in% c('gencode_coding',
+                                     'gencode_lncRNA',
+                                     'LINE',
+                                     'SINE',
+                                     'LTR',
+                                     'DNA',
+                                     'Simple_repeat'), clade, 'other'),
+         type = ifelse(grepl('gencode',family), 'GENCODE', 'TE'),
+         clade = factor(clade, levels = te_aware_annotation_levels[c(1,8)])) %>% 
+  filter(ensg %in% chrM.filter.list | grepl('^MT', gene)) -> mt_panc_annotated_rmsk_de
+
+mt_panc_label_list <- mt_panc_annotated_rmsk_de %>% 
+  top_n(6, wt = abs(log2FoldChange))
+
+mt_panc_annotated_rmsk_de %>%
+  filter(clade == 'gencode_coding') %>% 
+  ggplot(aes(log2FoldChange, -log10(padj), color = clade)) + 
+  geom_point(size = 2, alpha = 0.6, show.legend = FALSE) -> gencode_layer.plt
+
+gencode_layer.plt + 
+  geom_point(data = filter(mt_panc_annotated_rmsk_de, clade != 'gencode_coding') %>% 
+               mutate(clade = factor(clade, levels = te_aware_annotation_levels[c(1,8)])),
+             aes(log2FoldChange, -log10(padj), color = clade), size = 2, alpha = 0.8) +
+  scale_color_manual(values = te_color_pal[c(1,8)], name = 'biotype/clade') + 
+  ggrepel::geom_text_repel(data = mt_panc_annotated_rmsk_de %>% 
+             mutate(clade = factor(clade, levels = te_aware_annotation_levels[c(1,8)])),
+                    aes(label = ifelse(gene %in% mt_panc_label_list$gene, gene, '')), 
+                         show.legend = F, color = 'black', max.overlaps = 1000) + 
+  xlim(-8.5,8.5) + 
+  ggtitle('chrM panc DE') -> fig.S2C.plt
+
+fig.S2C.plt
+```
+## Fig_S2D
+```{r}
+ucsc.rmsk.salmon_quant$analysis_set$covid_ctrl$deseq$de_out %>% 
+  merge(reference_meta_data$ucsc_rmsk_insert_info.df, by = 'gene', all.x = T) %>% 
+  mutate(family = ifelse(ensg %in% reference_meta_data$gencode_lncRNA_gene_names.df$ensg,
+                         'gencode_lncRNA', family),
+         family = ifelse(is.na(family), 'gencode_coding', family),
+         clade = ifelse(grepl('gencode', family), family, clade),
+         clade = ifelse(clade %in% c('gencode_coding',
+                                     'gencode_lncRNA',
+                                     'LINE',
+                                     'SINE',
+                                     'LTR',
+                                     'DNA',
+                                     'Simple_repeat'), clade, 'other'),
+         type = ifelse(grepl('gencode',family), 'GENCODE', 'TE'),
+         clade = factor(clade, levels = te_aware_annotation_levels)) %>% 
+  filter(ensg %in% chrM.filter.list | grepl('^MT', gene)) -> mt_covid_annotated_rmsk_de
+
+mt_covid_label_list <- mt_covid_annotated_rmsk_de %>% 
+  top_n(6, wt = abs(log2FoldChange))
+
+mt_covid_annotated_rmsk_de %>%
+  filter(clade == 'gencode_coding') %>% 
+  ggplot(aes(log2FoldChange, -log10(padj), color = clade)) + 
+  geom_point(size = 2, alpha = 0.6, show.legend = FALSE) -> gencode_layer.plt
+
+gencode_layer.plt + 
+  geom_point(data = filter(mt_covid_annotated_rmsk_de, clade != 'gencode_coding') %>% 
+               mutate(clade = factor(clade, levels = te_aware_annotation_levels)),
+             aes(log2FoldChange, -log10(padj), color = clade), size = 2, alpha = 0.8) +
+  scale_color_manual(values = te_color_pal[c(1,8)], name = 'biotype/clade') + 
+  ggrepel::geom_text_repel(data = mt_covid_annotated_rmsk_de %>% 
+             mutate(clade = factor(clade, levels = te_aware_annotation_levels)),
+                    aes(label = ifelse(gene %in% mt_covid_label_list$gene, gene, '')), 
+                         show.legend = F, color = 'black', max.overlaps = 1000) + 
+  xlim(-7.5,7.5) + 
+  ggtitle('chrM covid DE') -> fig.S2D.plt
+
+fig.S2D.plt
+```
+### Fig_S2_patchwork
+```{r Fig1}
+import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer)
+
+
+fig_S2_layout <- "
+AA
+BC
+DD
+EF
+"
+
+wrap_plots(patchwork::wrap_elements(fig.S2A.fgsea_table.grob, ignore_tag = F),
+           patchwork::wrap_elements(full = fig.S2B.plt),
+           fig.S2B_2.plt,
+           guide_area(),
+           fig.S2C.plt,
+           fig.S2D.plt,
+           design = fig_S2_layout, 
+           guides = 'collect',
+           heights = c(0.35,1,0.0937,1,1)) + plot_annotation(tag_levels = 'A') & 
+  theme(plot.tag.position = c(0.01, 0.99), 
+        legend.position = 'bottom',
+        legend.title = element_text(vjust = 0.5),
+        legend.justification = c(0.5, 0.5)) -> fig.S2.patchwork
+
+save.manuscript.panel(figure = 's2',
+                      figure.dir = figure.dir,
+                      name = 'patchwork_full_fig_S2',
+                      width = figure_double_column_width,
+                      height = figure_depth,
+                      plot.in = fig.S2.patchwork)
+
+
+```
+
+# Fig_S2_2
+## Fig_S2_2_patchwork
+```{r}
+
+panc_annotated_rmsk_de %>% 
+  filter(clade %in% c('gencode_coding', 'gencode_lncRNA')) %>% 
+  ggplot(aes(log2FoldChange, -log10(padj), color = clade)) + 
+  geom_point(size = 2, alpha = 0.6) + 
+  scale_color_manual(values = te_color_pal[1:2], name = 'biotype') + 
+  ggtitle('panc GENCODE DE') +
+  ggrepel::geom_text_repel(aes(label = ifelse(-log10(padj) > 2.5, gene, '')), 
+                         show.legend = F, color = 'black', 
+             max.overlaps = 30, box.padding = unit(4.5, 'mm'), segment.colour = 'grey') -> plt_S2_2A
+
+covid_annotated_rmsk_de %>% 
+  filter(clade %in% c('gencode_coding', 'gencode_lncRNA')) %>% 
+  ggplot(aes(log2FoldChange, -log10(padj), color = clade)) + 
+  geom_point(size = 2, alpha = 0.6) + 
+  scale_color_manual(values = te_color_pal[1:2], name = 'biotype') + 
+  ggtitle('covid GENCODE DE') +
+  ggrepel::geom_text_repel(aes(label = ifelse(-log10(padj) > 2.5, gene, '')), 
+                         show.legend = F, color = 'black', 
+             max.overlaps = 60, box.padding = unit(4.5, 'mm'), segment.colour = 'grey') -> plt_S2_2B
+
+import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer)
+
+
+fig_S2_2_layout <- "
+AA
+BB
+CC
+"
+
+wrap_plots(plt_S2_2A,
+           guide_area(),
+           plt_S2_2B,
+           design = fig_S2_2_layout, 
+           guides = 'collect',
+           heights = c(1,0.05,1)) + plot_annotation(tag_levels = 'A') & 
+  theme(plot.tag.position = c(0.01, 0.99), 
+        legend.position = 'bottom',
+        legend.title = element_text(vjust = 0.5),
+        legend.justification = c(0.5, 0.5)) -> fig.S2_2.patchwork
+
+save.manuscript.panel(figure = 's2',
+                      figure.dir = figure.dir,
+                      name = 'patchwork_full_fig_S2_2',
+                      width = figure_double_column_width,
+                      height = figure_depth,
+                      plot.in = fig.S2_2.patchwork)
+
+
+```
+
+
 
 # Fig_supp_nanopore
 ## Fig_SNA

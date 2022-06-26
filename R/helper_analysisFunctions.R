@@ -593,7 +593,7 @@ run.pca <- function(input_de,
   pca.out %>% 
     ggplot(aes(PC1, PC2,
                color = condition)) +
-    geom_point(size = rel(2), alpha = 1) + 
+    geom_point(size = rel(1), alpha = 0.8) + 
     # scale_shape_manual(values = c(21,25)) +
     xlab(paste('PC1', round(cumsum(pcs.props)[1], digits = 3), sep = ' ')) +
     ylab(paste('PC2', round(cumsum(pcs.props)[2] - cumsum(pcs.props)[1], digits = 3), sep = ' ')) +
@@ -606,7 +606,7 @@ run.pca <- function(input_de,
   pca.out %>% 
     ggplot(aes(PC2, PC3,
                color = condition)) +
-    geom_point(size = rel(2), alpha = 1) +
+    geom_point(size = rel(1), alpha = 0.8) + 
     # scale_shape_manual(values = c(21,25)) +
     xlab(paste('PC2', round(cumsum(pcs.props)[2] - cumsum(pcs.props)[1], digits = 3), sep = ' ')) +
     ylab(paste('PC3', round(cumsum(pcs.props)[3] - cumsum(pcs.props)[2], digits = 3), sep = ' ')) +
@@ -618,7 +618,7 @@ run.pca <- function(input_de,
   pca.out %>% 
     ggplot(aes(PC3, PC4,
                color = condition)) +
-    geom_point(size = rel(2), alpha = 1) + 
+    geom_point(size = rel(1), alpha = 0.8) + 
     # scale_shape_manual(values = c(21,25)) +
     xlab(paste('PC3', round(cumsum(pcs.props)[3] - cumsum(pcs.props)[2], digits = 3), sep = ' ')) +
     ylab(paste('PC4', round(cumsum(pcs.props)[4] - cumsum(pcs.props)[3], digits = 3), sep = ' ')) +

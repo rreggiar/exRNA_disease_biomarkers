@@ -605,7 +605,7 @@ fig.1C.plt <-
   ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_2v3.plt +
   annotate(geom = 'text', x = 125, y = -175, label = 'Repeat-aware', size = txt.mm_to_pts(1.25))
 
-
+ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_out.df
 ```
 ## Fig_1D
 ```{r 1D}
@@ -1058,6 +1058,64 @@ save.manuscript.panel(figure = 2,
 ```
 
 # Fig_3
+## tcga & gtex load
+```{r}
+tcga_data_path <- file.path(output_data.dir, 'tcga_gtex')
+gtex_colData <- read_csv(file.path(tcga_data_path, 'panc_gtex_colData.csv'), 
+                         col_names = c('sample', 'name', 'tissue_1', 'tissue_2', 'sex', 'age'))
+
+tcga_colData <- read_tsv(file.path(tcga_data_path, 'paad_tcga_colData.tsv')) %>% 
+  mutate(submitter_id.samples = str_replace_all(string = submitter_id.samples, pattern = 'TCGA', replacement = 'PAAD'),
+         submitter_id.samples = str_replace_all(string = submitter_id.samples, pattern = '01A', replacement = 'TP'),
+         submitter_id.samples = str_replace_all(string = submitter_id.samples, pattern = '11A', replacement = 'NT'))
+
+if (! file.exists(file.path(tcga_data_path, 'paad_tcga_gene_readNum_matrix.tsv')) & 
+    ! file.exists(file.path(tcga_data_path, 'paad_gtex_gene_readNum_matrix.tsv'))) {
+  
+  tcga_paad_counts <- vroom::vroom(file.path(tcga_data_path, 'paad_tcga_readNum_matrix.tsv.gz'))
+  tx_names <- tcga_paad_counts$Name
+  
+  enst_names <- tx_names[grepl('^ENST', tx_names), drop = F]
+  enst_tx2gene <- tibble(tx = enst_names, gene = str_split_fixed(string = enst_names, pattern = '\\|', n = Inf)[,6])
+  
+  te_names <- tx_names[grepl('^hg38', tx_names), drop = F]
+  te_tx2gene <- tibble(tx = te_names, gene = str_split_fixed(string = te_names, pattern = '_', n = Inf)[,3])
+  
+  tx2gene <- rbind(enst_tx2gene, te_tx2gene)
+  
+  tx2gene
+  vroom::vroom_write(x = tx2gene, file.path(tcga_data_path, 'tcga_gtex_tx2gene.tsv'))
+  
+  tcga_paad_counts %>% 
+    merge(tx2gene, by.x = 'Name', by.y = 'tx') -> tcga_paad_counts
+  
+  tcga_paad_counts %>% 
+    group_by(gene) %>% 
+    summarize(across(is.numeric, ~sum(.x))) -> tcga_paad_gene_counts
+  
+  vroom::vroom_write(x = tcga_paad_gene_counts, file.path(tcga_data_path, 'paad_tcga_gene_readNum_matrix.tsv'))
+  
+  gtex_paad_counts <- vroom::vroom(file.path(tcga_data_path, 'paad_gtex_readNum_matrix.tsv.gz'))
+  
+  gtex_paad_counts %>% 
+    merge(tx2gene, by.x = 'Name', by.y = 'tx') -> gtex_paad_counts
+  
+  gtex_paad_counts %>% 
+    group_by(gene) %>% 
+    summarize(across(is.numeric, ~sum(.x))) -> gtex_paad_gene_counts
+  
+  rm(gtex_paad_counts)
+  
+  vroom::vroom_write(x = gtex_paad_gene_counts, file.path(tcga_data_path, 'paad_gtex_gene_readNum_matrix.tsv'))
+  
+} else {
+  message('loading....')
+  tx2gene <- read_tsv(file.path(tcga_data_path, 'tcga_gtex_tx2gene.tsv'))
+  gtex_paad_gene_counts <- read_tsv(file.path(tcga_data_path, 'paad_gtex_gene_readNum_matrix.tsv'))
+  tcga_paad_gene_counts <- read_tsv(file.path(tcga_data_path, 'paad_tcga_gene_readNum_matrix.tsv'))
+  
+}
+```
 ## Fig_TCGA_Surv_plt
 ```{r 3 prep}
 library(survminer)
@@ -1131,6 +1189,7 @@ ggsurvplot(surv.fit,
            ylab = 'Overall Survival Probability',
            xlab = 'Overall Survival Time -- days',
            pval = T, 
+           pval.size = txt.mm_to_pts(1),
            legend.title = "",
            ggtheme = theme_set_fun() + theme(legend.position = c(0.45,0.95)),
            pval.coord = c(0, 0.08),
@@ -1142,117 +1201,162 @@ paste0('panc gencode up \n (n genes = ',filter(ucsc.rmsk.salmon_quant$analysis_s
 
 surv.plt$plot + ggtitle(km_title) -> plt_surv_A.plt
 
+# ------------------------------------------------------------------------------
 filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
-                        padj < 0.05, log2FoldChange > 0.75) %>% 
-  filter(!gene %in% reference_meta_data$ucsc_rmsk_insert_info.df$gene) %>% 
-  top_n(wt =-padj, 10) %>% 
-  arrange(padj) %>% 
-  select(gene, baseMean, log2FoldChange, padj) -> panc_up_km_table
+                        padj < 0.05, log2FoldChange > 0.75) %>%
+  filter(!gene %in% reference_meta_data$ucsc_rmsk_insert_info.df$gene) %>%
+  top_n(wt =-padj, 10) %>% dplyr::pull(gene) -> this_top_10
 
-panc_up_km_table %>% 
-  gridExtra::tableGrob(theme = gridExtra::ttheme_minimal(base_size = 8,
-                                                         core = list(padding=unit(c(1, 2.5), "mm"))), 
-                       rows = NULL) -> plt_surv_A.tbl
+ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$norm_counts.df %>% 
+  rownames_to_column('ensg') %>% 
+  merge(reference_meta_data$total_tx_to_gene.df %>% select(ensg, gene) %>% distinct(), by = 'ensg') %>% 
+  filter(gene %in% this_top_10) %>% 
+  select(-ensg) %>% 
+  mutate_if(is.numeric, ~scale(log2(. + 1), center = T)) %>% 
+  column_to_rownames('gene') %>% as.matrix() %>% t() -> hm_count_data
 
-  
+# hm_meta_data <- ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$scaled_quant_meta_for_de.df
+
+hm_meta_data <- ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$scaled_quant_meta_for_de.df[match(rownames(hm_count_data),
+                                                                                                                                                                                                        ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$scaled_quant_meta_for_de.df$sample), ]
+
+left_hma <- ComplexHeatmap::rowAnnotation(df = hm_meta_data %>% select(condition), 
+                                          col = list(condition = identity_color_pal), 
+                                          show_annotation_name = F, simple_anno_size = unit(.3, "cm"),
+                                          annotation_legend_param = 
+                                            list(title_gp = grid::gpar(fontsize = 6, fontface = 'bold')))
+
+reference_meta_data$gencode_lncRNA_gene_names.df %>%
+  filter(gene %in% colnames(hm_count_data)) %>% 
+  select(gene, clade) %>% 
+  mutate(clade = ifelse(clade %in% names(te_color_pal), clade, 'other')) %>% 
+  column_to_rownames('gene') -> hm_te_data
+
+hm_te_data <- hm_te_data[match(colnames(hm_count_data), rownames(hm_te_data)), , drop = F]
+
+top_hma <- ComplexHeatmap::columnAnnotation(df = hm_te_data, 
+                                            col = list(clade = te_color_pal), 
+                                            show_annotation_name = T,
+                                            annotation_name_side = 'left',
+                                            annotation_name_gp = grid::gpar(fontsize = 7, fontface = 'italic'),
+                                            annotation_legend_param = 
+                                            list(title_gp = grid::gpar(fontsize = 6, fontface = 'bold')),
+                                            show_legend = T, 
+                                            simple_anno_size = unit(.275, "cm"))
+
+set.seed(129)
+ComplexHeatmap::Heatmap(hm_count_data, 
+                        show_row_names = F, 
+                        show_column_names = T, 
+                        heatmap_width = figure_single_column_width,
+                        left_annotation = left_hma, 
+                        column_dend_height = unit(.25, "cm"),
+                        row_dend_width = unit(.25, "cm"),
+                        heatmap_legend_param = 
+                          list(legend_gp = grid::gpar(fontsize = 5),
+                               title_gp = grid::gpar(fontsize = 6, fontface = 'bold')),
+                        row_names_gp = grid::gpar(fontsize = 6),
+                        column_names_gp = grid::gpar(fontsize = 6),
+                        name = 'Z-score') -> plt_surv_A.chm
+
 ```
 ### DN Surv
 ```{r}
-tcga_padd_stratified_counts <-
-  tcga_paad_dds_norm_counts.df %>%
-  t() %>% as.data.frame()
-
-tcga_padd_stratified_counts %>% 
-  rownames_to_column('sample') %>% 
-  filter(sample %in% tcga_primary_tumors$sample) %>% 
-  gather(gene, count, -sample) %>% 
-  filter(gene %in% filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
-                          padj < 0.05, log2FoldChange < -0.75)$gene) %>% 
-  filter(!gene %in% reference_meta_data$ucsc_rmsk_insert_info.df$gene) %>%
-  select(sample, count) %>% 
-  group_by(sample) %>%
-  summarize(avg.count = mean(count)) %>%
-  mutate(gene.set = 'panc_exRNA_signal') %>%
-  group_by(gene.set) %>%
-  mutate(stratum = ifelse(avg.count >= quantile(avg.count, 0.66),
-                          'top-third', ifelse(avg.count <= quantile(avg.count, 0.33),
-                                              'bottom-third', 'middle'))) %>%
-  filter(stratum != 'middle') %>%
-  spread(gene.set, stratum) -> tcga_paad_stratified_counts
-
-paad_survival <- read_tsv(file.path(output_data.dir, 'tcga_gtex', 'PAAD_survival.txt'))
-
-paad_tcga_pheno_merge <- 
-  tcga_primary_tumors %>% merge(paad_survival, by.x = 'patient', by.y = '_PATIENT')
-
-surv.obj <- Surv(time = filter(paad_tcga_pheno_merge %>% select(sample.x, OS.time, OS) %>% distinct(), 
-                               sample.x %in% tcga_paad_stratified_counts$sample)$OS.time,
-                 event = filter(paad_tcga_pheno_merge %>% select(sample.x, OS.time, OS) %>% distinct(), 
-                                sample.x %in% tcga_paad_stratified_counts$sample)$OS)
-
-surv.fit <- survfit(as.formula(surv.obj ~ panc_exRNA_signal), 
-                    data = tcga_paad_stratified_counts)
-ggsurvplot(surv.fit, 
-           ylab = 'Overall Survival Probability',
-           xlab = 'Overall Survival Time -- days',
-           pval = T, 
-           legend.title = "", 
-           ggtheme = theme_set_fun() + theme(legend.position = c(0.45,0.95)),
-           pval.coord = c(0, 0.08),
-           palette = viridis(3)[c(2,1)]) -> surv.plt
-
-surv.plt$plot + ggtitle('panc gencode down') -> plt_surv_B.plt
+# tcga_padd_stratified_counts <-
+#   tcga_paad_dds_norm_counts.df %>%
+#   t() %>% as.data.frame()
+# 
+# tcga_padd_stratified_counts %>% 
+#   rownames_to_column('sample') %>% 
+#   filter(sample %in% tcga_primary_tumors$sample) %>% 
+#   gather(gene, count, -sample) %>% 
+#   filter(gene %in% filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
+#                           padj < 0.05, log2FoldChange < -0.75)$gene) %>% 
+#   filter(!gene %in% reference_meta_data$ucsc_rmsk_insert_info.df$gene) %>%
+#   select(sample, count) %>% 
+#   group_by(sample) %>%
+#   summarize(avg.count = mean(count)) %>%
+#   mutate(gene.set = 'panc_exRNA_signal') %>%
+#   group_by(gene.set) %>%
+#   mutate(stratum = ifelse(avg.count >= quantile(avg.count, 0.66),
+#                           'top-third', ifelse(avg.count <= quantile(avg.count, 0.33),
+#                                               'bottom-third', 'middle'))) %>%
+#   filter(stratum != 'middle') %>%
+#   spread(gene.set, stratum) -> tcga_paad_stratified_counts
+# 
+# paad_survival <- read_tsv(file.path(output_data.dir, 'tcga_gtex', 'PAAD_survival.txt'))
+# 
+# paad_tcga_pheno_merge <- 
+#   tcga_primary_tumors %>% merge(paad_survival, by.x = 'patient', by.y = '_PATIENT')
+# 
+# surv.obj <- Surv(time = filter(paad_tcga_pheno_merge %>% select(sample.x, OS.time, OS) %>% distinct(), 
+#                                sample.x %in% tcga_paad_stratified_counts$sample)$OS.time,
+#                  event = filter(paad_tcga_pheno_merge %>% select(sample.x, OS.time, OS) %>% distinct(), 
+#                                 sample.x %in% tcga_paad_stratified_counts$sample)$OS)
+# 
+# surv.fit <- survfit(as.formula(surv.obj ~ panc_exRNA_signal), 
+#                     data = tcga_paad_stratified_counts)
+# ggsurvplot(surv.fit, 
+#            ylab = 'Overall Survival Probability',
+#            xlab = 'Overall Survival Time -- days',
+#            pval = T, 
+#            legend.title = "", 
+#            ggtheme = theme_set_fun() + theme(legend.position = c(0.45,0.95)),
+#            pval.coord = c(0, 0.08),
+#            palette = viridis(3)[c(2,1)]) -> surv.plt
+# 
+# surv.plt$plot + ggtitle('panc gencode down') -> plt_surv_B.plt
 ```
 ### DN lncRNA
 ```{r}
-reference_meta_data$gencode_lncRNA_gene_names.df %>% 
-  select(-biotype) %>% 
-  merge(reference_meta_data$total_tx_to_gene.df, by ='ensg') -> lncRNA_tx_to_gene
-
-tcga_padd_stratified_counts <-
-  tcga_paad_dds_norm_counts.df %>%
-  t() %>% as.data.frame()
-
-tcga_padd_stratified_counts %>% 
-  rownames_to_column('sample') %>% 
-  filter(sample %in% tcga_primary_tumors$sample) %>% 
-  gather(gene, count, -sample) %>% 
-  filter(gene %in% filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
-                          padj < 0.05, log2FoldChange < -1)$gene) %>% 
-  filter(gene %in% lncRNA_tx_to_gene$gene) %>%
-  select(sample, count) %>% 
-  group_by(sample) %>%
-  summarize(avg.count = mean(count)) %>%
-  mutate(gene.set = 'panc_exRNA_signal') %>%
-  group_by(gene.set) %>%
-  mutate(stratum = ifelse(avg.count >= quantile(avg.count, 0.66),
-                          'top-third', ifelse(avg.count <= quantile(avg.count, 0.33),
-                                              'bottom-third', 'middle'))) %>%
-  filter(stratum != 'middle') %>%
-  spread(gene.set, stratum) -> tcga_paad_stratified_counts
-
-paad_survival <- read_tsv(file.path(output_data.dir, 'tcga_gtex', 'PAAD_survival.txt'))
-
-paad_tcga_pheno_merge <- 
-  tcga_primary_tumors %>% merge(paad_survival, by.x = 'patient', by.y = '_PATIENT')
-
-surv.obj <- Surv(time = filter(paad_tcga_pheno_merge %>% select(sample.x, OS.time, OS) %>% distinct(), 
-                               sample.x %in% tcga_paad_stratified_counts$sample)$OS.time,
-                 event = filter(paad_tcga_pheno_merge %>% select(sample.x, OS.time, OS) %>% distinct(), 
-                                sample.x %in% tcga_paad_stratified_counts$sample)$OS)
-
-surv.fit <- survfit(as.formula(surv.obj ~ panc_exRNA_signal), 
-                    data = tcga_paad_stratified_counts)
-ggsurvplot(surv.fit, 
-           ylab = 'Overall Survival Probability',
-           xlab = 'Overall Survival Time -- days',
-           pval = T, 
-           legend.title = "", 
-           ggtheme = theme_set_fun() + theme(legend.position = c(0.45,0.95)),
-           pval.coord = c(0, 0.08),
-           palette = viridis(3)[c(2,1)]) -> surv.plt
-
-surv.plt$plot + ggtitle('panc lncRNA down') -> plt_surv_C.plt
+# reference_meta_data$gencode_lncRNA_gene_names.df %>% 
+#   select(-biotype) %>% 
+#   merge(reference_meta_data$total_tx_to_gene.df, by ='ensg') -> lncRNA_tx_to_gene
+# 
+# tcga_padd_stratified_counts <-
+#   tcga_paad_dds_norm_counts.df %>%
+#   t() %>% as.data.frame()
+# 
+# tcga_padd_stratified_counts %>% 
+#   rownames_to_column('sample') %>% 
+#   filter(sample %in% tcga_primary_tumors$sample) %>% 
+#   gather(gene, count, -sample) %>% 
+#   filter(gene %in% filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
+#                           padj < 0.05, log2FoldChange < -1)$gene) %>% 
+#   filter(gene %in% lncRNA_tx_to_gene$gene) %>%
+#   select(sample, count) %>% 
+#   group_by(sample) %>%
+#   summarize(avg.count = mean(count)) %>%
+#   mutate(gene.set = 'panc_exRNA_signal') %>%
+#   group_by(gene.set) %>%
+#   mutate(stratum = ifelse(avg.count >= quantile(avg.count, 0.66),
+#                           'top-third', ifelse(avg.count <= quantile(avg.count, 0.33),
+#                                               'bottom-third', 'middle'))) %>%
+#   filter(stratum != 'middle') %>%
+#   spread(gene.set, stratum) -> tcga_paad_stratified_counts
+# 
+# paad_survival <- read_tsv(file.path(output_data.dir, 'tcga_gtex', 'PAAD_survival.txt'))
+# 
+# paad_tcga_pheno_merge <- 
+#   tcga_primary_tumors %>% merge(paad_survival, by.x = 'patient', by.y = '_PATIENT')
+# 
+# surv.obj <- Surv(time = filter(paad_tcga_pheno_merge %>% select(sample.x, OS.time, OS) %>% distinct(), 
+#                                sample.x %in% tcga_paad_stratified_counts$sample)$OS.time,
+#                  event = filter(paad_tcga_pheno_merge %>% select(sample.x, OS.time, OS) %>% distinct(), 
+#                                 sample.x %in% tcga_paad_stratified_counts$sample)$OS)
+# 
+# surv.fit <- survfit(as.formula(surv.obj ~ panc_exRNA_signal), 
+#                     data = tcga_paad_stratified_counts)
+# ggsurvplot(surv.fit, 
+#            ylab = 'Overall Survival Probability',
+#            xlab = 'Overall Survival Time -- days',
+#            pval = T, 
+#            legend.title = "", 
+#            ggtheme = theme_set_fun() + theme(legend.position = c(0.45,0.95)),
+#            pval.coord = c(0, 0.08),
+#            palette = viridis(3)[c(2,1)]) -> surv.plt
+# 
+# surv.plt$plot + ggtitle('panc lncRNA down') -> plt_surv_C.plt
 ```
 ### DN TEs
 ```{r}
@@ -1294,6 +1398,7 @@ ggsurvplot(surv.fit,
            ylab = 'Overall Survival Probability',
            xlab = 'Overall Survival Time -- days',
            pval = T, 
+           pval.size = txt.mm_to_pts(1),
            legend.title = "", 
            ggtheme = theme_set_fun() + theme(legend.position = c(0.45,0.95)),
            pval.coord = c(0, 0.08),
@@ -1303,66 +1408,101 @@ paste0('panc TE down \n (n genes = ',filter(ucsc.rmsk.salmon_quant$analysis_set$
                           padj < 0.05, log2FoldChange < -1) %>% 
   filter(gene %in% reference_meta_data$ucsc_rmsk_insert_info.df$gene) %>% nrow(), ')') -> km_title
 
-surv.plt$plot + ggtitle(km_title) -> plt_surv_D.plt
+surv.plt$plot + ggtitle(km_title) -> plt_surv_B.plt
+
+# ------------------------------------------------------------------------------
 
 filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
                           padj < 0.05, log2FoldChange < -1) %>% 
   filter(gene %in% reference_meta_data$ucsc_rmsk_insert_info.df$gene) %>%
-  top_n(wt =-padj, 10) %>% 
-  arrange(padj) %>% 
-  select(gene, baseMean, log2FoldChange, padj) -> panc_dn_TE_km_table
+  top_n(wt =-padj, 10) %>% dplyr::pull(gene) -> this_top_10
 
-panc_dn_TE_km_table %>% 
-  gridExtra::tableGrob(theme = gridExtra::ttheme_minimal(base_size = 8,
-                                                         core = list(padding=unit(c(1, 2.5), "mm"))), 
-                       rows = NULL) -> plt_surv_D.tbl
+ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$norm_counts.df %>% 
+  rownames_to_column('ensg') %>% 
+  merge(reference_meta_data$total_tx_to_gene.df %>% select(ensg, gene) %>% distinct(), by = 'ensg') %>% 
+  filter(gene %in% this_top_10) %>% 
+  select(-ensg) %>% 
+  mutate_if(is.numeric, ~scale(log2(. + 1), center = T)) %>% 
+  column_to_rownames('gene') %>% as.matrix() %>% t() -> hm_count_data
+
+
+hm_meta_data <- ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$scaled_quant_meta_for_de.df[match(rownames(hm_count_data),
+                                                                                                                                                                                                        ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$scaled_quant_meta_for_de.df$sample), ]
+
+left_hma <- ComplexHeatmap::rowAnnotation(df = hm_meta_data %>% select(condition), 
+                                          col = list(condition = identity_color_pal), 
+                                          show_annotation_name = F, 
+                                          show_legend = F,
+                                          simple_anno_size = unit(.3, "cm"),
+                                          annotation_legend_param = 
+                                            list(title_gp = grid::gpar(fontsize = 6, fontface = 'bold'),
+                                                 legend_gp = grid::gpar(fontsize = 5),
+                                                 legend_height = unit(3.5, 'cm')))
+
+
+set.seed(129)
+ComplexHeatmap::Heatmap(hm_count_data,
+                        show_row_names = F, 
+                        show_column_names = T, 
+                        show_heatmap_legend = FALSE,
+                        heatmap_width = figure_single_column_width,
+                        left_annotation = left_hma, 
+                        column_dend_height = unit(.25, "cm"),
+                        row_dend_width = unit(.25, "cm"),
+                        heatmap_legend_param = 
+                          list(legend_gp = grid::gpar(fontsize = 5),
+                               title_gp = grid::gpar(fontsize = 6, fontface = 'bold')),
+                        row_names_gp = grid::gpar(fontsize = 6),
+                        column_names_gp = grid::gpar(fontsize = 6),
+                        name = 'Z-score') -> plt_surv_B.chm
+
 ```
 ### UP TEs
 ```{r}
-tcga_padd_stratified_counts <-
-  tcga_paad_dds_norm_counts.df %>%
-  t() %>% as.data.frame()
-
-tcga_padd_stratified_counts %>% 
-  rownames_to_column('sample') %>% 
-  filter(sample %in% tcga_primary_tumors$sample) %>% 
-  gather(gene, count, -sample) %>% 
-  filter(gene %in% filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
-                          padj < 0.05, log2FoldChange > 0.5)$gene) %>% 
-  filter(gene %in% reference_meta_data$ucsc_rmsk_insert_info.df$gene) %>%
-  select(sample, count) %>% 
-  group_by(sample) %>%
-  summarize(avg.count = mean(count)) %>%
-  mutate(gene.set = 'panc_exRNA_signal') %>%
-  group_by(gene.set) %>%
-  mutate(stratum = ifelse(avg.count >= quantile(avg.count, 0.66),
-                          'top-third', ifelse(avg.count <= quantile(avg.count, 0.33),
-                                              'bottom-third', 'middle'))) %>%
-  filter(stratum != 'middle') %>%
-  spread(gene.set, stratum) -> tcga_paad_stratified_counts
-
-paad_survival <- read_tsv(file.path(output_data.dir, 'tcga_gtex', 'PAAD_survival.txt'))
-
-paad_tcga_pheno_merge <- 
-  tcga_primary_tumors %>% merge(paad_survival, by.x = 'patient', by.y = '_PATIENT')
-
-surv.obj <- Surv(time = filter(paad_tcga_pheno_merge %>% select(sample.x, OS.time, OS) %>% distinct(), 
-                               sample.x %in% tcga_paad_stratified_counts$sample)$OS.time,
-                 event = filter(paad_tcga_pheno_merge %>% select(sample.x, OS.time, OS) %>% distinct(), 
-                                sample.x %in% tcga_paad_stratified_counts$sample)$OS)
-
-surv.fit <- survfit(as.formula(surv.obj ~ panc_exRNA_signal), 
-                    data = tcga_paad_stratified_counts)
-ggsurvplot(surv.fit, 
-           ylab = 'Overall Survival Probability',
-           xlab = 'Overall Survival Time -- days',
-           pval = T, 
-           legend.title = "", 
-           ggtheme = theme_set_fun() + theme(legend.position = c(0.45,0.95)),
-           pval.coord = c(0, 0.08),
-           palette = viridis(3)[c(2,1)]) -> surv.plt
-
-surv.plt$plot + ggtitle('panc TE up') -> plt_surv_E.plt
+# tcga_padd_stratified_counts <-
+#   tcga_paad_dds_norm_counts.df %>%
+#   t() %>% as.data.frame()
+# 
+# tcga_padd_stratified_counts %>% 
+#   rownames_to_column('sample') %>% 
+#   filter(sample %in% tcga_primary_tumors$sample) %>% 
+#   gather(gene, count, -sample) %>% 
+#   filter(gene %in% filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
+#                           padj < 0.05, log2FoldChange > 0.5)$gene) %>% 
+#   filter(gene %in% reference_meta_data$ucsc_rmsk_insert_info.df$gene) %>%
+#   select(sample, count) %>% 
+#   group_by(sample) %>%
+#   summarize(avg.count = mean(count)) %>%
+#   mutate(gene.set = 'panc_exRNA_signal') %>%
+#   group_by(gene.set) %>%
+#   mutate(stratum = ifelse(avg.count >= quantile(avg.count, 0.66),
+#                           'top-third', ifelse(avg.count <= quantile(avg.count, 0.33),
+#                                               'bottom-third', 'middle'))) %>%
+#   filter(stratum != 'middle') %>%
+#   spread(gene.set, stratum) -> tcga_paad_stratified_counts
+# 
+# paad_survival <- read_tsv(file.path(output_data.dir, 'tcga_gtex', 'PAAD_survival.txt'))
+# 
+# paad_tcga_pheno_merge <- 
+#   tcga_primary_tumors %>% merge(paad_survival, by.x = 'patient', by.y = '_PATIENT')
+# 
+# surv.obj <- Surv(time = filter(paad_tcga_pheno_merge %>% select(sample.x, OS.time, OS) %>% distinct(), 
+#                                sample.x %in% tcga_paad_stratified_counts$sample)$OS.time,
+#                  event = filter(paad_tcga_pheno_merge %>% select(sample.x, OS.time, OS) %>% distinct(), 
+#                                 sample.x %in% tcga_paad_stratified_counts$sample)$OS)
+# 
+# surv.fit <- survfit(as.formula(surv.obj ~ panc_exRNA_signal), 
+#                     data = tcga_paad_stratified_counts)
+# ggsurvplot(surv.fit, 
+#            ylab = 'Overall Survival Probability',
+#            xlab = 'Overall Survival Time -- days',
+#            pval = T, 
+#            legend.title = "", 
+#            ggtheme = theme_set_fun() + theme(legend.position = c(0.45,0.95)),
+#            pval.coord = c(0, 0.08),
+#            palette = viridis(3)[c(2,1)]) -> surv.plt
+# 
+# surv.plt$plot + ggtitle('panc TE up') -> plt_surv_E.plt
 ```
 ### OX PHOS
 ```{r}
@@ -1404,6 +1544,7 @@ ggsurvplot(surv.fit,
            ylab = 'Overall Survival Probability',
            xlab = 'Overall Survival Time -- days',
            pval = T, 
+           pval.size = txt.mm_to_pts(1),
            legend.title = "", 
            ggtheme = theme_set_fun() + theme(legend.position = c(0.45,0.95)),
            pval.coord = c(0, 0.08),
@@ -1413,19 +1554,55 @@ paste0('Ox. Phos \n (n genes = ',filter(ucsc.rmsk.salmon_quant$analysis_set$panc
                           padj < 0.05, log2FoldChange > 0.75) %>%
   filter(gene %in% msig.df$HALLMARK_OXIDATIVE_PHOSPHORYLATION) %>% nrow(), ')') -> km_title
 
-surv.plt$plot + ggtitle(km_title) -> plt_surv_F.plt
+surv.plt$plot + ggtitle(km_title) -> plt_surv_C.plt
+
+
+# ------------------------------------------------------------------------------
 
 filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
                           padj < 0.05, log2FoldChange > 0.75) %>%
   filter(gene %in% msig.df$HALLMARK_OXIDATIVE_PHOSPHORYLATION) %>%
-  top_n(wt =-padj, 10) %>% 
-  arrange(padj) %>% 
-  select(gene, baseMean, log2FoldChange, padj) -> panc_OX_km_table
+  top_n(wt =-padj, 10) %>% dplyr::pull(gene) -> this_top_10
 
-panc_OX_km_table %>% 
-  gridExtra::tableGrob(theme = gridExtra::ttheme_minimal(base_size = 8,
-                                                         core = list(padding=unit(c(1, 2.5), "mm"))), 
-                       rows = NULL) -> plt_surv_F.tbl
+ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$norm_counts.df %>% 
+  rownames_to_column('ensg') %>% 
+  merge(reference_meta_data$total_tx_to_gene.df %>% select(ensg, gene) %>% distinct(), by = 'ensg') %>% 
+  filter(gene %in% this_top_10) %>% 
+  select(-ensg) %>% 
+  mutate_if(is.numeric, ~scale(log2(. + 1), center = T)) %>% 
+  column_to_rownames('gene') %>% as.matrix() %>% t() -> hm_count_data
+
+
+hm_meta_data <- ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$scaled_quant_meta_for_de.df[match(rownames(hm_count_data),
+                                                                                                                                                                                                        ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$scaled_quant_meta_for_de.df$sample), ]
+
+left_hma <- ComplexHeatmap::rowAnnotation(df = hm_meta_data %>% select(condition), 
+                                          col = list(condition = identity_color_pal), 
+                                          show_annotation_name = F, 
+                                          show_legend = F,
+                                          simple_anno_size = unit(.3, "cm"),
+                                          annotation_legend_param = 
+                                            list(title_gp = grid::gpar(fontsize = 6, fontface = 'bold'),
+                                                 legend_gp = grid::gpar(fontsize = 5),
+                                                 legend_height = unit(3.5, 'cm')))
+
+
+set.seed(129)
+ComplexHeatmap::Heatmap(hm_count_data,
+                        show_row_names = F, 
+                        show_column_names = T, 
+                        show_heatmap_legend = FALSE,
+                        heatmap_width = figure_single_column_width,
+                        left_annotation = left_hma, 
+                        column_dend_height = unit(.25, "cm"),
+                        row_dend_width = unit(.25, "cm"),
+                        heatmap_legend_param = 
+                          list(legend_gp = grid::gpar(fontsize = 5),
+                               title_gp = grid::gpar(fontsize = 6, fontface = 'bold')),
+                        row_names_gp = grid::gpar(fontsize = 6),
+                        column_names_gp = grid::gpar(fontsize = 6),
+                        name = 'Z-score') -> plt_surv_C.chm
+
 ```
 ### MYC
 ```{r}
@@ -1467,6 +1644,7 @@ ggsurvplot(surv.fit,
            ylab = 'Overall Survival Probability',
            xlab = 'Overall Survival Time -- days',
            pval = T, 
+           pval.size = txt.mm_to_pts(1),
            legend.title = "", 
            ggtheme = theme_set_fun() + theme(legend.position = c(0.45,0.95)),
            pval.coord = c(0, 0.08),
@@ -1476,19 +1654,53 @@ paste0('MYC Targets \n (n genes = ',filter(ucsc.rmsk.salmon_quant$analysis_set$p
                           padj < 0.05, log2FoldChange > 0.75) %>%
   filter(gene %in% msig.df$HALLMARK_MYC_TARGETS_V1) %>% nrow(), ')') -> km_title
 
-surv.plt$plot + ggtitle(km_title) -> plt_surv_G.plt
+surv.plt$plot + ggtitle(km_title) -> plt_surv_D.plt
+
+# ------------------------------------------------------------------------------
 
 filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
                           padj < 0.05, log2FoldChange > 0.75) %>%
   filter(gene %in% msig.df$HALLMARK_MYC_TARGETS_V1) %>%
-  top_n(wt =-padj, 10) %>% 
-  arrange(padj) %>% 
-  select(gene, baseMean, log2FoldChange, padj) -> panc_MYC_km_table
+  top_n(wt =-padj, 10) %>% dplyr::pull(gene) -> this_top_10
 
-panc_MYC_km_table %>% 
-  gridExtra::tableGrob(theme = gridExtra::ttheme_minimal(base_size = 8,
-                                                         core = list(padding=unit(c(1, 2.5), "mm"))), 
-                       rows = NULL) -> plt_surv_G.tbl
+ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$norm_counts.df %>% 
+  rownames_to_column('ensg') %>% 
+  merge(reference_meta_data$total_tx_to_gene.df %>% select(ensg, gene) %>% distinct(), by = 'ensg') %>% 
+  filter(gene %in% this_top_10) %>% 
+  select(-ensg) %>% 
+  mutate_if(is.numeric, ~scale(log2(. + 1), center = T)) %>% 
+  column_to_rownames('gene') %>% as.matrix() %>% t() -> hm_count_data
+
+
+hm_meta_data <- ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$scaled_quant_meta_for_de.df[match(rownames(hm_count_data),
+                                                                                                                                                                                                        ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$scaled_quant_meta_for_de.df$sample), ]
+
+left_hma <- ComplexHeatmap::rowAnnotation(df = hm_meta_data %>% select(condition), 
+                                          col = list(condition = identity_color_pal), 
+                                          show_annotation_name = F, 
+                                          show_legend = F,
+                                          simple_anno_size = unit(.3, "cm"),
+                                          annotation_legend_param = 
+                                            list(title_gp = grid::gpar(fontsize = 6, fontface = 'bold'),
+                                                 legend_gp = grid::gpar(fontsize = 5),
+                                                 legend_height = unit(3.5, 'cm')))
+
+
+set.seed(129)
+ComplexHeatmap::Heatmap(hm_count_data,
+                        show_row_names = F, 
+                        show_column_names = T, 
+                        show_heatmap_legend = FALSE,
+                        heatmap_width = figure_single_column_width,
+                        left_annotation = left_hma, 
+                        column_dend_height = unit(.25, "cm"),
+                        row_dend_width = unit(.25, "cm"),
+                        heatmap_legend_param = 
+                          list(legend_gp = grid::gpar(fontsize = 5),
+                               title_gp = grid::gpar(fontsize = 6, fontface = 'bold')),
+                        row_names_gp = grid::gpar(fontsize = 6),
+                        column_names_gp = grid::gpar(fontsize = 6),
+                        name = 'Z-score') -> plt_surv_D.chm
 ```
 ### plt_surv_patchwork
 ```{r}
@@ -1502,16 +1714,21 @@ FG
 HI
 "
 
-wrap_plots(plt_surv_F.plt,
+wrap_plots(plt_surv_A.plt,
            guide_area(),
-           patchwork::wrap_elements(full = plt_surv_F.tbl, ignore_tag = F),
-           plt_surv_G.plt,
-           patchwork::wrap_elements(full = plt_surv_G.tbl, ignore_tag = F),
-           plt_surv_A.plt,
-           patchwork::wrap_elements(full = plt_surv_A.tbl, ignore_tag = F),
+           patchwork::wrap_elements(full = grid::grid.grabExpr(ComplexHeatmap::draw(plt_surv_A.chm, merge_legends = T), 
+                                                    width = figure_single_column_width)),
+           plt_surv_B.plt,
+           patchwork::wrap_elements(full = grid::grid.grabExpr(ComplexHeatmap::draw(plt_surv_B.chm, merge_legends = T), 
+                                                    width = figure_single_column_width)),
+           plt_surv_C.plt,
+           patchwork::wrap_elements(full = grid::grid.grabExpr(ComplexHeatmap::draw(plt_surv_C.chm, merge_legends = T), 
+                                                    width = figure_single_column_width)),
            plt_surv_D.plt,
-           patchwork::wrap_elements(full = plt_surv_D.tbl, ignore_tag = F),
-           heights = c(1,0.095,1,1,1,1,1),
+           patchwork::wrap_elements(full = grid::grid.grabExpr(ComplexHeatmap::draw(plt_surv_D.chm, merge_legends = T), 
+                                                    width = figure_single_column_width)),
+           heights = c(1.25,0.1,0.9,0.9,0.9),
+           widths = c(0.75, 1.25),
            guides = 'collect',
            design = fig_surv_layout) +
   plot_annotation(tag_levels = 'A') &
@@ -1522,7 +1739,7 @@ wrap_plots(plt_surv_F.plt,
 
 save.manuscript.panel(figure = 3,
                       figure.dir = figure.dir,
-                      name = 'patchwork_full_fig_surv',
+                      name = 'patchwork_full_fig_3',
                       width = figure_double_column_width,
                       height = figure_depth,
                       plot.in = fig.surv.patchwork)
@@ -3654,64 +3871,7 @@ save.manuscript.panel(figure = 's4',
                       plot.in = fig.model.patchwork)
 ```
 
-## tcga & gtex load
-```{r}
-tcga_data_path <- file.path(output_data.dir, 'tcga_gtex')
-gtex_colData <- read_csv(file.path(tcga_data_path, 'panc_gtex_colData.csv'), 
-                         col_names = c('sample', 'name', 'tissue_1', 'tissue_2', 'sex', 'age'))
 
-tcga_colData <- read_tsv(file.path(tcga_data_path, 'paad_tcga_colData.tsv')) %>% 
-  mutate(submitter_id.samples = str_replace_all(string = submitter_id.samples, pattern = 'TCGA', replacement = 'PAAD'),
-         submitter_id.samples = str_replace_all(string = submitter_id.samples, pattern = '01A', replacement = 'TP'),
-         submitter_id.samples = str_replace_all(string = submitter_id.samples, pattern = '11A', replacement = 'NT'))
-
-if (! file.exists(file.path(tcga_data_path, 'paad_tcga_gene_readNum_matrix.tsv')) & 
-    ! file.exists(file.path(tcga_data_path, 'paad_gtex_gene_readNum_matrix.tsv'))) {
-  
-  tcga_paad_counts <- vroom::vroom(file.path(tcga_data_path, 'paad_tcga_readNum_matrix.tsv.gz'))
-  tx_names <- tcga_paad_counts$Name
-  
-  enst_names <- tx_names[grepl('^ENST', tx_names), drop = F]
-  enst_tx2gene <- tibble(tx = enst_names, gene = str_split_fixed(string = enst_names, pattern = '\\|', n = Inf)[,6])
-  
-  te_names <- tx_names[grepl('^hg38', tx_names), drop = F]
-  te_tx2gene <- tibble(tx = te_names, gene = str_split_fixed(string = te_names, pattern = '_', n = Inf)[,3])
-  
-  tx2gene <- rbind(enst_tx2gene, te_tx2gene)
-  
-  tx2gene
-  vroom::vroom_write(x = tx2gene, file.path(tcga_data_path, 'tcga_gtex_tx2gene.tsv'))
-  
-  tcga_paad_counts %>% 
-    merge(tx2gene, by.x = 'Name', by.y = 'tx') -> tcga_paad_counts
-  
-  tcga_paad_counts %>% 
-    group_by(gene) %>% 
-    summarize(across(is.numeric, ~sum(.x))) -> tcga_paad_gene_counts
-  
-  vroom::vroom_write(x = tcga_paad_gene_counts, file.path(tcga_data_path, 'paad_tcga_gene_readNum_matrix.tsv'))
-  
-  gtex_paad_counts <- vroom::vroom(file.path(tcga_data_path, 'paad_gtex_readNum_matrix.tsv.gz'))
-  
-  gtex_paad_counts %>% 
-    merge(tx2gene, by.x = 'Name', by.y = 'tx') -> gtex_paad_counts
-  
-  gtex_paad_counts %>% 
-    group_by(gene) %>% 
-    summarize(across(is.numeric, ~sum(.x))) -> gtex_paad_gene_counts
-  
-  rm(gtex_paad_counts)
-  
-  vroom::vroom_write(x = gtex_paad_gene_counts, file.path(tcga_data_path, 'paad_gtex_gene_readNum_matrix.tsv'))
-  
-} else {
-  message('loading....')
-  tx2gene <- read_tsv(file.path(tcga_data_path, 'tcga_gtex_tx2gene.tsv'))
-  gtex_paad_gene_counts <- read_tsv(file.path(tcga_data_path, 'paad_gtex_gene_readNum_matrix.tsv'))
-  tcga_paad_gene_counts <- read_tsv(file.path(tcga_data_path, 'paad_tcga_gene_readNum_matrix.tsv'))
-  
-}
-```
 ## TCGA GTEx Heatmap
 ```{r}
 tcga_paad_gene_counts %>% 

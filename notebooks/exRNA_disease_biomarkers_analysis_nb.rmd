@@ -968,7 +968,7 @@ wrap_plots(fig.2A.plt,
                                                                 width = figure_double_column_width)),
            design = fig_2_layout, 
            guides = 'collect',
-           heights = c(0.75,0.125,0.825,1.225)) + plot_annotation(tag_levels = 'A') & 
+           heights = c(0.75,0.15,0.85,1.225)) + plot_annotation(tag_levels = 'A') & 
   theme(plot.tag.position = c(0.01, 0.99), 
         legend.position = 'bottom',
         legend.title = element_text(vjust = 0.5),

@@ -1528,17 +1528,17 @@ ucsc_rmsk_counts %>%
   rownames_to_column('gene') %>% 
   merge(reference_meta_data$ucsc_rmsk_insert_info.df, by = 'gene', all.x = T) %>% 
   mutate(family = ifelse(gene %in% reference_meta_data$gencode_lncRNA_gene_names.df$ensg,
-                         'gencode_lncRNA', family),
-         family = ifelse(is.na(family), 'gencode_coding', family),
-         clade = ifelse(grepl('gencode', family), family, clade),
-         clade = ifelse(clade %in% c('gencode_coding',
-                                     'gencode_lncRNA',
+                         'GENCODE_lncRNA', family),
+         family = ifelse(is.na(family), 'GENCODE_coding', family),
+         clade = ifelse(grepl('GENCODE', family), family, clade),
+         clade = ifelse(clade %in% c('GENCODE_coding',
+                                     'GENCODE_lncRNA',
                                      'LINE',
                                      'SINE',
                                      'LTR',
                                      'DNA',
                                      'Simple_repeat'), clade, 'other'),
-         type = ifelse(grepl('gencode',family), 'GENCODE', 'TE'),
+         type = ifelse(grepl('GENCODE',family), 'GENCODE', 'TE'),
          clade = factor(clade, levels = te_aware_annotation_levels)) %>% 
     distinct() -> ucsc_rmsk_counts
 
@@ -1579,7 +1579,7 @@ wrap_plots(biotype_count_fig_S3) + plot_annotation(tag_levels = 'A') -> patchwor
 
 save.manuscript.panel(figure = 3,
                       figure.dir = figure.dir,
-                      name = 'patchwork_full_biotype_tx_S3',
+                      name = 'patchwork_full_fig_S3',
                       width = figure_double_column_width,
                       height = figure_depth,
                       plot.in = patchwork_fig_S3)
@@ -1685,7 +1685,7 @@ table(illumina_read_len.df$biotype) %>%
   as.data.frame() %>% 
   select(biotype = Var1) %>% 
   filter(biotype %in% c('LINE', 'lncRNA', 'LTR', 'protein_coding', 'SINE')) %>% 
-  mutate(biolabel = c('LINE', 'gencode_lncRNA', 'LTR', 'gencode_coding', 'SINE')) -> illumina_biotype_labels
+  mutate(biolabel = c('LINE', 'GENCODE_lncRNA', 'LTR', 'GENCODE_coding', 'SINE')) -> illumina_biotype_labels
 
 illumina_read_len.df %>% 
   filter(biotype %in% illumina_biotype_labels$biotype,
@@ -1704,8 +1704,8 @@ tmp_mean_read_len.df %>%
          condition != 'covid') %>% 
   mutate(biotype = ifelse(biotype == 'lncRNA', 'gencode_lncRNA', biotype),
          biotype = ifelse(biotype == 'protein_coding', 'gencode_coding', biotype)) %>% 
-  mutate(biotype = factor(biotype, levels = c('SINE', 'LINE', 'LTR', 'gencode_lncRNA', 
-                                              'retained_intron', 'gencode_coding'))) %>% 
+  mutate(biotype = factor(biotype, levels = c('SINE', 'LINE', 'LTR', 'GENCODE_lncRNA', 
+                                              'retained_intron', 'GENCODE_coding'))) %>% 
   ggplot(aes(condition, read_length, color = condition)) +
   geom_boxplot(outlier.colour = NA) + 
   geom_jitter(width = 0.24, alpha = 0.2) +
@@ -1775,7 +1775,7 @@ panc_nanopore_read_length.df %>%
 table(panc_nanopore_read_length.df$biotype) %>% 
   as.data.frame() %>% 
   select(biotype = Var1) %>% 
-  mutate(biolabel = c('LINE', 'gencode_lncRNA', 'LTR', 'gencode_coding', 'SINE')) -> nanopore_biotype_labels
+  mutate(biolabel = c('LINE', 'GENCODE_lncRNA', 'LTR', 'GENCODE_coding', 'SINE')) -> nanopore_biotype_labels
 
 panc_nanopore_read_length.df %>% 
   group_by(biotype) %>% 

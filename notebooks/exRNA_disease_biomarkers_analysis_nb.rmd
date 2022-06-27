@@ -1206,9 +1206,7 @@ ggsurvplot(surv.fit,
            pval.coord = c(0, 0.08),
            palette = viridis(3)[c(2,1)]) -> surv.plt
 
-paste0('panc GENCODE up \n (n genes = ',filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
-                        padj < 0.05, log2FoldChange > 0.75) %>% 
-  filter(!gene %in% reference_meta_data$ucsc_rmsk_insert_info.df$gene) %>% nrow(), ')') -> km_title
+paste0('panc GENCODE up') -> km_title
 
 surv.plt$plot + ggtitle(km_title) -> plt_surv_A.plt
 
@@ -1286,9 +1284,7 @@ ggsurvplot(surv.fit,
            pval.coord = c(0, 0.08),
            palette = viridis(3)[c(2,1)]) -> surv.plt
 
-paste0('panc Repeat down \n (n genes = ',filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
-                          padj < 0.05, log2FoldChange < -1) %>% 
-  filter(gene %in% reference_meta_data$ucsc_rmsk_insert_info.df$gene) %>% nrow(), ')') -> km_title
+paste0('panc Repeat down') -> km_title
 
 surv.plt$plot + ggtitle(km_title) -> plt_surv_B.plt
 
@@ -1366,9 +1362,7 @@ ggsurvplot(surv.fit,
            pval.coord = c(0, 0.08),
            palette = viridis(3)[c(2,1)]) -> surv.plt
 
-paste0('Oxidative Phosphorylation \n (n genes = ',filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
-                          padj < 0.05, log2FoldChange > 0.75) %>%
-  filter(gene %in% msig.df$HALLMARK_OXIDATIVE_PHOSPHORYLATION) %>% nrow(), ')') -> km_title
+paste0('Oxidative Phosphorylation') -> km_title
 
 surv.plt$plot + ggtitle(km_title) -> plt_surv_C.plt
 
@@ -1446,9 +1440,7 @@ ggsurvplot(surv.fit,
            pval.coord = c(0, 0.08),
            palette = viridis(3)[c(2,1)]) -> surv.plt
 
-paste0('MYC Targets \n (n genes = ',filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
-                          padj < 0.05, log2FoldChange > 0.75) %>%
-  filter(gene %in% msig.df$HALLMARK_MYC_TARGETS_V1) %>% nrow(), ')') -> km_title
+paste0('MYC Targets') -> km_title
 
 surv.plt$plot + ggtitle(km_title) -> plt_surv_D.plt
 
@@ -2714,7 +2706,7 @@ panc_compare_annotated.df %>%
   summarize(detected = n()) %>% 
   ggplot(aes(sample, detected, fill = sample)) + 
   geom_col() + 
-  xlab('') + ylab('detected genes') +
+  xlab('') + ylab('detected genes/elements') +
   scale_fill_manual(values = viridisLite::plasma(20)[c(1,8,10)]) +
   facet_wrap(~clade, scales = 'free_y', ncol = 2, strip.position = 'bottom') -> plt_SN2E.plt
 
@@ -2756,8 +2748,8 @@ AA
 wrap_plots(plt_SN2E.plt,
            guides = 'collect',
            design = fig_S6_2_layout,
-           heights = c(1,0.25)) +
-  plot_annotation(tag_levels = 'A') & 
+           heights = c(1,0.25)) &
+  # plot_annotation(tag_levels = 'A') & 
   theme(legend.position = 'bottom', 
         legend.justification = c(0.5, 0.5))-> fig.S6_2.patchwork
 
@@ -3375,21 +3367,21 @@ ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out %>%
   filter(ensg %in% names(beta)) %>% 
   merge(reference_meta_data$ucsc_rmsk_insert_info.df, by = 'gene', all.x = T) %>% 
   mutate(family = ifelse(ensg %in% reference_meta_data$gencode_lncRNA_gene_names.df$ensg,
-                         'gencode_lncRNA', family),
-         family = ifelse(is.na(family), 'gencode_coding', family),
-         clade = ifelse(grepl('gencode', family), family, clade),
-         clade = ifelse(clade %in% c('gencode_coding',
-                                     'gencode_lncRNA',
+                         'GENCODE_lncRNA', family),
+         family = ifelse(is.na(family), 'GENCODE_coding', family),
+         clade = ifelse(grepl('GENCODE', family), family, clade),
+         clade = ifelse(clade %in% c('GENCODE_coding',
+                                     'GENCODE_lncRNA',
                                      'LINE',
                                      'SINE',
                                      'LTR',
                                      'DNA',
                                      'Simple_repeat'), clade, 'other'),
-         type = ifelse(grepl('gencode',family), 'GENCODE', 'TE'),
+         type = ifelse(grepl('GENCODE',family), 'GENCODE', 'TE'),
          clade = factor(clade, levels = te_aware_annotation_levels)) %>% 
   ggplot(aes(log2FoldChange, -log10(padj), color = clade, label = gene)) + 
   geom_point() + 
-  scale_color_manual(values = te_color_pal) +
+  scale_color_manual(values = te_color_pal, name = 'biotype/clade') + 
   geom_vline(xintercept = 0, linetype = 'dashed', alpha = 0.4) + 
   ggrepel::geom_text_repel(color = 'black', segment.colour = NA, size = txt.mm_to_pts(0.8)) -> feature_de.plt
 
@@ -3490,21 +3482,21 @@ ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out %>%
   filter(ensg %in% names(beta)) %>% 
   merge(reference_meta_data$ucsc_rmsk_insert_info.df, by = 'gene', all.x = T) %>% 
   mutate(family = ifelse(ensg %in% reference_meta_data$gencode_lncRNA_gene_names.df$ensg,
-                         'gencode_lncRNA', family),
-         family = ifelse(is.na(family), 'gencode_coding', family),
-         clade = ifelse(grepl('gencode', family), family, clade),
-         clade = ifelse(clade %in% c('gencode_coding',
-                                     'gencode_lncRNA',
+                         'GENCODE_lncRNA', family),
+         family = ifelse(is.na(family), 'GENCODE_coding', family),
+         clade = ifelse(grepl('GENCODE', family), family, clade),
+         clade = ifelse(clade %in% c('GENCODE_coding',
+                                     'GENCODE_lncRNA',
                                      'LINE',
                                      'SINE',
                                      'LTR',
                                      'DNA',
                                      'Simple_repeat'), clade, 'other'),
-         type = ifelse(grepl('gencode',family), 'GENCODE', 'TE'),
+         type = ifelse(grepl('GENCODE',family), 'GENCODE', 'TE'),
          clade = factor(clade, levels = te_aware_annotation_levels)) %>% 
   ggplot(aes(log2FoldChange, -log10(padj), color = clade, label = gene)) + 
   geom_point() + 
-  scale_color_manual(values = te_color_pal) +
+  scale_color_manual(values = te_color_pal, name = 'biotype/clade') + 
   geom_vline(xintercept = 0, linetype = 'dashed', alpha = 0.4) + 
   ggrepel::geom_text_repel(color = 'black', segment.colour = NA, size = txt.mm_to_pts(0.8)) -> gt_feature_de.plt
 

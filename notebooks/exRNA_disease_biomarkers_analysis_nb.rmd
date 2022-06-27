@@ -2018,12 +2018,12 @@ bind_rows(list('panc' = salmon_quant$analysis_set$ctrl_panc_covid$deseq$fgsea$pa
          NES = round(NES, 3)) %>% 
   # arrange(-NES, padj) %>% 
   ggplot(aes(NES, rank, color = -log10(padj))) + 
-  geom_point(size = 4) +
+  geom_point(size = 2.5) +
   geom_segment(aes(x=0, xend=NES, y=rank, yend=rank)) +
-  geom_text(aes(label = paste0(observed, '/', size, ' - ', condition), 
-                x = NES - 0.75 * sign(NES)), 
-            nudge_y = 0.15, 
-            color = 'black', 
+  geom_text(aes(label = paste0(condition),
+                x = NES - 0.75 * sign(NES)),
+            nudge_y = 0.15,
+            color = 'black',
             size = txt.mm_to_pts(1)) +
   geom_text(aes(label = pathway, 
               x = - .55 * sign(NES)), 
@@ -2199,7 +2199,7 @@ wrap_plots(fig.S4A.plt,
            fig.S2D.plt + theme(legend.background = element_blank()) + coord_cartesian(clip = 'off'),
            design = fig_S2_layout, 
            guides = 'collect',
-           heights = c(1,0.2,1,0.8)) + plot_annotation(tag_levels = 'A') & 
+           heights = c(0.6,0.2,1.2,1)) + plot_annotation(tag_levels = 'A') & 
   theme(plot.tag.position = c(0.01, 0.99), 
         legend.position = 'bottom',
         legend.title = element_text(vjust = 0.5),

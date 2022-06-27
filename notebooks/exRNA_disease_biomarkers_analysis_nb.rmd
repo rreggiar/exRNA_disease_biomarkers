@@ -1565,7 +1565,7 @@ ucsc_rmsk_biotype_summary %>%
   coord_cartesian(clip = 'off') +
   ggpubr::stat_compare_means(method = 'wilcox', 
                              comparisons = list(c('covid', 'ctrl'), c('panc', 'ctrl')),
-                             size = txt.mm_to_pts(1)) +
+                             size = txt.mm_to_pts(1), label = 'p.signif') +
   theme(axis.text.x = element_text(angle = 40, hjust = 1),
         legend.position = 'bottom', legend.direction = 'horizontal') -> biotype_count_fig_S3
 
@@ -2716,7 +2716,7 @@ panc_compare_annotated.df %>%
   geom_col() + 
   xlab('') + 
   scale_fill_manual(values = viridisLite::plasma(20)[c(1,8,10)]) +
-  facet_wrap(~clade, scales = 'free_y', ncol = 4) -> plt_SN2E.plt
+  facet_wrap(~clade, scales = 'free_y', ncol = 2, strip.position = 'bottom') -> plt_SN2E.plt
 
 import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer, wrap_elements)
 
@@ -3653,10 +3653,10 @@ FFFF
 
 wrap_plots(wrap_elements(full = gt_binom_roc.plt + inset_element(gt_binomial_cm.tbl, right = 0.5, 
                                          bottom = 0.2, left = 0.6, top = 0.5, ignore_tag = T)),
-           gt_feature_de.plt + annotate(geom = 'text', label = 'TE-aware', x = -1, y = 7),
+           gt_feature_de.plt + annotate(geom = 'text', label = 'Repeat-aware', x = -2, y = 7),
            wrap_elements(full = binom_roc.plt + inset_element(binomial_cm.tbl, right = 0.5, 
                                          bottom = 0.2, left = 0.6, top = 0.5, ignore_tag = T)),
-           feature_de.plt + annotate(geom = 'text', label = 'TE-alone', x = -1, y = 3.5),
+           feature_de.plt + annotate(geom = 'text', label = 'Repeat-alone', x = -1, y = 3.5),
            guide_area(),
            plot_spacer(),
            heights = c(1,0.2,1,1,1),
@@ -3669,7 +3669,7 @@ wrap_plots(wrap_elements(full = gt_binom_roc.plt + inset_element(gt_binomial_cm.
 
 save.manuscript.panel(figure = 7,
                       figure.dir = figure.dir,
-                      name = 'patchwork_full_fig_model',
+                      name = 'patchwork_full_figS7_model',
                       width = figure_double_column_width,
                       height = figure_depth,
                       plot.in = fig.model.patchwork)

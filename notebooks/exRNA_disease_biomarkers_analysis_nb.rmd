@@ -1176,7 +1176,7 @@ tcga_padd_stratified_counts %>%
   select(sample, count) %>% 
   group_by(sample) %>%
   summarize(avg.count = mean(count)) %>%
-  mutate(gene.set = 'panc_cfRNA_signal') %>%
+  mutate(gene.set = 'panc_RNA_signal') %>%
   group_by(gene.set) %>%
   mutate(stratum = ifelse(avg.count >= quantile(avg.count, 0.66),
                           'top-third', ifelse(avg.count <= quantile(avg.count, 0.33),
@@ -1194,7 +1194,7 @@ surv.obj <- Surv(time = filter(paad_tcga_pheno_merge %>% select(sample.x, OS.tim
                  event = filter(paad_tcga_pheno_merge %>% select(sample.x, OS.time, OS) %>% distinct(), 
                                 sample.x %in% tcga_paad_stratified_counts$sample)$OS)
 
-surv.fit <- survfit(as.formula(surv.obj ~ panc_cfRNA_signal), 
+surv.fit <- survfit(as.formula(surv.obj ~ panc_RNA_signal), 
                     data = tcga_paad_stratified_counts)
 ggsurvplot(surv.fit, 
            ylab = 'O.S. Probability',
@@ -1256,7 +1256,7 @@ tcga_padd_stratified_counts %>%
   select(sample, count) %>% 
   group_by(sample) %>%
   summarize(avg.count = mean(count)) %>%
-  mutate(gene.set = 'panc_cfRNA_signal') %>%
+  mutate(gene.set = 'panc_RNA_signal') %>%
   group_by(gene.set) %>%
   mutate(stratum = ifelse(avg.count >= quantile(avg.count, 0.66),
                           'top-third', ifelse(avg.count <= quantile(avg.count, 0.33),
@@ -1274,7 +1274,7 @@ surv.obj <- Surv(time = filter(paad_tcga_pheno_merge %>% select(sample.x, OS.tim
                  event = filter(paad_tcga_pheno_merge %>% select(sample.x, OS.time, OS) %>% distinct(), 
                                 sample.x %in% tcga_paad_stratified_counts$sample)$OS)
 
-surv.fit <- survfit(as.formula(surv.obj ~ panc_cfRNA_signal), 
+surv.fit <- survfit(as.formula(surv.obj ~ panc_RNA_signal), 
                     data = tcga_paad_stratified_counts)
 ggsurvplot(surv.fit, 
            ylab = 'O.S. Probability',
@@ -1336,7 +1336,7 @@ tcga_padd_stratified_counts %>%
   select(sample, count) %>% 
   group_by(sample) %>%
   summarize(avg.count = mean(count)) %>%
-  mutate(gene.set = 'panc_cfRNA_signal') %>%
+  mutate(gene.set = 'panc_RNA_signal') %>%
   group_by(gene.set) %>%
   mutate(stratum = ifelse(avg.count >= quantile(avg.count, 0.66),
                           'top-third', ifelse(avg.count <= quantile(avg.count, 0.33),
@@ -1354,7 +1354,7 @@ surv.obj <- Surv(time = filter(paad_tcga_pheno_merge %>% select(sample.x, OS.tim
                  event = filter(paad_tcga_pheno_merge %>% select(sample.x, OS.time, OS) %>% distinct(), 
                                 sample.x %in% tcga_paad_stratified_counts$sample)$OS)
 
-surv.fit <- survfit(as.formula(surv.obj ~ panc_cfRNA_signal), 
+surv.fit <- survfit(as.formula(surv.obj ~ panc_RNA_signal), 
                     data = tcga_paad_stratified_counts)
 ggsurvplot(surv.fit,
            ylab = 'O.S. Probability',
@@ -1416,7 +1416,7 @@ tcga_padd_stratified_counts %>%
   select(sample, count) %>% 
   group_by(sample) %>%
   summarize(avg.count = mean(count)) %>%
-  mutate(gene.set = 'panc_cfRNA_signal') %>%
+  mutate(gene.set = 'panc_RNA_signal') %>%
   group_by(gene.set) %>%
   mutate(stratum = ifelse(avg.count >= quantile(avg.count, 0.66),
                           'top-third', ifelse(avg.count <= quantile(avg.count, 0.33),
@@ -1434,7 +1434,7 @@ surv.obj <- Surv(time = filter(paad_tcga_pheno_merge %>% select(sample.x, OS.tim
                  event = filter(paad_tcga_pheno_merge %>% select(sample.x, OS.time, OS) %>% distinct(), 
                                 sample.x %in% tcga_paad_stratified_counts$sample)$OS)
 
-surv.fit <- survfit(as.formula(surv.obj ~ panc_cfRNA_signal), 
+surv.fit <- survfit(as.formula(surv.obj ~ panc_RNA_signal), 
                     data = tcga_paad_stratified_counts)
 ggsurvplot(surv.fit, 
            ylab = 'O.S. Probability',
@@ -1974,11 +1974,11 @@ CC
 wrap_plots(plt_NC.plt,
            wrap_elements(full = panel.SNA.patchwork, clip = F),
            guide_area(),
-           plt_ND_2.plt,
+           plt_ND_2.plt + coord_cartesian(clip = 'off'),
            # wrap_elements(full = plt_ND_2.plt),
            design = fig_N_layout, 
            guides = 'collect',
-           heights = c(1,1,1,1,0.055)) +
+           heights = c(1,1,1,1,0.15)) +
   plot_annotation(tag_levels = 'A') &
   theme(legend.justification = 'center', legend.position = 'bottom') -> fig.N.patchwork
 
@@ -2005,6 +2005,41 @@ bind_rows(list('panc' = salmon_quant$analysis_set$ctrl_panc_covid$deseq$fgsea$pa
   dplyr::rename('GSEA padj' = padj, 'GSEA NES' = NES) %>% 
   gridExtra::tableGrob(theme = gridExtra::ttheme_minimal(), rows = NULL) -> fig.S2A.fgsea_table.grob
 
+bind_rows(list('panc' = salmon_quant$analysis_set$ctrl_panc_covid$deseq$fgsea$panc_v_ctrl,
+          'covid' = salmon_quant$analysis_set$ctrl_panc_covid$deseq$fgsea$covid_v_ctrl),
+          .id = 'condition') %>% 
+  select(condition, pathway, padj, NES, leadingEdge, size) %>% 
+  arrange(NES) %>% 
+  mutate(rank = row_number()) %>% 
+  group_by(pathway) %>% 
+  mutate(pathway = str_replace_all(pathway, 'HALLMARK ', ''),
+         pathway = str_replace_all(pathway, ' ', '\n'),
+         observed = length(unlist(leadingEdge)),
+         NES = round(NES, 3)) %>% 
+  # arrange(-NES, padj) %>% 
+  ggplot(aes(NES, rank, color = -log10(padj))) + 
+  geom_point(size = 4) +
+  geom_segment(aes(x=0, xend=NES, y=rank, yend=rank)) +
+  geom_text(aes(label = paste0(observed, '/', size, ' - ', condition), 
+                x = NES - 0.75 * sign(NES)), 
+            nudge_y = 0.15, 
+            color = 'black', 
+            size = txt.mm_to_pts(0.8)) +
+  geom_text(aes(label = pathway, 
+              x = - .75 * sign(NES)), 
+              nudge_y = 0.05, 
+              color = 'black', 
+              size = txt.mm_to_pts(0.8)) + 
+  scale_color_viridis_c() +
+  xlim(-1,2.5) +
+  # ggforce::facet_col(~condition, scales = 'free_y') +
+  ylab('gene set') + xlab('GSEA NES') +
+  geom_vline(xintercept = 0, alpha = 0.3, linetype = 'dashed') +
+  theme(legend.position = c(0.99, 0.17),
+        axis.ticks.y = element_blank(),
+        axis.text.y = element_blank()) -> fig.S4A.plt
+
+
 ```
 ## Fig_S4B
 ```{r}
@@ -2028,7 +2063,7 @@ de_upset.df %>%
   geom_bar(fill = 'white', color = 'black') + 
   ggupset::scale_x_upset() +
   geom_text(stat='count', aes(label=after_stat(count)), nudge_y = -2) + 
-  xlab('') + ylab('shared DE MYC Target V1 genes') -> fig.S2B.plt
+  xlab('') + ylab('DE MYC Target V1') -> fig.S2B.plt
 
 
 de_upset.df %>% 
@@ -2048,7 +2083,7 @@ de_upset.df %>%
   geom_point() + 
   geom_hline(yintercept = 0, linetype = 'dashed', alpha = 0.6) +
   geom_vline(xintercept = 0, linetype = 'dashed', alpha = 0.6) + 
-  xlab('covid MYC Targets V1 log2FoldChange') + ylab('panc MYC Targets V1 log2FoldChange') +
+  xlab('covid MYC Targets V1 log2FC') + ylab('panc MYC Targets V1 log2FC') +
   ggrepel::geom_text_repel() -> fig.S2B_2.plt
 
 ```
@@ -2156,15 +2191,15 @@ DD
 EF
 "
 
-wrap_plots(patchwork::wrap_elements(fig.S2A.fgsea_table.grob, ignore_tag = F),
+wrap_plots(fig.S4A.plt,
            patchwork::wrap_elements(full = fig.S2B.plt),
            fig.S2B_2.plt,
            guide_area(),
-           fig.S2C.plt,
-           fig.S2D.plt,
+           fig.S2C.plt + theme(legend.background = element_blank()) + coord_cartesian(clip = 'off'),
+           fig.S2D.plt + theme(legend.background = element_blank()) + coord_cartesian(clip = 'off'),
            design = fig_S2_layout, 
            guides = 'collect',
-           heights = c(0.6,0.9,0.0937,1,1)) + plot_annotation(tag_levels = 'A') & 
+           heights = c(1,0.75,0.2,0.8)) + plot_annotation(tag_levels = 'A') & 
   theme(plot.tag.position = c(0.01, 0.99), 
         legend.position = 'bottom',
         legend.title = element_text(vjust = 0.5),
@@ -2218,7 +2253,7 @@ wrap_plots(plt_S2_2A,
            plt_S2_2B,
            design = fig_S2_2_layout, 
            guides = 'collect',
-           heights = c(1,0.05,1)) + plot_annotation(tag_levels = 'A') & 
+           heights = c(1,0.125,1)) + plot_annotation(tag_levels = 'A') & 
   theme(plot.tag.position = c(0.01, 0.99), 
         legend.position = 'bottom',
         legend.title = element_text(vjust = 0.5),

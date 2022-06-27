@@ -2269,8 +2269,6 @@ save.manuscript.panel(figure = 5,
 
 ```
 
-
-
 # Fig_S6
 ## Fig_SNA
 ```{r}
@@ -2743,9 +2741,9 @@ wrap_plots(plt_SN2B.plt + ggtitle('panc 7 nanopore v illumina'),
   theme(legend.position = 'bottom', 
         legend.justification = c(0.5, 0.5))-> fig.SN2.patchwork
 
-save.manuscript.panel(figure = 's3',
+save.manuscript.panel(figure = 6,
                       figure.dir = figure.dir,
-                      name = 'patchwork_full_fig_S3_2',
+                      name = 'patchwork_full_fig_S6',
                       width = figure_double_column_width,
                       height = figure_depth,
                       plot.in = fig.SN2.patchwork)

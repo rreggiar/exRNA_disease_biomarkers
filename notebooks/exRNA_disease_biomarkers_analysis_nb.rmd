@@ -179,8 +179,8 @@ identity_color_pal <- c('ctrl' = viridis_three_color_pal[[1]],
                         'panc' = viridis_three_color_pal[[2]],
                         'covid' = viridis_three_color_pal[[3]])
 
-te_aware_annotation_levels <- c('gencode_coding',
-                                 'gencode_lncRNA',
+te_aware_annotation_levels <- c('GENCODE_coding',
+                                 'GENCODE_lncRNA',
                                  'LINE',
                                  'SINE',
                                  'LTR',
@@ -761,17 +761,17 @@ ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$deseq$norm_counts.df %>%
   rownames_to_column('gene') %>% 
   merge(reference_meta_data$ucsc_rmsk_insert_info.df, by = 'gene', all.x = T) %>% 
   mutate(family = ifelse(gene %in% reference_meta_data$gencode_lncRNA_gene_names.df$ensg,
-                         'gencode_lncRNA', family),
-         family = ifelse(is.na(family), 'gencode_coding', family),
-         clade = ifelse(grepl('gencode', family), family, clade),
-         clade = ifelse(clade %in% c('gencode_coding',
-                                     'gencode_lncRNA',
+                         'GENCODE_lncRNA', family),
+         family = ifelse(is.na(family), 'GENCODE_coding', family),
+         clade = ifelse(grepl('GENCODE', family), family, clade),
+         clade = ifelse(clade %in% c('GENCODE_coding',
+                                     'GENCODE_lncRNA',
                                      'LINE',
                                      'SINE',
                                      'LTR',
                                      'DNA',
                                      'Simple_repeat'), clade, 'other'),
-         type = ifelse(grepl('gencode',family), 'GENCODE', 'TE'),
+         type = ifelse(grepl('GENCODE',family), 'GENCODE', 'TE'),
          clade = factor(clade, levels = te_aware_annotation_levels)) %>% 
   filter(!gene %in% chrM.filter.list) -> total_annotated_rmsk_counts
 
@@ -801,17 +801,17 @@ tidy_total_annotated_rmsk_counts %>%
 ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out %>% 
   merge(reference_meta_data$ucsc_rmsk_insert_info.df, by = 'gene', all.x = T) %>% 
   mutate(family = ifelse(ensg %in% reference_meta_data$gencode_lncRNA_gene_names.df$ensg,
-                         'gencode_lncRNA', family),
-         family = ifelse(is.na(family), 'gencode_coding', family),
-         clade = ifelse(grepl('gencode', family), family, clade),
-         clade = ifelse(clade %in% c('gencode_coding',
-                                     'gencode_lncRNA',
+                         'GENCODE_lncRNA', family),
+         family = ifelse(is.na(family), 'GENCODE_coding', family),
+         clade = ifelse(grepl('GENCODE', family), family, clade),
+         clade = ifelse(clade %in% c('GENCODE_coding',
+                                     'GENCODE_lncRNA',
                                      'LINE',
                                      'SINE',
                                      'LTR',
                                      'DNA',
                                      'Simple_repeat'), clade, 'other'),
-         type = ifelse(grepl('gencode',family), 'GENCODE', 'TE'),
+         type = ifelse(grepl('GENCODE',family), 'GENCODE', 'TE'),
          clade = factor(clade, levels = te_aware_annotation_levels)) %>% 
   filter(!ensg %in% chrM.filter.list,
          !grepl('^MT', gene)) -> panc_annotated_rmsk_de
@@ -825,19 +825,19 @@ panc_label_list_dn <- panc_annotated_rmsk_de %>%
   top_n(3, wt = -log2FoldChange)
 
 panc_label_lnc_list_dn <- panc_annotated_rmsk_de %>% 
-  filter(clade == 'gencode_lncRNA',
+  filter(clade == 'GENCODE_lncRNA',
          !grepl('^ENSG', gene)) %>% 
   top_n(3, wt = -log2FoldChange)
 
 panc_label_list <- rbind(panc_label_list, panc_label_list_dn, panc_label_lnc_list_dn)
 
 panc_annotated_rmsk_de %>%
-  filter(clade == 'gencode_coding') %>% 
+  filter(clade == 'GENCODE_coding') %>% 
   ggplot(aes(log2FoldChange, -log10(padj), color = clade)) + 
   geom_point(size = 2, alpha = 0.6, show.legend = FALSE) -> gencode_layer.plt
 
 gencode_layer.plt + 
-  geom_point(data = filter(panc_annotated_rmsk_de, clade != 'gencode_coding') %>% 
+  geom_point(data = filter(panc_annotated_rmsk_de, clade != 'GENCODE_coding') %>% 
                mutate(clade = factor(clade, levels = te_aware_annotation_levels)),
              aes(log2FoldChange, -log10(padj), color = clade), size = 2, alpha = 0.8) +
   scale_color_manual(values = te_color_pal, name = 'biotype/clade') + 
@@ -853,17 +853,17 @@ gencode_layer.plt +
 ucsc.rmsk.salmon_quant$analysis_set$covid_ctrl$deseq$de_out %>% 
   merge(reference_meta_data$ucsc_rmsk_insert_info.df, by = 'gene', all.x = T) %>% 
   mutate(family = ifelse(ensg %in% reference_meta_data$gencode_lncRNA_gene_names.df$ensg,
-                         'gencode_lncRNA', family),
-         family = ifelse(is.na(family), 'gencode_coding', family),
-         clade = ifelse(grepl('gencode', family), family, clade),
-         clade = ifelse(clade %in% c('gencode_coding',
-                                     'gencode_lncRNA',
+                         'GENCODE_lncRNA', family),
+         family = ifelse(is.na(family), 'GENCODE_coding', family),
+         clade = ifelse(grepl('GENCODE', family), family, clade),
+         clade = ifelse(clade %in% c('GENCODE_coding',
+                                     'GENCODE_lncRNA',
                                      'LINE',
                                      'SINE',
                                      'LTR',
                                      'DNA',
                                      'Simple_repeat'), clade, 'other'),
-         type = ifelse(grepl('gencode',family), 'GENCODE', 'TE'),
+         type = ifelse(grepl('GENCODE',family), 'GENCODE', 'TE'),
          clade = factor(clade, levels = te_aware_annotation_levels)) %>% 
   filter(!ensg %in% chrM.filter.list,
          !grepl('^MT', gene)) -> covid_annotated_rmsk_de
@@ -872,19 +872,19 @@ covid_label_list <- covid_annotated_rmsk_de %>%
   top_n(3, wt = log2FoldChange)
 
 covid_label_lnc_list_dn <- covid_annotated_rmsk_de %>% 
-  filter(clade == 'gencode_lncRNA',
+  filter(clade == 'GENCODE_lncRNA',
          !grepl('^ENSG', gene)) %>% 
   top_n(3, wt = -log2FoldChange)
 
 covid_label_list <- rbind(covid_label_list, covid_label_lnc_list_dn)
 
 covid_annotated_rmsk_de %>%
-  filter(clade == 'gencode_coding') %>% 
+  filter(clade == 'GENCODE_coding') %>% 
   ggplot(aes(log2FoldChange, -log10(padj), color = clade)) + 
   geom_point(size = 2, alpha = 0.6, show.legend = FALSE) -> gencode_layer.plt
 
 gencode_layer.plt + 
-  geom_point(data = filter(covid_annotated_rmsk_de, clade != 'gencode_coding') %>% 
+  geom_point(data = filter(covid_annotated_rmsk_de, clade != 'GENCODE_coding') %>% 
                mutate(clade = factor(clade, levels = te_aware_annotation_levels)),
              aes(log2FoldChange, -log10(padj), color = clade), size = 2, alpha = 0.8) +
   scale_color_manual(values = te_color_pal, name = 'biotype/clade') + 

@@ -2610,17 +2610,17 @@ merge(panc_7.1.1_tpm, panc_6.1.1_tpm, by = 'Gene ID') %>%
 panc_compare.df %>% 
   merge(reference_meta_data$ucsc_rmsk_insert_info.df, by.x = 'Gene ID', by.y = 'gene', all.x = T) %>% 
   mutate(family = ifelse(`Gene ID` %in% reference_meta_data$gencode_lncRNA_gene_names.df$ensg,
-                         'gencode_lncRNA', family),
-         family = ifelse(is.na(family), 'gencode_coding', family),
-         clade = ifelse(grepl('gencode', family), family, clade),
-         clade = ifelse(clade %in% c('gencode_coding',
-                                     'gencode_lncRNA',
+                         'GENCODE_lncRNA', family),
+         family = ifelse(is.na(family), 'GENCODE_coding', family),
+         clade = ifelse(grepl('GENCODE', family), family, clade),
+         clade = ifelse(clade %in% c('GENCODE_coding',
+                                     'GENCODE_lncRNA',
                                      'LINE',
                                      'SINE',
                                      'LTR',
                                      'DNA',
                                      'Simple_repeat'), clade, 'other'),
-         type = ifelse(grepl('gencode',family), 'GENCODE', 'TE'),
+         type = ifelse(grepl('GENCODE',family), 'GENCODE', 'TE'),
          clade = factor(clade, levels = te_aware_annotation_levels)) -> panc_compare_annotated.df
 
 # lm(panc_6_tpm ~ panc_7_tpm, data = panc_compare_annotated.df) %>% 
@@ -2714,7 +2714,7 @@ panc_compare_annotated.df %>%
   summarize(detected = n()) %>% 
   ggplot(aes(sample, detected, fill = sample)) + 
   geom_col() + 
-  xlab('') + 
+  xlab('') + ylab('detected genes') +
   scale_fill_manual(values = viridisLite::plasma(20)[c(1,8,10)]) +
   facet_wrap(~clade, scales = 'free_y', ncol = 2, strip.position = 'bottom') -> plt_SN2E.plt
 
@@ -2747,6 +2747,26 @@ save.manuscript.panel(figure = 6,
                       width = figure_double_column_width,
                       height = figure_depth,
                       plot.in = fig.SN2.patchwork)
+
+fig_S6_2_layout <- "
+AA
+AA
+"
+
+wrap_plots(plt_SN2E.plt,
+           guides = 'collect',
+           design = fig_S6_2_layout,
+           heights = c(1,0.25)) +
+  plot_annotation(tag_levels = 'A') & 
+  theme(legend.position = 'bottom', 
+        legend.justification = c(0.5, 0.5))-> fig.S6_2.patchwork
+
+save.manuscript.panel(figure = 6,
+                      figure.dir = figure.dir,
+                      name = 'patchwork_full_fig_S6_2',
+                      width = figure_double_column_width,
+                      height = figure_depth,
+                      plot.in = fig.S6_2.patchwork)
 
 
 ```

@@ -1584,7 +1584,7 @@ surv.obj <- Surv(time = filter(paad_tcga_pheno_merge %>% select(sample.x, OS.tim
 surv.fit <- survfit(as.formula(surv.obj ~ panc_exRNA_signal), 
                     data = tcga_paad_stratified_counts)
 ggsurvplot(surv.fit,
-           ylab = 'Overall Survival Probability',
+           ylab = 'O.S. Probability',
            xlab = 'Overall Survival Time -- days',
            pval = T, 
            pval.size = txt.mm_to_pts(1),
@@ -1702,7 +1702,7 @@ surv.obj <- Surv(time = filter(paad_tcga_pheno_merge %>% select(sample.x, OS.tim
 surv.fit <- survfit(as.formula(surv.obj ~ panc_exRNA_signal), 
                     data = tcga_paad_stratified_counts)
 ggsurvplot(surv.fit, 
-           ylab = 'Overall Survival Probability',
+           ylab = 'O.S. Probability',
            xlab = 'Overall Survival Time -- days',
            pval = T, 
            pval.size = txt.mm_to_pts(1),

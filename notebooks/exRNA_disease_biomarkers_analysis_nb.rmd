@@ -1206,7 +1206,7 @@ ggsurvplot(surv.fit,
            pval.coord = c(0, 0.08),
            palette = viridis(3)[c(2,1)]) -> surv.plt
 
-paste0('panc gencode up \n (n genes = ',filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
+paste0('panc GENCODE up \n (n genes = ',filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
                         padj < 0.05, log2FoldChange > 0.75) %>% 
   filter(!gene %in% reference_meta_data$ucsc_rmsk_insert_info.df$gene) %>% nrow(), ')') -> km_title
 
@@ -1429,7 +1429,7 @@ ggsurvplot(surv.fit,
            pval.coord = c(0, 0.08),
            palette = viridis(3)[c(2,1)]) -> surv.plt
 
-paste0('panc TE down \n (n genes = ',filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
+paste0('panc Repeat down \n (n genes = ',filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
                           padj < 0.05, log2FoldChange < -1) %>% 
   filter(gene %in% reference_meta_data$ucsc_rmsk_insert_info.df$gene) %>% nrow(), ')') -> km_title
 
@@ -1440,7 +1440,7 @@ surv.plt$plot + ggtitle(km_title) -> plt_surv_B.plt
 filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
                           padj < 0.05, log2FoldChange < -1) %>% 
   filter(gene %in% reference_meta_data$ucsc_rmsk_insert_info.df$gene) %>%
-  top_n(wt =-padj, 4) %>% dplyr::pull(gene) -> this_top_10
+  top_n(wt =-padj, 5) %>% dplyr::pull(gene) -> this_top_10
 
 ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$norm_counts.df %>% 
   rownames_to_column('ensg') %>% 

@@ -627,7 +627,7 @@ mapping_rate_compare.df %>%
   geom_point(size = rel(1), alpha = 0.8) +
   geom_line(aes(group = sample), alpha = 0.2, show.legend = F) +
   ylab('% mapped') + xlab('') + 
-  ggforce::facet_col(~condition, strip.position = 'bottom') +
+  ggforce::facet_row(~condition, strip.position = 'bottom') +
   scale_color_manual(values = identity_color_pal) + 
   ggpubr::stat_compare_means(comparisons = list(c('GENCODE', 'Repeat-aware')), 
                              method = 'wilcox', size = 2.5, 
@@ -641,10 +641,10 @@ import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_
 
 
 fig_1_layout <- "
-AD
-AD
+AB
+AC
 EE
-BC
+DD
 "
 
 wrap_plots(flowchart_wrap_fig1A.plt,

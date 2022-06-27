@@ -593,7 +593,7 @@ rowRanges(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$gxi) %>%
 ## Fig_flowchart_1A
 ```{r 1A}
 # install.packages('pdftools')
-flow_chart.plt <- magick::image_read_pdf(path = file.path(figure.dir, 'fig.1', 'plasma_schematic_v4.pdf'))
+flow_chart.plt <- magick::image_read_pdf(path = file.path(figure.dir, 'fig.1', 'plasma_schematic_v6.pdf'))
 flowchart_wrap_fig1A.plt <- wrap_elements(full = magick::image_ggplot(flow_chart.plt))
 
 ```

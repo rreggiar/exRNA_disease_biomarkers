@@ -845,7 +845,7 @@ gencode_layer.plt +
                mutate(clade = factor(clade, levels = te_aware_annotation_levels)),
                       aes(label = ifelse(gene %in% panc_label_list$gene, gene, '')), 
                            show.legend = F, color = 'black', size = txt.mm_to_pts(1),
-               max.overlaps = 1000, box.padding = unit(4.5, 'mm'), segment.colour = 'grey') -> fig.2B.plt
+               max.overlaps = 1000, box.padding = 0.3, segment.colour = 'grey') -> fig.2B.plt
 
 ```
 ## Fig_2C
@@ -891,7 +891,7 @@ gencode_layer.plt +
   ggrepel::geom_text_repel(data = covid_annotated_rmsk_de %>% 
              mutate(clade = factor(clade, levels = te_aware_annotation_levels)),
                     aes(label = ifelse(gene %in% covid_label_list$gene, gene, '')), 
-                         show.legend = F, color = 'black', size = txt.mm_to_pts(1), max.overlaps = 1000) + 
+                         show.legend = F, color = 'black',segment.colour = 'grey', size = txt.mm_to_pts(1), max.overlaps = 1000) + 
   xlim(-7.5,7.5) -> fig.2C.plt
 ```
 ## Fig_2D

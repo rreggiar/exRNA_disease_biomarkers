@@ -1840,7 +1840,7 @@ len_compare.df %>%
 #   ylab('cumulative proportion (99% CI)') + 
 #   xlab('read length') + 
 #   theme(legend.position = c(0.25, 0.99)) -> plt_ND_1.plt
-devtools::install_github("SwampThingPaul/AnalystHelper")
+# devtools::install_github("SwampThingPaul/AnalystHelper")
 ctrl.6.1.5_nanopore_hex_to.plt %>% 
   pull(read_length) %>% 
   AnalystHelper::ecdf_fun(CI = T, CI.interval = 0.99) %>% 
@@ -1970,7 +1970,7 @@ wrap_plots(plt_NC.plt,
            # wrap_elements(full = plt_ND_2.plt),
            design = fig_N_layout, 
            guides = 'collect',
-           heights = c(1,1,1,1,0.15)) +
+           heights = c(1,1,1,1,0.17)) +
   plot_annotation(tag_levels = 'A') &
   theme(legend.justification = 'center', legend.position = 'bottom') -> fig.N.patchwork
 

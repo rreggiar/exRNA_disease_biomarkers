@@ -787,8 +787,9 @@ tidy_total_annotated_rmsk_counts %>%
   group_by(name, condition, clade) %>% 
   summarize(clade_sum = sum(count)) %>% 
   mutate(clade_frac = clade_sum/sum(clade_sum),
-         condition = factor(condition, levels = c('panc', 'ctrl', 'covid'))) %>% 
-  ggplot(aes(name, clade_frac, fill = clade)) + 
+         condition = factor(condition, levels = c('panc', 'ctrl', 'covid'))) %>%
+  mutate(rep = as.numeric(str_split_fixed(string = name, pattern = ' ', n = 2)[,2])) %>% 
+  ggplot(aes(reorder(name, rep), clade_frac, fill = clade)) +
   geom_col(color = 'white', show.legend = F) + 
   scale_fill_manual(values = te_color_pal, name = 'biotype/clade') + 
   ggforce::facet_row(~condition, scales = 'free_x') +

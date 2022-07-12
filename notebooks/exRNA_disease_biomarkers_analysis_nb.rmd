@@ -588,6 +588,25 @@ rowRanges(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$gxi) %>%
   unlist() %>% unname() -> chrM.filter.list
 ```
 
+## meta table re number
+```{r}
+salmon_quant$analysis_set$ctrl_panc_covid$quant_meta %>% 
+  gather(var, value, -sample, -condition, -sex, -context) %>% 
+  mutate(value = as.numeric(value),
+         condition = factor(condition, levels = c('panc', 'ctrl', 'covid'))) %>% 
+  filter(var %in% c('age', 'input_vol')) %>% 
+  spread(var, value) %>% 
+  filter(! sample %in% qc_fails) %>% 
+  select(-context, -input_vol) %>% 
+  mutate(num = ifelse(grepl('covid', sample),
+                      row_number(),
+                      str_split_fixed(string = sample, pattern = '[.]', n = 4)[, 2]),
+         old_name = sample,
+         num = ifelse(condition == 'ctrl', as.numeric(num)-3, num),
+         sample = paste0(condition, ' ', num)) -> meta_grob_input_table
+```
+
+
 # Figures
 # Fig_1
 ## Fig_flowchart_1A
@@ -1023,19 +1042,7 @@ fig.S2A.plt <- pca_correlation_top7.plt
 ```
 ## Fig_S2B
 ```{r S2B}
-salmon_quant$analysis_set$ctrl_panc_covid$quant_meta %>% 
-  gather(var, value, -sample, -condition, -sex, -context) %>% 
-  mutate(value = as.numeric(value),
-         condition = factor(condition, levels = c('panc', 'ctrl', 'covid'))) %>% 
-  filter(var %in% c('age', 'input_vol')) %>% 
-  spread(var, value) %>% 
-  filter(! sample %in% qc_fails) %>% 
-  select(-context, -input_vol) %>% 
-  mutate(num = ifelse(grepl('covid', sample),
-                      row_number(),
-                      str_split_fixed(string = sample, pattern = '[.]', n = 4)[, 2]),
-         old_name = sample,
-         sample = paste0(condition, ' ', num)) -> meta_grob_input_table
+
 
 meta_grob_input_table %>% 
   select(-num, -old_name) %>% 

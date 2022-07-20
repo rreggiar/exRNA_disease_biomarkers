@@ -606,6 +606,69 @@ salmon_quant$analysis_set$ctrl_panc_covid$quant_meta %>%
          sample = paste0(condition, ' ', num)) -> meta_grob_input_table
 ```
 
+```{r}
+tmp <- read_csv(file.path(output_data.dir, 'unmelted_cohort_data.csv'))
+
+tmp %>% 
+  mutate(Human = TRUE) %>% 
+  mutate(insertion_status = str_replace(insertion_status, pattern = '\\[', replacement = ''),
+         insertion_status = str_replace(insertion_status, pattern = '\\]', replacement = ''),
+         insertion_status = str_replace_all(insertion_status, pattern = ' ', replacement = ''),
+         insertion_status = as.list(as.vector(insertion_status))) %>% 
+  unnest(insertion_status) %>% 
+  separate(insertion_status, sep = '[,]', into = c('Chimp', 'Gorilla', 'Orangutang', 'Bonobo')) %>% 
+  select(insertion = insertion_y, Human, Chimp, Gorilla, Orangutang, Bonobo, `panc.1.2.3`:`ctrl.9.1.2`) %>% 
+  mutate(Chimp = as.logical(Chimp),
+         Gorilla = as.logical(Gorilla),
+         Orangutang = as.logical(Orangutang),
+         Bonobo = as.logical(Bonobo)) %>% 
+  pivot_longer(names_to = 'sample', cols = `panc.1.2.3`:`ctrl.9.1.2`) %>% 
+  select(insertion:Bonobo) %>% 
+  pivot_longer(names_to = 'species', cols = Human:Bonobo) %>% 
+  filter(value == T) -> tmp_insert_df
+
+tmp %>% 
+  mutate(Human = TRUE) %>% 
+  mutate(insertion_status = str_replace(insertion_status, pattern = '\\[', replacement = ''),
+         insertion_status = str_replace(insertion_status, pattern = '\\]', replacement = ''),
+         insertion_status = str_replace_all(insertion_status, pattern = ' ', replacement = ''),
+         insertion_status = as.list(as.vector(insertion_status))) %>% 
+  unnest(insertion_status) %>% 
+  separate(insertion_status, sep = '[,]', into = c('Chimp', 'Gorilla', 'Orangutang', 'Bonobo')) %>% 
+  select(insertion = insertion_y, Human, Chimp, Gorilla, Orangutang, Bonobo, `panc.1.2.3`:`ctrl.9.1.2`) %>% 
+  mutate(Chimp = as.logical(Chimp),
+         Gorilla = as.logical(Gorilla),
+         Orangutang = as.logical(Orangutang),
+         Bonobo = as.logical(Bonobo)) %>% 
+  pivot_longer(names_to = 'sample', cols = `panc.1.2.3`:`ctrl.9.1.2`) %>% 
+  select(insertion, sample, value) %>% 
+  separate(sample, sep = '[.]', into = c('condition', NA, NA, NA)) -> tmp_value_df
+
+merge(tmp_insert_df, 
+      tmp_value_df,
+      by = 'insertion') -> tmp_merge_df
+  
+
+tmp_merge_df %>% 
+  group_by(insertion, condition) %>% 
+  summarize(species = unique(list(species)), mean_exp = mean(log1p(value.y)), sd_exp = sd(log1p(value.y))) %>%
+  ggplot(aes(x = species,y = mean_exp, color = condition)) + 
+  scale_color_manual(values = identity_color_pal) +
+  # geom_errorbar(position = position_dodge(width = 0.45)) +
+  geom_point(position = position_jitterdodge(dodge.width = 0.75, jitter.width = 0.15)) + 
+  ggupset::scale_x_upset(order_by = 'degree')
+
+tmp_merge_df %>% 
+  group_by(insertion, condition) %>% 
+  summarize(species = unique(list(species)), mean_exp = mean(log1p(value.y)), sd_exp = sd(log1p(value.y))) %>%
+  filter(grepl('Alu', insertion)) %>% nrow()
+  filter(mean_exp > 0) %>% 
+  ggplot(aes(x = species, fill = condition)) + 
+  scale_fill_manual(values = identity_color_pal) +
+  geom_bar(position = position_dodge()) +
+  ggupset::scale_x_upset(order_by = 'degree') + ylab('number of detected Alu insertions')
+
+```
 
 # Figures
 # Fig_1

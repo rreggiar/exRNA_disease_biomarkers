@@ -607,7 +607,7 @@ salmon_quant$analysis_set$ctrl_panc_covid$quant_meta %>%
 ```
 
 ```{r}
-tmp <- read_csv(file.path(output_data.dir, 'lnc.merged_species_TE_df.TEBAG.csv'))
+tmp <- read_csv(file.path(output_data.dir, 'unmelted_cohort_data.csv'))
 
 tmp %>% 
   mutate(Human = TRUE) %>% 
@@ -617,10 +617,10 @@ tmp %>%
          insertion_status = as.list(as.vector(insertion_status))) %>% 
   unnest(insertion_status) %>% 
   separate(insertion_status, sep = '[,]', into = c('Chimp', 'Gorilla', 'Orangutan', 'Bonobo')) %>% 
-  select(insertion = insertion_y, Human, Chimp, Gorilla, Orangutang, Bonobo, `panc.1.2.3`:`ctrl.9.1.2`) %>% 
+  select(insertion = insertion_y, Human, Chimp, Gorilla, Orangutan, Bonobo, `panc.1.2.3`:`ctrl.9.1.2`) %>%
   mutate(Chimp = as.logical(Chimp),
          Gorilla = as.logical(Gorilla),
-         Orangutang = as.logical(Orangutang),
+         Orangutan = as.logical(Orangutan),
          Bonobo = as.logical(Bonobo)) %>% 
   pivot_longer(names_to = 'sample', cols = `panc.1.2.3`:`ctrl.9.1.2`) %>% 
   select(insertion:Bonobo) %>% 
@@ -635,10 +635,10 @@ tmp %>%
          insertion_status = as.list(as.vector(insertion_status))) %>% 
   unnest(insertion_status) %>% 
   separate(insertion_status, sep = '[,]', into = c('Chimp', 'Gorilla', 'Orangutan', 'Bonobo')) %>% 
-  select(insertion = insertion_y, Human, Chimp, Gorilla, Orangutang, Bonobo, `panc.1.2.3`:`ctrl.9.1.2`) %>% 
+  select(insertion = insertion_y, Human, Chimp, Gorilla, Orangutan, Bonobo, `panc.1.2.3`:`ctrl.9.1.2`) %>% 
   mutate(Chimp = as.logical(Chimp),
          Gorilla = as.logical(Gorilla),
-         Orangutang = as.logical(Orangutang),
+         Orangutan = as.logical(Orangutan),
          Bonobo = as.logical(Bonobo)) %>% 
   pivot_longer(names_to = 'sample', cols = `panc.1.2.3`:`ctrl.9.1.2`) %>% 
   select(insertion, sample, value) %>% 

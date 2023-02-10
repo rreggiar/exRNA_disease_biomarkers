@@ -285,7 +285,7 @@ salmon_quant <- load.tximeta.object.list('salmon',
 salmon_quant <- parse.tximeta.quant.metadata(salmon_quant)
 
 
-ucsc.rmsk.salmon_quant <- load.tximeta.object.list('ucsc.rmsk.salmon', 
+ucsc.rmsk.salmon_quant <- load.tximeta.object.list('resub', 
                                                    output_data.dir = output_data.dir)
 
 

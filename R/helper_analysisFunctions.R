@@ -94,21 +94,21 @@ parse.tximeta.quant.metadata <- function(se_list, qc_data.dir = here::here('data
 	  project <- sub('_ucsc.rmsk.salmon', '', project)
 	  project <- sub('_process.aware.salmon', '', project)
 	  
-	  star_meta_tmp_path <- Sys.glob(file.path(qc_data.dir,
-    					                     'star',
-    					                     paste0('multiqc.star.', project, '.*_data'),
-    					                     'multiqc_star.txt'))
+# 	  star_meta_tmp_path <- Sys.glob(file.path(qc_data.dir,
+#     					                     'star',
+#     					                     paste0('multiqc.star.', project, '.*_data'),
+#     					                     'multiqc_star.txt'))
+# 
+# 	  star_meta_tmp <- read_tsv(star_meta_tmp_path)
+# 
+# 	  colnames(star_meta_tmp) <- paste0('star_', colnames(star_meta_tmp))
+# 
+# 	  star_meta_tmp %>%
+# 	    dplyr::rename('sample' = star_Sample) %>%
+# 	    mutate(sample = sub('_second_pass_out', '', sample)) -> star_meta_tmp
 
-	  star_meta_tmp <- read_tsv(star_meta_tmp_path)
-
-	  colnames(star_meta_tmp) <- paste0('star_', colnames(star_meta_tmp))
-
-	  star_meta_tmp %>%
-	    dplyr::rename('sample' = star_Sample) %>%
-	    mutate(sample = sub('_second_pass_out', '', sample)) -> star_meta_tmp
-
-	  meta_out <- merge(star_meta_tmp, salmon_meta_tmp, by = 'sample')
-	  
+	  # meta_out <- merge(star_meta_tmp, salmon_meta_tmp, by = 'sample')
+	  meta_out <- salmon_meta_tmp
 	  if (process_aware == T){
 
 	    return(lst('txi' = data$txi, 

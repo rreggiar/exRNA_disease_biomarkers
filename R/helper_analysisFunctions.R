@@ -293,7 +293,7 @@ run.de.seq <- function(type = 'gxi', base_level = 'ctrl',
   scaled_quant_meta_for_de.df <- 
     input_se$quant_meta %>% 
     mutate(input_vol = as.numeric(input_vol),
-           condition = relevel(as.factor(condition), ref = base_level)) %>% 
+           condition = relevel(as.factor(diagnosis), ref = base_level)) %>% 
     mutate_if(is.numeric, ~scale(., center = T)) %>% 
     mutate_if(is.character, ~as.factor(.))
   
@@ -332,12 +332,12 @@ run.de.seq <- function(type = 'gxi', base_level = 'ctrl',
     input_set_dds_norm_counts.df %>% 
     rownames_to_column('ensg') %>% 
     gather(sample, count, -ensg) %>% 
-    merge(input_se$quant_meta %>% select(sample, age, condition), by = 'sample') %>% 
-    group_by(condition, ensg) %>% 
-    summarize(age_cor = cor(count, age, method = 'pearson')) %>% 
+    merge(input_se$quant_meta %>% select(sample, sample_sku_patient_age_at_collection, diagnosis), by = 'sample') %>% 
+    group_by(diagnosis, ensg) %>% 
+    summarize(age_cor = cor(count, sample_sku_patient_age_at_collection, method = 'pearson')) %>% 
     drop_na() %>% 
     filter(abs(age_cor) >= 0.70) %>% 
-    spread(condition, age_cor)
+    spread(diagnosis, age_cor)
   
   input_set_dds_vst_counts <-  as.data.frame(assay(vst(input_set_dds, blind = F)))
   
@@ -351,52 +351,52 @@ run.de.seq <- function(type = 'gxi', base_level = 'ctrl',
   
   coef_list <- tail(resultsNames(input_set_dds), n=2)
   
-  if (ref_type != 'ucsc.rmsk') { 
-    
-    covid_vs_ctrl <- 
-      lfcShrink(input_set_dds, coef = coef_list[[1]]) %>% 
-      as.data.frame() %>% 
-      rownames_to_column('ensg') %>% 
-      filter(!ensg %in% c(condition_aware_age_cor_filter[, c('ctrl', 'covid')]$ensg,
-                          gencode_sex_filter.df$gene_id)) %>%
-      merge(rowRanges(input_se[[type]]) %>% as.data.frame(), by.x = 'ensg', by.y = 'gene_id') %>%
-      merge(reference_meta_in %>% select(ensg, gene) %>% distinct(), by = 'ensg')
-    
-    panc_vs_ctrl <- 
-      lfcShrink(input_set_dds, coef = coef_list[[2]]) %>% 
-      as.data.frame() %>% 
-      rownames_to_column('ensg') %>% 
-      filter(!ensg %in% c(condition_aware_age_cor_filter[, c('ctrl', 'panc')]$ensg,
-                          gencode_sex_filter.df$gene_id)) %>% 
-      merge(rowRanges(input_se[[type]]) %>% as.data.frame(), by.x = 'ensg', by.y = 'gene_id') %>%
-      merge(reference_meta_in %>% select(ensg, gene) %>% distinct(), by = 'ensg') 
-  } else { 
-    
-    covid_vs_ctrl <- 
-      lfcShrink(input_set_dds, coef = coef_list[[1]]) %>% 
-      as.data.frame() %>% 
-      rownames_to_column('ensg') %>% 
-      filter(!ensg %in% c(condition_aware_age_cor_filter[, c('ctrl', 'covid')]$ensg,
-                          gencode_sex_filter.df$gene_id)) %>%
-      merge(reference_meta_in %>% select(ensg, gene) %>% distinct(), by = 'ensg')
-    
-    panc_vs_ctrl <- 
-      lfcShrink(input_set_dds, coef = coef_list[[2]]) %>% 
-      as.data.frame() %>% 
-      rownames_to_column('ensg') %>% 
-      filter(!ensg %in% c(condition_aware_age_cor_filter[, c('ctrl', 'panc')]$ensg,
-                          gencode_sex_filter.df$gene_id)) %>%
-      merge(reference_meta_in %>% select(ensg, gene) %>% distinct(), by = 'ensg')
-    
-  }
+  # if (ref_type != 'ucsc.rmsk') { 
+  #   
+  #   covid_vs_ctrl <- 
+  #     lfcShrink(input_set_dds, coef = coef_list[[1]]) %>% 
+  #     as.data.frame() %>% 
+  #     rownames_to_column('ensg') %>% 
+  #     filter(!ensg %in% c(condition_aware_age_cor_filter[, c('ctrl', 'covid')]$ensg,
+  #                         gencode_sex_filter.df$gene_id)) %>%
+  #     merge(rowRanges(input_se[[type]]) %>% as.data.frame(), by.x = 'ensg', by.y = 'gene_id') %>%
+  #     merge(reference_meta_in %>% select(ensg, gene) %>% distinct(), by = 'ensg')
+  #   
+  #   panc_vs_ctrl <- 
+  #     lfcShrink(input_set_dds, coef = coef_list[[2]]) %>% 
+  #     as.data.frame() %>% 
+  #     rownames_to_column('ensg') %>% 
+  #     filter(!ensg %in% c(condition_aware_age_cor_filter[, c('ctrl', 'panc')]$ensg,
+  #                         gencode_sex_filter.df$gene_id)) %>% 
+  #     merge(rowRanges(input_se[[type]]) %>% as.data.frame(), by.x = 'ensg', by.y = 'gene_id') %>%
+  #     merge(reference_meta_in %>% select(ensg, gene) %>% distinct(), by = 'ensg') 
+  # } else { 
+  #   
+  #   covid_vs_ctrl <- 
+  #     lfcShrink(input_set_dds, coef = coef_list[[1]]) %>% 
+  #     as.data.frame() %>% 
+  #     rownames_to_column('ensg') %>% 
+  #     filter(!ensg %in% c(condition_aware_age_cor_filter[, c('ctrl', 'covid')]$ensg,
+  #                         gencode_sex_filter.df$gene_id)) %>%
+  #     merge(reference_meta_in %>% select(ensg, gene) %>% distinct(), by = 'ensg')
+  #   
+  #   panc_vs_ctrl <- 
+  #     lfcShrink(input_set_dds, coef = coef_list[[2]]) %>% 
+  #     as.data.frame() %>% 
+  #     rownames_to_column('ensg') %>% 
+  #     filter(!ensg %in% c(condition_aware_age_cor_filter[, c('ctrl', 'panc')]$ensg,
+  #                         gencode_sex_filter.df$gene_id)) %>%
+  #     merge(reference_meta_in %>% select(ensg, gene) %>% distinct(), by = 'ensg')
+  #   
+  # }
   
   lst('norm_counts.df' = input_set_dds_norm_counts.df,
       'vst_counts.df' = input_set_dds_vst_counts,
       'age_filter.df' = condition_aware_age_cor_filter,
       'sex_filter.df' = gencode_sex_filter.df,
       'dds_object' = input_set_dds,
-      'panc_vs_ctrl' = panc_vs_ctrl,
-      'covid_vs_ctrl' = covid_vs_ctrl,
+      # 'panc_vs_ctrl' = panc_vs_ctrl,
+      # 'covid_vs_ctrl' = covid_vs_ctrl,
       'scaled_quant_meta_for_de.df' = scaled_quant_meta_for_de.df)  
   
 }
@@ -419,7 +419,7 @@ run.de.seq.individual <- function(type = 'gxi', base_level = 'ctrl',
   scaled_quant_meta_for_de.df <- 
     input_se$quant_meta %>% 
     mutate(input_vol = as.numeric(input_vol),
-           condition = relevel(as.factor(condition), ref = base_level)) %>% 
+           condition = relevel(as.factor(diagnosis), ref = base_level)) %>% 
     mutate_if(is.numeric, ~scale(., center = T)) %>% 
     mutate_if(is.character, ~as.factor(.))
   
@@ -477,12 +477,12 @@ run.de.seq.individual <- function(type = 'gxi', base_level = 'ctrl',
     input_set_dds_norm_counts.df %>% 
     rownames_to_column('ensg') %>% 
     gather(sample, count, -ensg) %>% 
-    merge(input_se$quant_meta %>% select(sample, age, condition), by = 'sample') %>% 
-    group_by(condition, ensg) %>% 
-    summarize(age_cor = cor(count, age, method = 'pearson')) %>% 
+    merge(input_se$quant_meta %>% select(sample, sample_sku_patient_age_at_collection, diagnosis), by = 'sample') %>% 
+    group_by(diagnosis, ensg) %>% 
+    summarize(age_cor = cor(count, sample_sku_patient_age_at_collection, method = 'pearson')) %>% 
     drop_na() %>% 
     filter(abs(age_cor) >= 0.70) %>% 
-    spread(condition, age_cor)
+    spread(diagnosis, age_cor)
   
   input_set_dds_vst_counts <- as.data.frame(assay(vst(input_set_dds, blind = F)))
   
@@ -530,15 +530,14 @@ run.de.seq.individual <- function(type = 'gxi', base_level = 'ctrl',
   } else { 
     
     message('ucsc.rmsk')
-    
+    print(condition_aware_age_cor_filter)
     de_out <- 
       lfcShrink(input_set_dds, coef = coef_list[[1]]) %>% 
       as.data.frame() %>% 
       # indiv comparisons return flipped values ?
       # mutate(log2FoldChange = -log2FoldChange) %>% 
       rownames_to_column('ensg') %>% 
-      filter(!ensg %in% c(condition_aware_age_cor_filter[, c(base_level, top_level)]$ensg,
-                          gencode_sex_filter.df$gene_id)) %>%
+      filter(!ensg %in% c(gencode_sex_filter.df$gene_id)) %>%
       merge(reference_meta_in %>% select(ensg, gene) %>% distinct(), by = 'ensg')
     
   }

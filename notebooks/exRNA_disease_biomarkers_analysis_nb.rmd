@@ -290,7 +290,7 @@ discovery_meta_data <- read_csv(file.path(
 original_roster_names <- read_csv(
   file.path(meta_data.dir,
             "original_roster_data_2020-09-30.csv"),
-  col_names = c('name', 'sample')
+  col_names = c('sample', 'name')
 )
 
 ```
@@ -298,78 +298,84 @@ original_roster_names <- read_csv(
 # import_data
 ## load_tximeta_obj
 ```{r}
-import::from(.directory = r_code.dir, 
-             .from = 'helper_analysisFunctions.R', 
-             load.tximeta.object.list,
-             parse.tximeta.quant.metadata)
+import::from(
+  .directory = r_code.dir,
+  .from = 'helper_analysisFunctions.R',
+  load.tximeta.object.list,
+  parse.tximeta.quant.metadata
+)
 
-# salmon_quant <- load.tximeta.object.list('salmon', 
+# salmon_quant <- load.tximeta.object.list('salmon',
 #                                          output_data.dir = output_data.dir)
-# 
+#
 # salmon_quant <- parse.tximeta.quant.metadata(salmon_quant)
 
 
-ucsc.rmsk.salmon_quant <- load.tximeta.object.list('full_resub', 
+ucsc.rmsk.salmon_quant <- load.tximeta.object.list('full_resub',
                                                    output_data.dir = output_data.dir)
 
 
-ucsc.rmsk.salmon_quant <- parse.tximeta.quant.metadata(ucsc.rmsk.salmon_quant)
+ucsc.rmsk.salmon_quant <-
+  parse.tximeta.quant.metadata(ucsc.rmsk.salmon_quant)
 
 
-# process.aware.salmon_quant <- load.tximeta.object.list('process.aware.salmon', 
+# process.aware.salmon_quant <- load.tximeta.object.list('process.aware.salmon',
 #                                                        output_data.dir = output_data.dir)
-# 
+#
 # process.aware.salmon_quant <- parse.tximeta.quant.metadata(process.aware.salmon_quant)
 ```
 
 # analysis_INTERACTIVE
 ## QC_filter
 ```{r}
-import::from(.directory = r_code.dir, 
-             .from = 'helper_analysisFunctions.R', 
+import::from(.directory = r_code.dir,
+             .from = 'helper_analysisFunctions.R',
              subset.tximeta.se)
 
-# salmon_quant$bioIvt_panc_salmon <- 
-#   subset.tximeta.se(salmon_quant$bioIvt_panc_salmon, 
+# salmon_quant$bioIvt_panc_salmon <-
+#   subset.tximeta.se(salmon_quant$bioIvt_panc_salmon,
 #                     filter_list = qc_fails)
 
-ucsc.rmsk.salmon_quant$bioIvt_panc_ucsc.rmsk.salmon <- 
-  subset.tximeta.se(ucsc.rmsk.salmon_quant$bioIvt_panc_ucsc.rmsk.salmon, 
-                    filter_list = qc_fails)
+# ucsc.rmsk.salmon_quant$bioIvt_panc_ucsc.rmsk.salmon <-
+#   subset.tximeta.se(ucsc.rmsk.salmon_quant$bioIvt_panc_ucsc.rmsk.salmon,
+#                     filter_list = qc_fails)
 
-# process.aware.salmon_quant$bioIvt_panc_process.aware.salmon <- 
-#   subset.tximeta.se(process.aware.salmon_quant$bioIvt_panc_process.aware.salmon, 
+# process.aware.salmon_quant$bioIvt_panc_process.aware.salmon <-
+#   subset.tximeta.se(process.aware.salmon_quant$bioIvt_panc_process.aware.salmon,
 #                     filter_list = qc_fails)
 
 ##
 
-# salmon_quant$bioIvt_covid_salmon <- 
-#   subset.tximeta.se(salmon_quant$bioIvt_covid_salmon, 
+# salmon_quant$bioIvt_covid_salmon <-
+#   subset.tximeta.se(salmon_quant$bioIvt_covid_salmon,
 #                     filter_list = qc_fails)
 
-ucsc.rmsk.salmon_quant$bioIvt_covid_ucsc.rmsk.salmon <- 
-  subset.tximeta.se(ucsc.rmsk.salmon_quant$bioIvt_covid_ucsc.rmsk.salmon, 
-                    filter_list = qc_fails)
+# ucsc.rmsk.salmon_quant$bioIvt_covid_ucsc.rmsk.salmon <-
+#   subset.tximeta.se(ucsc.rmsk.salmon_quant$bioIvt_covid_ucsc.rmsk.salmon,
+#                     filter_list = qc_fails)
 
-# process.aware.salmon_quant$bioIvt_covid_process.aware.salmon <- 
-#   subset.tximeta.se(process.aware.salmon_quant$bioIvt_covid_process.aware.salmon, 
+# process.aware.salmon_quant$bioIvt_covid_process.aware.salmon <-
+#   subset.tximeta.se(process.aware.salmon_quant$bioIvt_covid_process.aware.salmon,
 #                     filter_list = qc_fails)
 
 ## discovery
-ucsc.rmsk.salmon_quant$ucsc_rmsk_quant <- 
-  subset.tximeta.se(ucsc.rmsk.salmon_quant$ucsc_rmsk_quant, 
-                    filter_list = c('unknown1_S49.salmon.out',
-                                    'unknown2_S50.salmon.out',
-                                    'unknown3_S51.salmon.out',
-                                    'unknown4_S52.salmon.out',
-                                    'unknown5_S53.salmon.out',
-                                    # 'e14_S32.salmon.out',
-                                    # 'e11_S8.salmon.out',
-                                    # 'e12_S16.salmon.out',
-                                    # 'e13_S24.salmon.out',
-                                    # 'e15_S40.salmon.out',
-                                    # 'e16_S48.salmon.out'
-                                    ))
+ucsc.rmsk.salmon_quant$ucsc_rmsk_quant <-
+  subset.tximeta.se(
+    ucsc.rmsk.salmon_quant$ucsc_rmsk_quant,
+    filter_list = c(
+      'unknown1_S49.salmon.out',
+      'unknown2_S50.salmon.out',
+      'unknown3_S51.salmon.out',
+      'unknown4_S52.salmon.out',
+      'unknown5_S53.salmon.out'
+      # 'e14_S32.salmon.out',
+      # 'e11_S8.salmon.out',
+      # 'e12_S16.salmon.out',
+      # 'e13_S24.salmon.out',
+      # 'e15_S40.salmon.out',
+      # 'e16_S48.salmon.out'
+    )
+  )
 ```
 
 ## construct_analysis_sets
@@ -431,6 +437,17 @@ import::from(.directory = r_code.dir,
 #                        se_1 = 'bioIvt_panc_process.aware.salmon', 
 #                        analysis_set_2 = process.aware.salmon_quant$analysis_set$covid_ctrl,
 #                        sample_meta_in = sample_meta_data$`2022.01.14_combined_meta_data.csv`)
+sample_meta_data$`2022.01.14_combined_meta_data.csv` %>% 
+  select('sample' = patient, 'sample_sku_patient_gender' = sex, 'diagnosis' = condition)
+
+discovery_meta_data %>% 
+  select(sample, sample_sku_patient_gender, diagnosis)
+
+ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$quant_meta %>% 
+  mutate(sample = str_split_fixed(sample, '_S',2)[,1]) %>% 
+  merge(original_roster_names, by = 'sample', all.x = T) %>% 
+  mutate(sample = ifelse(is.na(name), sample, name)) %>% 
+  select(-name)
 
 ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$quant_meta <- 
   merge(ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$quant_meta %>% 

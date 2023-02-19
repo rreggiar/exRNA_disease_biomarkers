@@ -30,6 +30,7 @@ docker run --rm -p 127.0.0.1:"${PORT}":8787 -e DISABLE_AUTH=true \
 	-e USER="${USER}" \
 	-e USERID="${USER_ID}" \
 	-e ROOT=TRUE \
+	-e SSH_AUTH_SOCK=$SSH_AUTH_SOCK \
 	--detach \
 	--name "${PROJ}" \
 	-v "${DATA}" \
@@ -40,4 +41,5 @@ docker run --rm -p 127.0.0.1:"${PORT}":8787 -e DISABLE_AUTH=true \
 	-v "${MYSQL}" \
 	-v "${CONFIG}" \
 	-v "${REFERENCE}" \
+	-v "$SSH_AUTH_SOCK:$SSH_AUTH_SOCK" \
 	kimlab_rstudio:latest

@@ -132,13 +132,13 @@ txt.mm_to_pts <- function(ratio){ base_size * ratio * (25.4 / 72.27) }
 
 ## data_path_obj
 ```{r}
-figure.dir <- here::here('manuscript/figures')
-input_data.dir <- here::here('data/input_data')
-output_data.dir <- here::here('data/output_data')
-qc_data.dir <- here::here('data/output_data/rna_qc')
-meta_data.dir <- here::here('data/meta_data')
-reference.dir <- here::here('reference')
-r_code.dir <- here::here('R')
+figure.dir <- here::here('proj/manuscript/figures')
+input_data.dir <- here::here('proj/data/input_data')
+output_data.dir <- here::here('proj/data/output_data')
+qc_data.dir <- here::here('proj/data/output_data/rna_qc')
+meta_data.dir <- here::here('proj/data/meta_data')
+reference.dir <- here::here('proj/reference')
+r_code.dir <- here::here('proj/R')
 ```
 
 ## figure_export
@@ -209,68 +209,89 @@ names(te_alone_color_pal) <- te_alone_annotation_levels
 ```{r}
 
 ## reference meta data
-if (! file.exists(file.path(meta_data.dir, 'reference_meta_data_df.rds'))) {
-  
+if (!file.exists(file.path(meta_data.dir, 'reference_meta_data_df.rds'))) {
   reference_meta_data <- tibble::lst()
   
-  reference_meta_data$ucsc_rmsk_insert_info.df <- 
-    readr::read_tsv(file.path(reference.dir, 'ucsc.rmsk.insert.info.txt'),
-             col_names = c('gene', 'clade', 'family'))
+  reference_meta_data$ucsc_rmsk_insert_info.df <-
+    readr::read_tsv(
+      file.path(reference.dir, 'ucsc.rmsk.insert.info.txt'),
+      col_names = c('gene', 'clade', 'family')
+    )
   
-  reference_meta_data$gencode_tx_to_gene.df <- 
-    readr::read_csv(file.path(reference.dir, 
-                              paste0('gencode.v', gencode_ver, '.tx.to.gene.csv')),
-                    col_names = c('tx', 'gene')) %>% 
-    tidyr::separate(tx, sep = '\\|', 
-                    into = c('enst','ensg',NA,NA,'tx','gene','len','biotype'))
+  reference_meta_data$gencode_tx_to_gene.df <-
+    readr::read_csv(file.path(
+      reference.dir,
+      paste0('gencode.v', gencode_ver, '.tx.to.gene.csv')
+    ),
+    col_names = c('tx', 'gene')) %>%
+    tidyr::separate(
+      tx,
+      sep = '\\|',
+      into = c('enst', 'ensg', NA, NA, 'tx', 'gene', 'len', 'biotype')
+    )
   
-  reference_meta_data$gencode_tx_to_gene.df %>% 
-    dplyr::select(-enst) %>% 
-    dplyr::group_by(biotype) %>% 
+  reference_meta_data$gencode_tx_to_gene.df %>%
+    dplyr::select(-enst) %>%
+    dplyr::group_by(biotype) %>%
     dplyr::tally() -> reference_meta_data$gencode_biotype_count.df
   
-  reference_meta_data$gencode_tx_to_gene.df %>% 
-    dplyr::select(ensg,biotype) %>% 
-    dplyr::group_by(ensg) %>% 
-    dplyr::filter(all(biotype == 'lncRNA')) %>% 
+  reference_meta_data$gencode_tx_to_gene.df %>%
+    dplyr::select(ensg, biotype) %>%
+    dplyr::group_by(ensg) %>%
+    dplyr::filter(all(biotype == 'lncRNA')) %>%
     dplyr::distinct() -> reference_meta_data$gencode_lncRNA_gene_names.df
   
-  reference_meta_data$ucsc_rmsk_tx_to_gene.df <-  
-    readr::read_csv(file.path(reference.dir, 
-                              'ucsc.rmsk.insert.analysis.tx.to.gene.csv'),
-                    col_names = c('insert', 'info', 'gene', 'len', 'biotype')) %>% 
-    mutate(enst = insert, ensg = gene, tx = insert) %>% 
-    select(enst, ensg, tx, gene, len, biotype, -insert, -info)
+  reference_meta_data$ucsc_rmsk_tx_to_gene.df <-
+    readr::read_csv(
+      file.path(reference.dir,
+                'ucsc.rmsk.insert.analysis.tx.to.gene.csv'),
+      col_names = c('insert', 'info', 'gene', 'len', 'biotype')
+    ) %>%
+    mutate(enst = insert, ensg = gene, tx = insert) %>%
+    select(enst, ensg, tx, gene, len, biotype,-insert,-info)
   
-  reference_meta_data$total_tx_to_gene.df <- 
-    rbind(reference_meta_data$gencode_tx_to_gene.df,
-          reference_meta_data$ucsc_rmsk_tx_to_gene.df)
+  reference_meta_data$total_tx_to_gene.df <-
+    rbind(
+      reference_meta_data$gencode_tx_to_gene.df,
+      reference_meta_data$ucsc_rmsk_tx_to_gene.df
+    )
   
-  saveRDS(reference_meta_data, file.path(meta_data.dir, 'reference_meta_data_df.rds'))
+  saveRDS(reference_meta_data,
+          file.path(meta_data.dir, 'reference_meta_data_df.rds'))
   
 } else {
-  reference_meta_data <- readRDS(file.path(meta_data.dir, 'reference_meta_data_df.rds'))
+  reference_meta_data <-
+    readRDS(file.path(meta_data.dir, 'reference_meta_data_df.rds'))
 }
 
 ## sample_meta_data
-if (! file.exists(file.path(meta_data.dir, 'sample_meta_data_df.rds'))) {
-  
+if (!file.exists(file.path(meta_data.dir, 'sample_meta_data_df.rds'))) {
   list.files(meta_data.dir, pattern = '*_meta_data.csv') -> meta_file.list
   names(meta_file.list) <- meta_file.list
   
-  meta_file.list %>% 
+  meta_file.list %>%
     purrr::imap(function(name, file) {
       readr::read_csv(file.path(meta_data.dir, file))
     }) -> sample_meta_data
   
-  saveRDS(sample_meta_data, file.path(meta_data.dir, 'sample_meta_data_df.rds'))
+  saveRDS(sample_meta_data,
+          file.path(meta_data.dir, 'sample_meta_data_df.rds'))
   
 } else {
-  sample_meta_data <- readRDS(file.path(meta_data.dir, 'sample_meta_data_df.rds'))
+  sample_meta_data <-
+    readRDS(file.path(meta_data.dir, 'sample_meta_data_df.rds'))
 }
 
-discovery_meta_data <- read_csv(file.path(meta_data.dir,
-                                          'discovery_meta_data_w_inputVol_2023-02-10.csv'))
+discovery_meta_data <- read_csv(file.path(
+  meta_data.dir,
+  'discovery_meta_data_w_inputVol_2023-02-10.csv'
+))
+
+original_roster_names <- read_csv(
+  file.path(meta_data.dir,
+            "original_roster_data_2020-09-30.csv"),
+  col_names = c('name', 'sample')
+)
 
 ```
 
@@ -282,23 +303,23 @@ import::from(.directory = r_code.dir,
              load.tximeta.object.list,
              parse.tximeta.quant.metadata)
 
-salmon_quant <- load.tximeta.object.list('salmon', 
-                                         output_data.dir = output_data.dir)
+# salmon_quant <- load.tximeta.object.list('salmon', 
+#                                          output_data.dir = output_data.dir)
+# 
+# salmon_quant <- parse.tximeta.quant.metadata(salmon_quant)
 
-salmon_quant <- parse.tximeta.quant.metadata(salmon_quant)
 
-
-ucsc.rmsk.salmon_quant <- load.tximeta.object.list('resub', 
+ucsc.rmsk.salmon_quant <- load.tximeta.object.list('full_resub', 
                                                    output_data.dir = output_data.dir)
 
 
 ucsc.rmsk.salmon_quant <- parse.tximeta.quant.metadata(ucsc.rmsk.salmon_quant)
 
 
-process.aware.salmon_quant <- load.tximeta.object.list('process.aware.salmon', 
-                                                       output_data.dir = output_data.dir)
-
-process.aware.salmon_quant <- parse.tximeta.quant.metadata(process.aware.salmon_quant)
+# process.aware.salmon_quant <- load.tximeta.object.list('process.aware.salmon', 
+#                                                        output_data.dir = output_data.dir)
+# 
+# process.aware.salmon_quant <- parse.tximeta.quant.metadata(process.aware.salmon_quant)
 ```
 
 # analysis_INTERACTIVE
@@ -308,31 +329,31 @@ import::from(.directory = r_code.dir,
              .from = 'helper_analysisFunctions.R', 
              subset.tximeta.se)
 
-salmon_quant$bioIvt_panc_salmon <- 
-  subset.tximeta.se(salmon_quant$bioIvt_panc_salmon, 
-                    filter_list = qc_fails)
+# salmon_quant$bioIvt_panc_salmon <- 
+#   subset.tximeta.se(salmon_quant$bioIvt_panc_salmon, 
+#                     filter_list = qc_fails)
 
 ucsc.rmsk.salmon_quant$bioIvt_panc_ucsc.rmsk.salmon <- 
   subset.tximeta.se(ucsc.rmsk.salmon_quant$bioIvt_panc_ucsc.rmsk.salmon, 
                     filter_list = qc_fails)
 
-process.aware.salmon_quant$bioIvt_panc_process.aware.salmon <- 
-  subset.tximeta.se(process.aware.salmon_quant$bioIvt_panc_process.aware.salmon, 
-                    filter_list = qc_fails)
+# process.aware.salmon_quant$bioIvt_panc_process.aware.salmon <- 
+#   subset.tximeta.se(process.aware.salmon_quant$bioIvt_panc_process.aware.salmon, 
+#                     filter_list = qc_fails)
 
 ##
 
-salmon_quant$bioIvt_covid_salmon <- 
-  subset.tximeta.se(salmon_quant$bioIvt_covid_salmon, 
-                    filter_list = qc_fails)
+# salmon_quant$bioIvt_covid_salmon <- 
+#   subset.tximeta.se(salmon_quant$bioIvt_covid_salmon, 
+#                     filter_list = qc_fails)
 
 ucsc.rmsk.salmon_quant$bioIvt_covid_ucsc.rmsk.salmon <- 
   subset.tximeta.se(ucsc.rmsk.salmon_quant$bioIvt_covid_ucsc.rmsk.salmon, 
                     filter_list = qc_fails)
 
-process.aware.salmon_quant$bioIvt_covid_process.aware.salmon <- 
-  subset.tximeta.se(process.aware.salmon_quant$bioIvt_covid_process.aware.salmon, 
-                    filter_list = qc_fails)
+# process.aware.salmon_quant$bioIvt_covid_process.aware.salmon <- 
+#   subset.tximeta.se(process.aware.salmon_quant$bioIvt_covid_process.aware.salmon, 
+#                     filter_list = qc_fails)
 
 ## discovery
 ucsc.rmsk.salmon_quant$ucsc_rmsk_quant <- 
@@ -342,12 +363,12 @@ ucsc.rmsk.salmon_quant$ucsc_rmsk_quant <-
                                     'unknown3_S51.salmon.out',
                                     'unknown4_S52.salmon.out',
                                     'unknown5_S53.salmon.out',
-                                    'e14_S32.salmon.out',
-                                    'e11_S8.salmon.out',
-                                    'e12_S16.salmon.out',
-                                    'e13_S24.salmon.out',
-                                    'e15_S40.salmon.out',
-                                    'e16_S48.salmon.out'
+                                    # 'e14_S32.salmon.out',
+                                    # 'e11_S8.salmon.out',
+                                    # 'e12_S16.salmon.out',
+                                    # 'e13_S24.salmon.out',
+                                    # 'e15_S40.salmon.out',
+                                    # 'e16_S48.salmon.out'
                                     ))
 ```
 
@@ -357,59 +378,59 @@ import::from(.directory = r_code.dir,
              .from = 'helper_analysisFunctions.R', 
              build.analysis.set)
 ##
-salmon_quant$analysis_set$panc_ctrl <- 
-  build.analysis.set(se_list = salmon_quant, 
-                     se_1 = 'bioIvt_panc_salmon', 
-                     se_2 = 'pittsburgh_ctrl_salmon',
-                     sample_meta_in = sample_meta_data$`2022.01.14_bioIVTAndPitts_meta_data.csv`)
-
-salmon_quant$analysis_set$covid_ctrl <- 
-  build.analysis.set(se_list = salmon_quant, 
-                     se_1 = 'bioIvt_covid_salmon', 
-                     se_2 = 'pittsburgh_ctrl_salmon',
-                     sample_meta_in = sample_meta_data$`2022.01.14_combined_meta_data.csv`)
-
-salmon_quant$analysis_set$ctrl_panc_covid <- 
-  build.analysis.set(se_list = salmon_quant, 
-                     se_1 = 'bioIvt_panc_salmon', 
-                     analysis_set_2 = salmon_quant$analysis_set$covid_ctrl,
-                     sample_meta_in = sample_meta_data$`2022.01.14_combined_meta_data.csv`)
-##
-ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl <- 
-    build.analysis.set(se_list = ucsc.rmsk.salmon_quant, 
-                       se_1 = 'bioIvt_panc_ucsc.rmsk.salmon', 
-                       se_2 = 'pittsburgh_ctrl_ucsc.rmsk.salmon',
-                       sample_meta_in = sample_meta_data$`2022.01.14_bioIVTAndPitts_meta_data.csv`)
-
-ucsc.rmsk.salmon_quant$analysis_set$covid_ctrl <- 
-    build.analysis.set(se_list = ucsc.rmsk.salmon_quant, 
-                       se_1 = 'bioIvt_covid_ucsc.rmsk.salmon', 
-                       se_2 = 'pittsburgh_ctrl_ucsc.rmsk.salmon',
-                       sample_meta_in = sample_meta_data$`2022.01.14_combined_meta_data.csv`)
-
-ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid <- 
-    build.analysis.set(se_list = ucsc.rmsk.salmon_quant, 
-                       se_1 = 'bioIvt_panc_ucsc.rmsk.salmon', 
-                       analysis_set_2 = ucsc.rmsk.salmon_quant$analysis_set$covid_ctrl,
-                       sample_meta_in = sample_meta_data$`2022.01.14_combined_meta_data.csv`)
-##
-process.aware.salmon_quant$analysis_set$panc_ctrl <- 
-    build.analysis.set(se_list = process.aware.salmon_quant, 
-                       se_1 = 'bioIvt_panc_process.aware.salmon', 
-                       se_2 = 'pittsburgh_ctrl_process.aware.salmon',
-                       sample_meta_in = sample_meta_data$`2022.01.14_bioIVTAndPitts_meta_data.csv`)
-
-process.aware.salmon_quant$analysis_set$covid_ctrl <- 
-    build.analysis.set(se_list = process.aware.salmon_quant, 
-                       se_1 = 'bioIvt_covid_process.aware.salmon', 
-                       se_2 = 'pittsburgh_ctrl_process.aware.salmon',
-                       sample_meta_in = sample_meta_data$`2022.01.14_combined_meta_data.csv`)
-
-process.aware.salmon_quant$analysis_set$ctrl_panc_covid <- 
-    build.analysis.set(se_list = process.aware.salmon_quant, 
-                       se_1 = 'bioIvt_panc_process.aware.salmon', 
-                       analysis_set_2 = process.aware.salmon_quant$analysis_set$covid_ctrl,
-                       sample_meta_in = sample_meta_data$`2022.01.14_combined_meta_data.csv`)
+# salmon_quant$analysis_set$panc_ctrl <- 
+#   build.analysis.set(se_list = salmon_quant, 
+#                      se_1 = 'bioIvt_panc_salmon', 
+#                      se_2 = 'pittsburgh_ctrl_salmon',
+#                      sample_meta_in = sample_meta_data$`2022.01.14_bioIVTAndPitts_meta_data.csv`)
+# 
+# salmon_quant$analysis_set$covid_ctrl <- 
+#   build.analysis.set(se_list = salmon_quant, 
+#                      se_1 = 'bioIvt_covid_salmon', 
+#                      se_2 = 'pittsburgh_ctrl_salmon',
+#                      sample_meta_in = sample_meta_data$`2022.01.14_combined_meta_data.csv`)
+# 
+# salmon_quant$analysis_set$ctrl_panc_covid <- 
+#   build.analysis.set(se_list = salmon_quant, 
+#                      se_1 = 'bioIvt_panc_salmon', 
+#                      analysis_set_2 = salmon_quant$analysis_set$covid_ctrl,
+#                      sample_meta_in = sample_meta_data$`2022.01.14_combined_meta_data.csv`)
+# ##
+# ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl <- 
+#     build.analysis.set(se_list = ucsc.rmsk.salmon_quant, 
+#                        se_1 = 'bioIvt_panc_ucsc.rmsk.salmon', 
+#                        se_2 = 'pittsburgh_ctrl_ucsc.rmsk.salmon',
+#                        sample_meta_in = sample_meta_data$`2022.01.14_bioIVTAndPitts_meta_data.csv`)
+# 
+# ucsc.rmsk.salmon_quant$analysis_set$covid_ctrl <- 
+#     build.analysis.set(se_list = ucsc.rmsk.salmon_quant, 
+#                        se_1 = 'bioIvt_covid_ucsc.rmsk.salmon', 
+#                        se_2 = 'pittsburgh_ctrl_ucsc.rmsk.salmon',
+#                        sample_meta_in = sample_meta_data$`2022.01.14_combined_meta_data.csv`)
+# 
+# ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid <- 
+#     build.analysis.set(se_list = ucsc.rmsk.salmon_quant, 
+#                        se_1 = 'bioIvt_panc_ucsc.rmsk.salmon', 
+#                        analysis_set_2 = ucsc.rmsk.salmon_quant$analysis_set$covid_ctrl,
+#                        sample_meta_in = sample_meta_data$`2022.01.14_combined_meta_data.csv`)
+# ##
+# process.aware.salmon_quant$analysis_set$panc_ctrl <- 
+#     build.analysis.set(se_list = process.aware.salmon_quant, 
+#                        se_1 = 'bioIvt_panc_process.aware.salmon', 
+#                        se_2 = 'pittsburgh_ctrl_process.aware.salmon',
+#                        sample_meta_in = sample_meta_data$`2022.01.14_bioIVTAndPitts_meta_data.csv`)
+# 
+# process.aware.salmon_quant$analysis_set$covid_ctrl <- 
+#     build.analysis.set(se_list = process.aware.salmon_quant, 
+#                        se_1 = 'bioIvt_covid_process.aware.salmon', 
+#                        se_2 = 'pittsburgh_ctrl_process.aware.salmon',
+#                        sample_meta_in = sample_meta_data$`2022.01.14_combined_meta_data.csv`)
+# 
+# process.aware.salmon_quant$analysis_set$ctrl_panc_covid <- 
+#     build.analysis.set(se_list = process.aware.salmon_quant, 
+#                        se_1 = 'bioIvt_panc_process.aware.salmon', 
+#                        analysis_set_2 = process.aware.salmon_quant$analysis_set$covid_ctrl,
+#                        sample_meta_in = sample_meta_data$`2022.01.14_combined_meta_data.csv`)
 
 ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$quant_meta <- 
   merge(ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$quant_meta %>% 

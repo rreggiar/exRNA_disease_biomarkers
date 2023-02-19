@@ -21,7 +21,7 @@ BIN="/public/groups/kimlab/"${PROJ}"/bin:/home/"${USER}"/proj/bin"
 R="/public/groups/kimlab/"${PROJ}"/R:/home/"${USER}"/proj/R"
 MYSQL="/public/groups/kimlab/"${PROJ}"/my_sql:/home/"${USER}"/proj/my_sql"
 # rreggiar config file for RSTUDIO looks and behavior
-CONFIG="/public/home/"${USER}"/.rstudio_docker_config:/home/"${USER}"/proj/.config/rstudio"
+CONFIG="/public/home/"${USER}"/.rstudio_docker_config:/home/"${USER}"/.config/rstudio"
 # lab wide reference
 REFERENCE="/public/groups/kimlab/genomes.annotations/gencode.39:/home/"${USER}"/proj/reference"
 DOT_GIT="/public/groups/kimlab/"${PROJ}"/.git:/home/"${USER}"/proj/.git"

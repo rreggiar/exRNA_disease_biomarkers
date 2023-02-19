@@ -25,6 +25,7 @@ CONFIG="/public/home/"${USER}"/.rstudio_docker_config:/home/"${USER}"/.config/rs
 # lab wide reference
 REFERENCE="/public/groups/kimlab/genomes.annotations/gencode.39:/home/"${USER}"/proj/reference"
 DOT_GIT="/public/groups/kimlab/"${PROJ}"/.git:/home/"${USER}"/proj/.git"
+GIT_CONFIG="/public/home/"${USER}"/.gitconfig:/home/"${USER}"/.gitconfig"
 
 echo "making rstudio session hosted at 127.0.0.1:"${PORT}":8787 for "${USER}":"${USER_ID}""
 docker run --rm -p 127.0.0.1:"${PORT}":8787 -e DISABLE_AUTH=true \
@@ -43,5 +44,6 @@ docker run --rm -p 127.0.0.1:"${PORT}":8787 -e DISABLE_AUTH=true \
 	-v "${CONFIG}" \
 	-v "${REFERENCE}" \
 	-v "${DOT_GIT}" \
+	-v "${GIT_CONFIG}" \
 	-v "$SSH_AUTH_SOCK:$SSH_AUTH_SOCK" \
 	kimlab_rstudio:latest

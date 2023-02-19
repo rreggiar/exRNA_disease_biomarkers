@@ -132,13 +132,13 @@ txt.mm_to_pts <- function(ratio){ base_size * ratio * (25.4 / 72.27) }
 
 ## data_path_obj
 ```{r}
-figure.dir <- here::here('proj/manuscript/figures')
-input_data.dir <- here::here('proj/data/input_data')
-output_data.dir <- here::here('proj/data/output_data')
-qc_data.dir <- here::here('proj/data/output_data/rna_qc')
-meta_data.dir <- here::here('proj/data/meta_data')
-reference.dir <- here::here('proj/reference')
-r_code.dir <- here::here('proj/R')
+figure.dir <- here::here('manuscript/figures')
+input_data.dir <- here::here('data/input_data')
+output_data.dir <- here::here('data/output_data')
+qc_data.dir <- here::here('data/output_data/rna_qc')
+meta_data.dir <- here::here('data/meta_data')
+reference.dir <- here::here('reference')
+r_code.dir <- here::here('R')
 ```
 
 ## figure_export

@@ -455,8 +455,8 @@ sample_meta_data$`2022.01.14_combined_meta_data.csv` %>%
       string = str_split_fixed(string = tmp, pattern = '[.]', n = 2)[,2],
       pattern = '[.]',
       n = 2)[,2]
-    ) * 1000
-  ) %>% 
+    )
+  ) %>% View()
   select(-tmp) %>% 
   rbind(discovery_meta_data %>%
           select(
@@ -627,8 +627,8 @@ disc_identity_color_pal <- setNames(RColorBrewer::brewer.pal(3, 'Dark2'),
 
 input_de <- ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$deseq
 
-input_de$vst_counts.df[! rownames(input_de$vst_counts.df) %in% 
-                           c(input_de$age_filter.df$ensg,input_de$sex_filter.df$gene_id), ] %>% 
+input_de$vst_counts.df[rownames(input_de$vst_counts.df) %in% 
+                           c(filt_PAAD_1vAll$ensg), ] %>% 
     t() -> pca_tmp_in 
   
 pca_tmp_in_sd <- apply(pca_tmp_in, 2, sd)
@@ -670,9 +670,8 @@ pca.out %>%
   geom_hline(yintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) + 
   scale_color_manual(values = disc_identity_color_pal)
 
-# ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_corr_out.df <- 
-#   extract.meta.pca.correlates(pca.out =
-#                             ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_out.df)
+pca_corr_out.df <-
+  extract.meta.pca.correlates(pca.out = pca.out)
 # 
 # 
 # te_only_deseq <- ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$deseq
@@ -689,11 +688,12 @@ pca.out %>%
 ```
 ## 1vsall
 ```{r}
-PAAD_1vAll <- read_csv(file.path(output_data.dir, 'PAAD_vs_all.results'), skip = 7) %>% filter(log2FoldChange > 1)
+PAAD_1vAll <- read_csv(file.path(output_data.dir, 'PAAD_vs_all.results'), skip = 7) %>% filter(log2FoldChange > 0)
 Pancreas_1vAll <- read_csv(file.path(output_data.dir, 'Pancreas_vs_all.results'), skip = 7) %>% filter(log2FoldChange > 1)
 
 PAAD_1vAll %>% 
-  filter(! name %in% Pancreas_1vAll$name) -> filt_PAAD_1vAll
+  filter(! name %in% Pancreas_1vAll$name) %>% 
+  merge(reference_meta_data$total_tx_to_gene.df %>% select(ensg, 'name' = gene) %>% distinct(), by = 'name') -> filt_PAAD_1vAll
 
 ```
 
@@ -1079,8 +1079,10 @@ tidy_total_annotated_rmsk_counts %>%
   summarize(median_sine_abundance = median(count)) %>% 
   merge(ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$quant_meta %>% select(-dataset), by = 'sample') %>% 
   filter(clade == 'SINE') %>% 
-  ggplot(aes(salmon_percent_mapped, median_sine_abundance, color = condition)) + 
-  geom_point()
+  ggplot(aes(input_vol, median_sine_abundance, color = condition, shape = dataset)) + 
+  geom_point() +
+  scale_color_manual(values = disc_identity_color_pal)
+
   # geom_boxplot(fill = NA) + 
   # geom_jitter() +
   # ggforce::facet_row(~dataset+condition) + 

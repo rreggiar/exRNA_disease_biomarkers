@@ -371,7 +371,7 @@ ucsc.rmsk.salmon_quant$ucsc_rmsk_quant <-
       'unknown2_S50.salmon.out',
       'unknown3_S51.salmon.out',
       'unknown4_S52.salmon.out',
-      'unknown5_S53.salmon.out'
+      'unknown5_S53.salmon.out',
       'e14_S32.salmon.out'
       # 'e11_S8.salmon.out',
       # 'e12_S16.salmon.out',
@@ -668,25 +668,35 @@ pca.out %>%
   ylab(paste('PC2', round(cumsum(pcs.props)[2] - cumsum(pcs.props)[1], digits = 3), sep = ' ')) +
   geom_vline(xintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) +
   geom_hline(yintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) + 
-  scale_color_manual(values = disc_identity_color_pal) + ggrepel::geom_text_repel(aes(label = sample))
+  scale_color_manual(values = disc_identity_color_pal)
 
-ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_corr_out.df <- 
-  extract.meta.pca.correlates(pca.out =
-                            ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_out.df)
-
-
-te_only_deseq <- ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$deseq
-
-
-te_only_deseq$vst_counts.df <- 
-  te_only_deseq$vst_counts.df[!rownames(te_only_deseq$vst_counts.df) %in% 
-                                reference_meta_data$gencode_tx_to_gene.df$gene, ]
-
-te_only_deseq$pca <-
-  run.pca(input_de = te_only_deseq,
-          identity_color_pal = identity_color_pal)
+# ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_corr_out.df <- 
+#   extract.meta.pca.correlates(pca.out =
+#                             ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_out.df)
+# 
+# 
+# te_only_deseq <- ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$deseq
+# 
+# 
+# te_only_deseq$vst_counts.df <- 
+#   te_only_deseq$vst_counts.df[!rownames(te_only_deseq$vst_counts.df) %in% 
+#                                 reference_meta_data$gencode_tx_to_gene.df$gene, ]
+# 
+# te_only_deseq$pca <-
+#   run.pca(input_de = te_only_deseq,
+#           identity_color_pal = identity_color_pal)
 
 ```
+## 1vsall
+```{r}
+PAAD_1vAll <- read_csv(file.path(output_data.dir, 'PAAD_vs_all.results'), skip = 7) %>% filter(log2FoldChange > 1)
+Pancreas_1vAll <- read_csv(file.path(output_data.dir, 'Pancreas_vs_all.results'), skip = 7) %>% filter(log2FoldChange > 1)
+
+PAAD_1vAll %>% 
+  filter(! name %in% Pancreas_1vAll$name) -> filt_PAAD_1vAll
+
+```
+
 
 ## run_fgsea
 ```{r}
@@ -1069,7 +1079,7 @@ tidy_total_annotated_rmsk_counts %>%
   summarize(median_sine_abundance = median(count)) %>% 
   merge(ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$quant_meta %>% select(-dataset), by = 'sample') %>% 
   filter(clade == 'SINE') %>% 
-  ggplot(aes(salmon_num_mapped, median_sine_abundance, color = condition)) + 
+  ggplot(aes(salmon_percent_mapped, median_sine_abundance, color = condition)) + 
   geom_point()
   # geom_boxplot(fill = NA) + 
   # geom_jitter() +

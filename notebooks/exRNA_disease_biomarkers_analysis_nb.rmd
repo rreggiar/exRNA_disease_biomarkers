@@ -1071,10 +1071,17 @@ tidy_total_annotated_rmsk_counts %>%
   xlab('') + ylab('normalized count fraction')
 
 ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$quant_meta %>% 
-  ggplot(aes(diagnosis, salmon_num_mapped)) + 
-  geom_boxplot(fill = NA) + 
+  ggplot(aes(diagnosis, salmon_frag_lenght_mean)) + 
+  geom_boxplot(fill = NA, ) + 
   geom_jitter() +
   ggforce::facet_row(~dataset, shrink = T, space = 'free', scales = 'free_x')
+
+ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$quant_meta %>% 
+  ggplot(aes(salmon_frag_length_mean, color = diagnosis)) + 
+  geom_density() +
+  facet_wrap(~dataset) +
+  scale_color_manual(values = disc_identity_color_pal)
+
 
 tidy_total_annotated_rmsk_counts %>% 
   group_by(sample, condition, clade, dataset) %>% 

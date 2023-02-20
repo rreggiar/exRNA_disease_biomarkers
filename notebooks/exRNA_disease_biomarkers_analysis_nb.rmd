@@ -360,24 +360,34 @@ import::from(.directory = r_code.dir,
 #                     filter_list = qc_fails)
 
 ## discovery
-covid_samples <- ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$quant_meta %>% filter(grepl('^HMN', sample)) %>% pull(sample)
+covid_samples <-
+  ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$quant_meta %>% filter(grepl('^HMN', sample)) %>% pull(sample)
+
+orig_panc_samples <-
+  ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$quant_meta %>%
+  filter(grepl('panc|BioIVT', sample)) %>%
+  pull(sample)
+
+unknown_samples <-
+  ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$quant_meta %>% filter(grepl('^unknown', sample)) %>% pull(sample)
+
+pitts_samples <-
+  ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$quant_meta %>% filter(grepl('^PH', sample)) %>% pull(sample)
+
+esoph_samples <-
+  ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$quant_meta %>% filter(grepl('^e', sample)) %>% pull(sample)
+
 ucsc.rmsk.salmon_quant$ucsc_rmsk_quant <-
   subset.tximeta.se(
     ucsc.rmsk.salmon_quant$ucsc_rmsk_quant,
     filter_list = c(
       qc_fails,
-      # covid_samples,
-      'unknown1_S49.salmon.out',
-      'unknown2_S50.salmon.out',
-      'unknown3_S51.salmon.out',
-      'unknown4_S52.salmon.out',
-      'unknown5_S53.salmon.out',
-      'e14_S32.salmon.out'
-      # 'e11_S8.salmon.out',
-      # 'e12_S16.salmon.out',
-      # 'e13_S24.salmon.out',
-      # 'e15_S40.salmon.out',
-      # 'e16_S48.salmon.out'
+      covid_samples,
+      orig_panc_samples,
+      unknown_samples,
+      pitts_samples,
+      esoph_samples,
+      'e14_S32.salmon.out' # outlier
     )
   )
 ```
@@ -441,47 +451,47 @@ import::from(.directory = r_code.dir,
 #                        se_1 = 'bioIvt_panc_process.aware.salmon', 
 #                        analysis_set_2 = process.aware.salmon_quant$analysis_set$covid_ctrl,
 #                        sample_meta_in = sample_meta_data$`2022.01.14_combined_meta_data.csv`)
-sample_meta_data$`2022.01.14_combined_meta_data.csv` %>%
-  select(
-    'sample' = patient,
-    'sample_sku_patient_gender' = sex,
-    'sample_sku_patient_age_at_collection' = age,
-    'diagnosis' = condition
-  ) %>% 
-  mutate(tmp = sample,
-         diagnosis = ifelse(diagnosis == 'ctrl', 'normal', diagnosis)) %>% 
-  mutate(input_vol = as.numeric(
-      str_split_fixed(
-      string = str_split_fixed(string = tmp, pattern = '[.]', n = 2)[,2],
-      pattern = '[.]',
-      n = 2)[,2]
-    ) * 1000
-  ) %>% 
-  select(-tmp) %>% 
-  rbind(discovery_meta_data %>%
-          select(
-            sample, 
-            sample_sku_patient_gender, 
-            sample_sku_patient_age_at_collection, 
-            diagnosis, 
-            input_vol)) -> combined_meta_data
+# sample_meta_data$`2022.01.14_combined_meta_data.csv` %>%
+#   select(
+#     'sample' = patient,
+#     'sample_sku_patient_gender' = sex,
+#     'sample_sku_patient_age_at_collection' = age,
+#     'diagnosis' = condition
+#   ) %>% 
+#   mutate(tmp = sample,
+#          diagnosis = ifelse(diagnosis == 'ctrl', 'normal', diagnosis)) %>% 
+#   mutate(input_vol = as.numeric(
+#       str_split_fixed(
+#       string = str_split_fixed(string = tmp, pattern = '[.]', n = 2)[,2],
+#       pattern = '[.]',
+#       n = 2)[,2]
+#     ) * 1000
+#   ) %>% 
+#   select(-tmp) %>% 
+#   rbind(discovery_meta_data %>%
+#           select(
+#             sample, 
+#             sample_sku_patient_gender, 
+#             sample_sku_patient_age_at_collection, 
+#             diagnosis, 
+#             input_vol)) -> combined_meta_data
+# 
+# ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$quant_meta <-
+#   ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$quant_meta %>%
+#     mutate(sample = str_split_fixed(sample, '_S', 2)[, 1]) %>%
+#     merge(original_roster_names, by = 'sample', all.x = T) %>% 
+#     mutate(sample = ifelse(is.na(name), sample, name)) %>%
+#     mutate(dataset = ifelse(is.na(name), 'discovery', 'original')) %>% 
+#     select(-name) %>% 
+#     merge(combined_meta_data, by = 'sample')
 
 ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$quant_meta <-
-  ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$quant_meta %>%
-    mutate(sample = str_split_fixed(sample, '_S', 2)[, 1]) %>%
-    merge(original_roster_names, by = 'sample', all.x = T) %>% 
-    mutate(sample = ifelse(is.na(name), sample, name)) %>%
-    mutate(dataset = ifelse(is.na(name), 'discovery', 'original')) %>% 
-    select(-name) %>% 
-    merge(combined_meta_data, by = 'sample')
-
-# ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$quant_meta <-
-#   merge(
-#     ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$quant_meta %>%
-#       mutate(sample = str_split_fixed(sample, '_S', 2)[, 1]),
-#     discovery_meta_data,
-#     by = 'sample'
-#   )
+  merge(
+    ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$quant_meta %>%
+      mutate(sample = str_split_fixed(sample, '_S', 2)[, 1]),
+    discovery_meta_data,
+    by = 'sample'
+  )
 
 
 ```

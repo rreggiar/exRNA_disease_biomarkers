@@ -708,7 +708,7 @@ pca_corr_out.df <-
 ```
 ## 1vsall
 ```{r}
-PAAD_1vAll <- read_csv(file.path(output_data.dir, 'PAAD_vs_all.results'), skip = 7) %>% filter(log2FoldChange > 2)
+PAAD_1vAll <- read_csv(file.path(output_data.dir, 'PAAD_vs_all.results'), skip = 7) %>% filter(log2FoldChange != 0)
 Pancreas_1vAll <- read_csv(file.path(output_data.dir, 'Pancreas_vs_all.results'), skip = 7) %>% filter(log2FoldChange > 1)
 
 PAAD_1vAll %>% 
@@ -1066,9 +1066,9 @@ total_annotated_rmsk_counts %>%
   gather(sample, count, -gene, -clade, -family, -type) %>% 
   mutate(sample = str_split_fixed(sample, '_S',2)[,1]) %>% 
   filter(count > 0) %>% 
-  merge(original_roster_names, by = 'sample', all.x = T) %>% 
-  mutate(sample = ifelse(is.na(name), sample, name)) %>% 
-  select(-name) %>% 
+  # merge(original_roster_names, by = 'sample', all.x = T) %>% 
+  # mutate(sample = ifelse(is.na(name), sample, name)) %>% 
+  # select(-name) %>% 
   merge(ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$deseq$scaled_quant_meta_for_de.df %>%
           select(sample, condition, dataset), 
         by = 'sample') -> tidy_total_annotated_rmsk_counts
@@ -1137,6 +1137,20 @@ ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$deseq$de_out %>%
   filter(!ensg %in% chrM.filter.list,
          !grepl('^MT', gene)) -> panc_annotated_rmsk_de
 
+
+panc_annotated_rmsk_de %>% 
+  filter(ensg %in% filt_PAAD_1vAll$ensg,
+         log2FoldChange != 0 & padj < 0.05) %>% 
+  merge(filt_PAAD_1vAll %>% filter(padj < 0.05), by = 'ensg') %>% 
+  ggplot(aes(log2FoldChange.x, log2FoldChange.y)) + 
+  geom_point() +
+  ggrepel::geom_text_repel(aes(label = gene)) + 
+  geom_hline(yintercept = 0, linetype = 'dashed', alpha = 0.4) +
+  geom_vline(xintercept = 0, linetype = 'dashed', alpha = 0.4) +
+  xlab('Disc Panc V Normal') +
+  ylab('TCGA PAAD V All')
+
+
 panc_label_list <- panc_annotated_rmsk_de %>% 
   filter(grepl('LTR|^L1|Alu', gene)) %>% 
   top_n(6, wt = log2FoldChange)
@@ -1161,10 +1175,11 @@ gencode_layer.plt +
   geom_point(data = filter(panc_annotated_rmsk_de, clade != 'GENCODE_coding') %>% 
                mutate(clade = factor(clade, levels = te_aware_annotation_levels)),
              aes(log2FoldChange, -log10(padj), color = clade), size = 2, alpha = 0.8) +
+  geom_hline(yintercept = -log10(0.01), linetype = 'dashed', alpha = 0.4) +
   scale_color_manual(values = te_color_pal, name = 'biotype/clade') + 
   ggrepel::geom_text_repel(data = panc_annotated_rmsk_de %>% 
                mutate(clade = factor(clade, levels = te_aware_annotation_levels)),
-                      aes(label = ifelse(gene %in% panc_label_list$gene, gene, '')), 
+                      aes(label = ifelse(padj < 0.01, gene, '')), 
                            show.legend = F, color = 'black', size = txt.mm_to_pts(1),
                max.overlaps = 1000, box.padding = 0.3, segment.colour = 'grey')
 

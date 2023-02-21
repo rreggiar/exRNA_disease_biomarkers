@@ -664,6 +664,33 @@ ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$deseq <-
                         dds_formula = 
                           as.formula('~sample_sku_patient_alcohol_history+sample_sku_patient_tobacco_history+sample_sku_patient_age_at_collection+input_vol+condition'))
 
+ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$stage_IandII$deseq <- 
+  run.de.seq.individual(input_se = ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$stage_IandII,
+                        type = 'gxi',
+                        base_level = 'normal',
+                        top_level = 'panc',
+                        ref_type = 'ucsc.rmsk',
+                        dds_formula = 
+                          as.formula('~sample_sku_patient_alcohol_history+sample_sku_patient_tobacco_history+sample_sku_patient_age_at_collection+input_vol+condition'))
+
+ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$stage_III$deseq <- 
+  run.de.seq.individual(input_se = ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$stage_III,
+                        type = 'gxi',
+                        base_level = 'normal',
+                        top_level = 'panc',
+                        ref_type = 'ucsc.rmsk',
+                        dds_formula = 
+                          as.formula('~sample_sku_patient_alcohol_history+sample_sku_patient_tobacco_history+sample_sku_patient_age_at_collection+input_vol+condition'))
+
+ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$stage_IV$deseq <- 
+  run.de.seq.individual(input_se = ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$stage_IV,
+                        type = 'gxi',
+                        base_level = 'normal',
+                        top_level = 'panc',
+                        ref_type = 'ucsc.rmsk',
+                        dds_formula = 
+                          as.formula('~sample_sku_patient_alcohol_history+sample_sku_patient_tobacco_history+sample_sku_patient_age_at_collection+input_vol+condition'))
+
 # ucsc.rmsk.salmon_quant$analysis_set$covid_ctrl$deseq <- 
 #   run.de.seq.individual(input_se = ucsc.rmsk.salmon_quant$analysis_set$covid_ctrl,
 #                         type = 'gxi',
@@ -1214,7 +1241,7 @@ tidy_total_annotated_rmsk_counts %>%
 ```
 ## Fig_2B
 ```{r}
-ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$deseq$de_out %>% 
+ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$stage_IV$deseq$de_out %>% 
   merge(reference_meta_data$ucsc_rmsk_insert_info.df, by = 'gene', all.x = T) %>% 
   mutate(family = ifelse(ensg %in% reference_meta_data$gencode_lncRNA_gene_names.df$ensg,
                          'GENCODE_lncRNA', family),
@@ -1246,20 +1273,20 @@ panc_annotated_rmsk_de %>%
   ylab('TCGA PAAD V All')
 
 
-panc_label_list <- panc_annotated_rmsk_de %>% 
-  filter(grepl('LTR|^L1|Alu', gene)) %>% 
-  top_n(6, wt = log2FoldChange)
+# panc_label_list <- panc_annotated_rmsk_de %>% 
+#   filter(grepl('LTR|^L1|Alu', gene)) %>% 
+#   top_n(6, wt = log2FoldChange)
+# 
+# panc_label_list_dn <- panc_annotated_rmsk_de %>% 
+#   filter(grepl('LTR|^L1|Alu', gene)) %>% 
+#   top_n(3, wt = -log2FoldChange)
+# 
+# panc_label_lnc_list_dn <- panc_annotated_rmsk_de %>% 
+#   filter(clade == 'GENCODE_lncRNA',
+#          !grepl('^ENSG', gene)) %>% 
+#   top_n(3, wt = -log2FoldChange)
 
-panc_label_list_dn <- panc_annotated_rmsk_de %>% 
-  filter(grepl('LTR|^L1|Alu', gene)) %>% 
-  top_n(3, wt = -log2FoldChange)
-
-panc_label_lnc_list_dn <- panc_annotated_rmsk_de %>% 
-  filter(clade == 'GENCODE_lncRNA',
-         !grepl('^ENSG', gene)) %>% 
-  top_n(3, wt = -log2FoldChange)
-
-panc_label_list <- rbind(panc_label_list, panc_label_list_dn, panc_label_lnc_list_dn)
+# panc_label_list <- rbind(panc_label_list, panc_label_list_dn, panc_label_lnc_list_dn)
 
 panc_annotated_rmsk_de %>%
   filter(clade == 'GENCODE_coding') %>% 

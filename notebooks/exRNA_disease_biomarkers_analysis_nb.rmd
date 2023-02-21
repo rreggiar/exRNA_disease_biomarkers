@@ -1480,9 +1480,16 @@ tcga_colData %>%
   filter(type != 'Metastatic') %>% 
   mutate(patient = str_replace_all(string = sample, 
                                    pattern = '-TP', replacement = ''),
+         patient = str_replace_all(string = patient, 
+                                   pattern = '-NT', replacement = ''),
          patient = str_replace_all(string = patient,
                                    pattern = 'PAAD-',
                                    replacement = 'TCGA-')) -> tcga_primary_tumors
+
+tcga_primary_tumors %>% 
+  group_by(patient) %>% 
+  filter(n() > 1) -> tcga_matched_samples
+  
 ```
 ### TCGA PCA
 ```{r}

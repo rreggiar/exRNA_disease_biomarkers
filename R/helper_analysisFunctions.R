@@ -421,7 +421,9 @@ run.de.seq.individual <- function(type = 'gxi', base_level = 'ctrl',
     mutate(input_vol = as.numeric(input_vol),
            condition = relevel(as.factor(diagnosis), ref = base_level)) %>% 
     mutate_if(is.numeric, ~scale(., center = T)) %>% 
-    mutate_if(is.character, ~as.factor(.))
+    mutate_if(is.character, ~as.factor(.)) %>% 
+    remove_rownames() %>% 
+    column_to_rownames('sample')
   
   print(levels(scaled_quant_meta_for_de.df$condition))
   
@@ -465,6 +467,10 @@ run.de.seq.individual <- function(type = 'gxi', base_level = 'ctrl',
     
   }
   
+  colnames(count_matrix.df) <- 
+    str_split_fixed(colnames(count_matrix.df), '_S', 2)[,1]
+  
+
   scaled_quant_meta_for_de.df <- 
     scaled_quant_meta_for_de.df[match(colnames(count_matrix.df),
                                       rownames(scaled_quant_meta_for_de.df)), ]

@@ -568,6 +568,30 @@ ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$quant_meta <-
     by = 'sample'
   )
 
+ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$stage_IandII$quant_meta <-
+  merge(
+    ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$stage_IandII$quant_meta %>%
+      mutate(sample = str_split_fixed(sample, '_S', 2)[, 1]),
+    discovery_meta_data,
+    by = 'sample'
+  )
+
+ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$stage_III$quant_meta <-
+  merge(
+    ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$stage_III$quant_meta %>%
+      mutate(sample = str_split_fixed(sample, '_S', 2)[, 1]),
+    discovery_meta_data,
+    by = 'sample'
+  )
+
+ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$stage_IV$quant_meta <-
+  merge(
+    ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$stage_IV$quant_meta %>%
+      mutate(sample = str_split_fixed(sample, '_S', 2)[, 1]),
+    discovery_meta_data,
+    by = 'sample'
+  )
+
 ```
 
 ## save memory

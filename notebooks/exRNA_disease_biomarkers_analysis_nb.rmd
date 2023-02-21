@@ -1484,6 +1484,23 @@ tcga_colData %>%
                                    pattern = 'PAAD-',
                                    replacement = 'TCGA-')) -> tcga_primary_tumors
 ```
+### TCGA PCA
+```{r}
+input_de$norm_counts.df %>% 
+  rownames_to_column('ensg') %>% 
+  merge(reference_meta_data$total_tx_to_gene.df %>% select(ensg, gene) %>% distinct(), by = 'ensg') %>% 
+  select(-ensg) %>% 
+  group_by(gene) %>% 
+  summarise(across(everything(), ~mean(.x))) %>% 
+  column_to_rownames('gene') -> gene_norm_counts
+
+tcga_pca_input_data <- t(tcga_de_dds_norm_counts.df)[!grepl('-TM$|-NT$', rownames(hm_count_data)), ]
+tcga_pca_input_meta_data <- hm_meta_data[match(rownames(tcga_pca_input_data), hm_meta_data$sample), ]
+
+pca_tmp_in_zero_sd
+```
+
+
 ### UP Surv
 ```{r 3A}
 tcga_padd_stratified_counts <-
@@ -4016,7 +4033,7 @@ save.manuscript.panel(figure = 7,
 ```{r}
 tcga_paad_gene_counts %>% 
   merge(gtex_paad_gene_counts, by = 'gene') %>%
-  filter(gene %in% reference_meta_data$ucsc_rmsk_insert_info.df$gene) %>%
+  # filter(gene %in% reference_meta_data$ucsc_rmsk_insert_info.df$gene) %>%
   # filter(gene %in% filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out,
   #                         padj < 0.05 & abs(log2FoldChange) > 0.75)$gene) %>%
   # filter(!if_all(is.numeric, ~.x == 0)) %>% nrow()

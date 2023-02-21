@@ -313,7 +313,7 @@ import::from(
 # salmon_quant <- parse.tximeta.quant.metadata(salmon_quant)
 
 
-ucsc.rmsk.salmon_quant <- load.tximeta.object.list('full_resub',
+ucsc.rmsk.salmon_quant <- load.tximeta.object.list('resub',
                                                    output_data.dir = output_data.dir)
 
 
@@ -376,6 +376,9 @@ pitts_samples <-
 
 esoph_samples <-
   ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$quant_meta %>% filter(grepl('^e', sample)) %>% pull(sample)
+
+normal_samples <-
+  ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$quant_meta %>% filter(grepl('^n', sample)) %>% pull(sample)
 
 ucsc.rmsk.salmon_quant$ucsc_rmsk_quant <-
   subset.tximeta.se(
@@ -564,7 +567,7 @@ ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$deseq <-
                         top_level = 'panc',
                         ref_type = 'ucsc.rmsk',
                         dds_formula = 
-                          as.formula('~sample_sku_patient_age_at_collection+input_vol+condition'))
+                          as.formula('~sample_sku_patient_alcohol_history+sample_sku_patient_tobacco_history+sample_sku_patient_age_at_collection+input_vol+condition'))
 
 # ucsc.rmsk.salmon_quant$analysis_set$covid_ctrl$deseq <- 
 #   run.de.seq.individual(input_se = ucsc.rmsk.salmon_quant$analysis_set$covid_ctrl,
@@ -629,17 +632,21 @@ import::from(.directory = r_code.dir,
 #   extract.meta.pca.correlates(pca.out =
 #                             salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_out.df)
 
-disc_identity_color_pal <- setNames(RColorBrewer::brewer.pal(4, 'Dark2'), 
-                                    c('normal', 'panc', 'esoph', 'covid'))
+disc_identity_color_pal <- setNames(RColorBrewer::brewer.pal(3, 'Dark2')[c(1,2)], 
+                                    c('normal', 'panc'))
 # disc_pca <-
 #   run.pca(input_de = ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$deseq,
 #           identity_color_pal = disc_identity_color_pal)
 
 input_de <- ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$deseq
 
-input_de$vst_counts.df[rownames(input_de$vst_counts.df) %in% 
-                           c(filt_PAAD_1vAll$ensg), ] %>% 
-    t() -> pca_tmp_in 
+input_de$vst_counts.df[!rownames(input_de$vst_counts.df) %in%
+                           c(ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$deseq$sex_filter.df$group_name), ] %>%
+    t() -> pca_tmp_in
+
+# input_de$vst_counts.df[rownames(input_de$vst_counts.df) %in% 
+#                            c(filt_PAAD_1vAll$ensg), ] %>% 
+#     t() -> pca_tmp_in 
   
 pca_tmp_in_sd <- apply(pca_tmp_in, 2, sd)
 pca_tmp_in_zero_sd <- pca_tmp_in[,pca_tmp_in_sd!=0]
@@ -670,15 +677,18 @@ pca.out.summary <-
   spread(metric, value)
 
 pca.out %>% 
+  mutate(stage = factor(stage, 
+                        levels = c(NA, 'I-B', 'II', 'II-B', 'III', 'IV', 'IV-B'),
+                        exclude = NULL)) %>% 
   ggplot(aes(PC1, PC2,
-             color = condition, shape = dataset)) +
-  geom_point(size = txt.mm_to_pts(0.8), alpha = 0.8) + 
-  # scale_shape_manual(values = c(21,25)) +
-  xlab(paste('PC1', round(cumsum(pcs.props)[1], digits = 3), sep = ' ')) +
-  ylab(paste('PC2', round(cumsum(pcs.props)[2] - cumsum(pcs.props)[1], digits = 3), sep = ' ')) +
+             shape = condition, fill = stage)) +
+  geom_point(size = txt.mm_to_pts(0.8), alpha = 0.8) +
+  scale_shape_manual(values = c(21,25)) +
+  xlab(paste('PC1', round(cumsum(pcs.props)[1], digits = 3)*100,'%',sep = ' ')) +
+  ylab(paste('PC2', round(cumsum(pcs.props)[2] - cumsum(pcs.props)[1], digits = 3)*100,'%',sep = ' ')) +
   geom_vline(xintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) +
   geom_hline(yintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) + 
-  scale_color_manual(values = disc_identity_color_pal)
+  scale_fill_grey(na.value = 'lightgreen', end = 0.25, start = 1)
 
 pca_corr_out.df <-
   extract.meta.pca.correlates(pca.out = pca.out)
@@ -698,7 +708,7 @@ pca_corr_out.df <-
 ```
 ## 1vsall
 ```{r}
-PAAD_1vAll <- read_csv(file.path(output_data.dir, 'PAAD_vs_all.results'), skip = 7) %>% filter(log2FoldChange > 0)
+PAAD_1vAll <- read_csv(file.path(output_data.dir, 'PAAD_vs_all.results'), skip = 7) %>% filter(log2FoldChange > 2)
 Pancreas_1vAll <- read_csv(file.path(output_data.dir, 'Pancreas_vs_all.results'), skip = 7) %>% filter(log2FoldChange > 1)
 
 PAAD_1vAll %>% 

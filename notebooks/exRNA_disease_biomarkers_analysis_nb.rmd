@@ -313,7 +313,7 @@ import::from(
 # salmon_quant <- parse.tximeta.quant.metadata(salmon_quant)
 
 
-ucsc.rmsk.salmon_quant <- load.tximeta.object.list('full_resub',
+ucsc.rmsk.salmon_quant <- load.tximeta.object.list('resub',
                                                    output_data.dir = output_data.dir)
 
 
@@ -508,6 +508,17 @@ ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$quant_meta <-
 # process.aware.salmon_quant$bioIvt_luad_ucsc.rmsk.salmon <- 'NULL'
 # process.aware.salmon_quant$panc1_intra_ucsc.rmsk.salmon <- 'NULL'
 # process.aware.salmon_quant$pittsburgh_ctrl_ucsc.rmsk.salmon <- 'NULL'
+```
+
+## new nanopore
+```{r}
+nanopore_read_len <- read_csv(file.path(output_data.dir, 
+                                        'resub_nanopore_read_length_counts.csv'),
+                              col_names = c('sample', 'len')
+                              )
+
+
+
 ```
 
 ## run_de_seq

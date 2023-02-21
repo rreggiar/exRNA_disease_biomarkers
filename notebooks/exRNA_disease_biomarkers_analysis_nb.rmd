@@ -1571,7 +1571,7 @@ sample_pred_pca.out %>%
   mutate(stage = factor(stage, 
                         levels = c(NA, 'I-B', 'II', 'II-B', 'III', 'IV', 'IV-B'),
                         exclude = NULL)) %>% 
-  ggplot(aes(PC1, PC2,
+  ggplot(aes(PC5, PC6,
              shape = condition, fill = stage)) +
   geom_point(size = txt.mm_to_pts(0.8), alpha = 0.8) +
   scale_shape_manual(values = c(21,25)) +

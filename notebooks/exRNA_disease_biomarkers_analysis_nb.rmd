@@ -1501,9 +1501,13 @@ input_de$norm_counts.df %>%
   summarise(across(everything(), ~mean(.x))) %>% 
   column_to_rownames('gene') -> gene_norm_counts
 
-tcga_pca_input_data <- t(tcga_de_dds_norm_counts.df)[!grepl('-TM$|-NT$', rownames(hm_count_data)), ]
-tcga_pca_input_meta_data <- hm_meta_data[match(rownames(tcga_pca_input_data), hm_meta_data$sample), ]
-
+# tcga_pca_input_data <- t(tcga_de_dds_norm_counts.df)[!grepl('-TM$|-NT$', rownames(hm_count_data)), ]
+tcga_pca_input_data <- t(tcga_paad_dds_norm_counts.df[colnames(tcga_paad_dds_norm_counts.df) %in% 
+                                                         tcga_matched_samples$sample, ])
+# tcga_pca_input_meta_data <- hm_meta_data[match(rownames(tcga_pca_input_data), hm_meta_data$sample), ]
+tcga_pca_input_meta_data <- tcga_matched_samples 
+    
+  
 
 tcga_pca_tmp <- tcga_pca_input_data[, colnames(tcga_pca_input_data) %in% rownames(gene_norm_counts), drop = F]
 gene_norm_counts_tmp <- gene_norm_counts[rownames(gene_norm_counts) %in% colnames(tcga_pca_tmp), ,drop = F]
@@ -1544,7 +1548,7 @@ pca.out.summary <-
 
 pca.out %>% 
   ggplot(aes(PC1, PC2,
-             fill = condition, shape = condition)) +
+             fill = type, shape = type)) +
   geom_point(size = txt.mm_to_pts(0.8), alpha = 0.8) +
   scale_shape_manual(values = c(21,25)) +
   xlab(paste('PC1', round(cumsum(pcs.props)[1], digits = 3)*100,'%',sep = ' ')) +
@@ -1568,17 +1572,17 @@ sample_pred_pca %>%
   as.data.frame() %>% 
   rownames_to_column('sample') %>% 
   mutate(sample = str_split_fixed(sample, '_S', 2)[, 1]) %>%
-  merge(original_roster_names, by = 'sample', all.x = T) %>% 
-  mutate(sample = ifelse(is.na(name), sample, name)) %>% 
-  select(-name) %>% 
-  merge(input_de$scaled_quant_meta_for_de.df, by = 'sample') -> sample_pred_pca.out
+  # merge(original_roster_names, by = 'sample', all.x = T) %>% 
+  # mutate(sample = ifelse(is.na(name), sample, name)) %>% 
+  # select(-name) %>% 
+  merge(input_de$scaled_quant_meta_for_de.df %>% rownames_to_column('sample'), by = 'sample') -> sample_pred_pca.out
 
 
 sample_pred_pca.out %>% 
   mutate(stage = factor(stage, 
                         levels = c(NA, 'I-B', 'II', 'II-B', 'III', 'IV', 'IV-B'),
                         exclude = NULL)) %>% 
-  ggplot(aes(PC5, PC6,
+  ggplot(aes(PC3, PC4,
              shape = condition, fill = stage)) +
   geom_point(size = txt.mm_to_pts(0.8), alpha = 0.8) +
   scale_shape_manual(values = c(21,25)) +

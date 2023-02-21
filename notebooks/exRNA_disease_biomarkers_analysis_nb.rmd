@@ -517,7 +517,22 @@ nanopore_read_len <- read_csv(file.path(output_data.dir,
                               col_names = c('sample', 'len')
                               )
 
+nanopore_read_len %>% 
+  mutate(diagnosis = 
+           case_when(
+             grepl('^N', sample) ~ 'normal',
+             grepl('P', sample) ~ 'panc',
+             grepl('E', sample) ~ 'esoph',
+             grepl('^[[:digit:]]', sample) ~ 'ctrl'
+           )
+         ) %>% 
+  mutate(rep = str_split_fixed(sample, pattern = '[.]', n = 2)[,1]) -> label_nanopore_read_len
 
+label_nanopore_read_len %>% 
+  filter(len >= 10, len <= 1500) %>% 
+  ggplot(aes(len, color = rep)) + 
+  geom_density(position = position_stack()) + 
+  facet_wrap(~diagnosis)
 
 ```
 

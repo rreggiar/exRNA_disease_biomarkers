@@ -532,7 +532,7 @@ label_nanopore_read_len %>%
   filter(len >= 10, len <= 1500) %>% 
   ggplot(aes(len, color = rep)) + 
   geom_density(position = position_stack()) + 
-  facet_wrap(~diagnosis)
+  facet_wrap(~diagnosis, scales = 'free_y')
 
 ```
 

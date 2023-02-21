@@ -718,3 +718,78 @@ generate.unsplice.data <- function(analysis_set) {
     mutate(unsplice_rate = unsplice_count / (unsplice_count + splice_count))
   
 }
+
+load.in.tcga.counts <- function(type) {
+  
+  input_counts %>%
+    mutate(tmp = Name) %>%
+    separate(tmp, sep = '_', into = c(NA,NA,NA,NA,NA,NA,NA,NA,'strand',NA)) %>%
+    mutate(Name = case_when(
+      grepl('ENST', Name) ~ str_split_fixed(string = Name,
+                                            pattern = '\\|', n = 8)[, 1],
+      grepl('hg38', Name) ~ str_split_fixed(string = str_remove(Name, 'hg38_rmsk_'),
+                                            pattern = '_5', n = 2)[, 1]
+    )) -> luad_counts_rename
+  
+  
+  luad_counts_rename <- vroom::vroom(file.path(meta_data.dir, 'LUAD_rename_counts_txi.tsv'))
+  
+  
+  luad_counts_rename <- luad_counts_rename[, colnames(luad_counts_rename) %in%
+                                             c('Name', luad_pheno$sampleID)]
+  
+  rmsk_luad_counts_rename <- filter(luad_counts_rename, grepl('range=', Name))
+  
+  rmsk_luad_counts_rename_filt <-
+    rmsk_luad_counts_rename %>%
+    filter(if_any(where(is.numeric)))
+  
+  rmsk_luad_counts_rename_filt %>%
+    separate(Name, sep = '_', into = c('gene', NA, NA, NA)) -> rmsk_luad_counts_rename_filt
+  
+  rmsk_luad_counts_rename_filt %>%
+    merge(reference_meta_data$ucsc_rmsk_insert_info.df, by = 'gene') -> rmsk_luad_counts_rename_filt
+  
+  rmsk_luad_counts_rename_filt %>%
+    pivot_longer(names_to = 'sample', values_to = 'count',
+                 cols = `LUAD-05-4249-TP`:`LUAD-99-7458-TP`) %>%
+    group_by(gene, sample) %>%
+    summarize(count = sum(count)) %>%
+    distinct() -> rmsk_luad_counts_tx2gene
+  
+  vroom::vroom_write(x = rmsk_luad_counts_tx2gene,
+                     file = file.path(meta_data.dir, 'LUAD_rmsk_tidy_counts_gxi.tsv'))
+  
+  
+  gencode_luad_counts_rename <- filter(luad_counts_rename, grepl('ENST', Name))
+  
+  gencode_luad_counts_rename %>%
+    merge(reference_meta_data$gencode_tx_to_gene.df,
+          by.x = 'Name', by.y = 'enst') -> luad_counts_rename_merge
+  
+  luad_counts_rename_merge %>%
+    pivot_longer(names_to = 'sample', values_to = 'count',
+                 cols = `LUAD-05-4249-TP`:`LUAD-99-7458-TP`) %>%
+    group_by(gene, sample) %>%
+    summarize(count = sum(count)) %>%
+    distinct() -> luad_counts_tx2gene
+  
+  vroom::vroom_write(x = luad_counts_tx2gene, file = file.path(meta_data.dir,
+                                                               'LUAD_gencode_tidy_counts_gxi.tsv'))
+  
+  luad_counts_tx2gene <- vroom::vroom(file.path(meta_data.dir, 'LUAD_tidy_counts_gxi.tsv'))
+  
+  
+  luad_counts_tx2gene %>%
+    pivot_wider(names_from = sample, values_from = count) -> luad_deSeq_count_matrix.df
+  
+  luad_deSeq_count_matrix.df <- vroom::vroom(file = file.path(meta_data.dir,
+                                                              'LUAD_gencode_tidy_counts_gxi.tsv'))
+  
+  
+  
+  bind_rows(luad_deSeq_count_matrix.df, rmsk_luad_counts_tx2gene) -> luad_tidy_counts.df
+  
+  vroom::vroom_write(x = luad_tidy_counts.df, file = file.path(meta_data.dir, 'LUAD_tidy_counts_gxi.tsv'))
+  
+}

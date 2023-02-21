@@ -1477,7 +1477,7 @@ tcga_paad_dds_norm_counts.df <- as.data.frame(DESeq2::counts(tcga_de_dds, normal
 tcga_colData %>% 
   filter(submitter_id.samples %in% colnames(tcga_paad_dds_norm_counts.df)) %>% 
   select('sample' = submitter_id.samples, 'type' = sample_type.samples) %>% 
-  filter(type == 'Primary Tumor') %>% 
+  filter(type != 'Metastatic') %>% 
   mutate(patient = str_replace_all(string = sample, 
                                    pattern = '-TP', replacement = ''),
          patient = str_replace_all(string = patient,

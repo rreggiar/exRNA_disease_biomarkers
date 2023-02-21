@@ -465,6 +465,10 @@ run.de.seq.individual <- function(type = 'gxi', base_level = 'ctrl',
     
   }
   
+  scaled_quant_meta_for_de.df <- 
+    scaled_quant_meta_for_de.df[match(colnames(count_matrix.df),
+                                      rownames(scaled_quant_meta_for_de.df)), ]
+  
   input_set_dds <- DESeqDataSetFromMatrix(countData = count_matrix.df, 
                                           colData = scaled_quant_meta_for_de.df, 
                                           design = dds_formula)

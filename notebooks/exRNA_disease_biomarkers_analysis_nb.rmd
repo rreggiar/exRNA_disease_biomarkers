@@ -3712,9 +3712,9 @@ inverse.logit.calc <- function(y_hat) { exp(y_hat)/(1+exp(y_hat)) }
 
 sens_at_spec_ROC <- function(roc, spec) { 
   
-  sens <- coords(roc, input = 'specificity', spec)$sensitivity
+  sens <- pROC::coords(roc, input = 'specificity', spec)$sensitivity
   
-  p.thresh <- inverse.logit.calc(coords(roc, input = 'specificity', spec)$threshold)
+  p.thresh <- inverse.logit.calc(pROC::coords(roc, input = 'specificity', spec)$threshold)
   
   return(list('sens' = sens, 
               'spec' = spec, 
@@ -3724,30 +3724,30 @@ sens_at_spec_ROC <- function(roc, spec) {
 
 doMC::registerDoMC(cores = 6)
 
-filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
-       padj < 0.01, !grepl('ENSG', ensg), ! gene %in% chrM.filter.list)$ensg ->
-  de_ensg_names
+# filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
+#        padj < 0.01, !grepl('ENSG', ensg), ! gene %in% chrM.filter.list)$ensg ->
+#   de_ensg_names
 
-x_in <- t(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$norm_counts.df)
+x_in <- t(ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$deseq$norm_counts.df)
 
-x_in_filt <- x_in[, colnames(x_in) %in% c(de_ensg_names)]
+# x_in_filt <- x_in[, colnames(x_in) %in% c(de_ensg_names)]
 
-y_in <- ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$scaled_quant_meta_for_de.df %>% 
+y_in <- ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$deseq$scaled_quant_meta_for_de.df %>% 
+  rownames_to_column('sample') %>% 
   select(sample, condition) %>% 
-  mutate(condition = ifelse(condition == 'ctrl', 0, 
-                            ifelse(condition == 'panc', 1, 2))) %>% 
+  mutate(condition = ifelse(condition == 'normal', 0, 1)) %>% 
   column_to_rownames('sample')
 
-y <- y_in[match(rownames(x_in_filt), rownames(y_in)), ]
+y <- y_in[match(rownames(x_in), rownames(y_in)), ]
 
 set.seed(123)
 
 binom_model <- 
-  cv.glmnet(x = x_in_filt,
+  glmnet::cv.glmnet(x = x_in,
             y = y,
             family = 'binomial',
             type.measure = 'deviance',
-            nfolds = nrow(x_in_filt), 
+            nfolds = nrow(x_in)-1, 
             alpha = 0.75, 
             parallel = TRUE,
             keep = TRUE)
@@ -3762,7 +3762,7 @@ colnames(beta) <- names(coef(binom_model, s = binom_model$lambda.min))
 y_hat_matrix <- binom_model$fit.preval[,which(binom_model$lambda == binom_model$lambda.min)]
 
 y_hat_predictions <- predict(object = binom_model, s = 'lambda.min', 
-                             newx = x_in_filt, newy = y_in, type = 'response')
+                             newx = x_in, newy = y_in, type = 'response')
 
 binom_roc_out <- pROC::roc(response = y, predictor = y_hat_matrix)
 
@@ -3779,7 +3779,7 @@ binomial_model_response_prob %>%
   rownames_to_column('sample') %>%
   dplyr::rename('prob' = '.') %>%
   merge(y_in %>% rownames_to_column('sample'), by = 'sample') %>%
-  mutate(condition = ifelse(condition == 1, 'panc', 'ctrl')) %>%
+  mutate(condition = ifelse(condition == 1, 'panc', 'normal')) %>%
   ggplot(aes(condition, prob)) +
   geom_jitter(width = 0.125) +
   geom_boxplot(outlier.colour = NA, fill = NA) + 
@@ -3789,14 +3789,15 @@ binomial_model_response_prob %>%
   ylab('probability') + 
   xlab('') -> binom_prob_thresh.plt
 
-beta %>%
-  as.matrix() %>%
-  as.data.frame() %>%
-  rownames_to_column('gene') %>%
-  merge(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, by = 'gene') %>%
-  ggplot(aes(V1, log2FoldChange, label = gene)) +
-  geom_point() +
-  ggrepel::geom_text_repel() 
+
+# beta %>%
+#   as.matrix() %>%
+#   as.data.frame() %>%
+#   rownames_to_column('gene') %>%
+#   merge(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, by = 'gene') %>%
+#   ggplot(aes(V1, log2FoldChange, label = gene)) +
+#   geom_point() +
+#   ggrepel::geom_text_repel() 
 
 ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out %>% 
   filter(ensg %in% names(beta)) %>% 

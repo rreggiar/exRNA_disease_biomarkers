@@ -412,16 +412,19 @@ ucsc.rmsk.salmon_quant$ucsc_rmsk_quant <-
     )
   )
 
-ucsc.rmsk.salmon_quant$ucsc_rmsk_quant <-
+ucsc.rmsk.salmon_quant$original_data <-
   subset.tximeta.se(
     ucsc.rmsk.salmon_quant$ucsc_rmsk_quant,
     filter_list = c(
       qc_fails,
-      covid_samples,
-      orig_panc_samples,
+      # covid_samples,
+      # orig_panc_samples,
       unknown_samples,
-      pitts_samples,
+      # pitts_samples,
       esoph_samples,
+      stage_IandII_select_list,
+      stage_III_select_list,
+      stage_IV_select_list,
       'e14_S32.salmon.out' # outlier
     )
   )

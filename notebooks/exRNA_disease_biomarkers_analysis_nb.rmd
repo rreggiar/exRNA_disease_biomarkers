@@ -359,6 +359,13 @@ import::from(.directory = r_code.dir,
 #   subset.tximeta.se(process.aware.salmon_quant$bioIvt_covid_process.aware.salmon,
 #                     filter_list = qc_fails)
 
+merge(
+  ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$quant_meta %>%
+      mutate(name = sample, sample = str_split_fixed(sample, '_S', 2)[, 1]),
+    discovery_meta_data,
+    by = 'sample'
+  ) -> discovery_merge_meta_for_filt
+
 ## discovery
 covid_samples <-
   ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$quant_meta %>% filter(grepl('^HMN', sample)) %>% pull(sample)

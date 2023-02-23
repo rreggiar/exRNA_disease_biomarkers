@@ -313,7 +313,7 @@ import::from(
 # salmon_quant <- parse.tximeta.quant.metadata(salmon_quant)
 
 
-ucsc.rmsk.salmon_quant <- load.tximeta.object.list('resub',
+ucsc.rmsk.salmon_quant <- load.tximeta.object.list('full_resub',
                                                    output_data.dir = output_data.dir)
 
 
@@ -379,6 +379,38 @@ esoph_samples <-
 
 normal_samples <-
   ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$quant_meta %>% filter(grepl('^n', sample)) %>% pull(sample)
+
+stage_IandII_select_list <- 
+  discovery_merge_meta_for_filt %>% 
+    filter(!stage %in% c('I-B', 'II-B', 'II'),
+           !grepl('^n', sample)) %>% 
+  pull(name)
+
+stage_III_select_list <- 
+  discovery_merge_meta_for_filt %>% 
+    filter(!stage %in% c('III'),
+           !grepl('^n', sample)) %>% 
+  pull(name)
+
+stage_IV_select_list <- 
+  discovery_merge_meta_for_filt %>% 
+    filter(!stage %in% c('IV', 'IV-B'),
+           !grepl('^n', sample)) %>% 
+  pull(name)
+
+ucsc.rmsk.salmon_quant$ucsc_rmsk_quant <-
+  subset.tximeta.se(
+    ucsc.rmsk.salmon_quant$ucsc_rmsk_quant,
+    filter_list = c(
+      qc_fails,
+      covid_samples,
+      orig_panc_samples,
+      unknown_samples,
+      pitts_samples,
+      esoph_samples,
+      'e14_S32.salmon.out' # outlier
+    )
+  )
 
 ucsc.rmsk.salmon_quant$ucsc_rmsk_quant <-
   subset.tximeta.se(

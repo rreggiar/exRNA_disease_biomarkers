@@ -405,20 +405,6 @@ stage_IV_select_list <-
            !grepl('^n', sample)) %>% 
   pull(name)
 
-ucsc.rmsk.salmon_quant$ucsc_rmsk_quant <-
-  subset.tximeta.se(
-    ucsc.rmsk.salmon_quant$ucsc_rmsk_quant,
-    filter_list = c(
-      qc_fails,
-      covid_samples,
-      orig_panc_samples,
-      unknown_samples,
-      pitts_samples,
-      esoph_samples,
-      'e14_S32.salmon.out' # outlier
-    )
-  )
-
 ucsc.rmsk.salmon_quant$original_data <-
   subset.tximeta.se(
     ucsc.rmsk.salmon_quant$ucsc_rmsk_quant,
@@ -435,6 +421,22 @@ ucsc.rmsk.salmon_quant$original_data <-
       'e14_S32.salmon.out' # outlier
     )
   )
+
+ucsc.rmsk.salmon_quant$ucsc_rmsk_quant <-
+  subset.tximeta.se(
+    ucsc.rmsk.salmon_quant$ucsc_rmsk_quant,
+    filter_list = c(
+      qc_fails,
+      covid_samples,
+      orig_panc_samples,
+      unknown_samples,
+      pitts_samples,
+      esoph_samples,
+      'e14_S32.salmon.out' # outlier
+    )
+  )
+
+
 ```
 
 ## construct_analysis_sets
@@ -496,39 +498,39 @@ import::from(.directory = r_code.dir,
 #                        se_1 = 'bioIvt_panc_process.aware.salmon', 
 #                        analysis_set_2 = process.aware.salmon_quant$analysis_set$covid_ctrl,
 #                        sample_meta_in = sample_meta_data$`2022.01.14_combined_meta_data.csv`)
-# sample_meta_data$`2022.01.14_combined_meta_data.csv` %>%
-#   select(
-#     'sample' = patient,
-#     'sample_sku_patient_gender' = sex,
-#     'sample_sku_patient_age_at_collection' = age,
-#     'diagnosis' = condition
-#   ) %>% 
-#   mutate(tmp = sample,
-#          diagnosis = ifelse(diagnosis == 'ctrl', 'normal', diagnosis)) %>% 
-#   mutate(input_vol = as.numeric(
-#       str_split_fixed(
-#       string = str_split_fixed(string = tmp, pattern = '[.]', n = 2)[,2],
-#       pattern = '[.]',
-#       n = 2)[,2]
-#     ) * 1000
-#   ) %>% 
-#   select(-tmp) %>% 
-#   rbind(discovery_meta_data %>%
-#           select(
-#             sample, 
-#             sample_sku_patient_gender, 
-#             sample_sku_patient_age_at_collection, 
-#             diagnosis, 
-#             input_vol)) -> combined_meta_data
-# 
-# ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$quant_meta <-
-#   ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$quant_meta %>%
-#     mutate(sample = str_split_fixed(sample, '_S', 2)[, 1]) %>%
-#     merge(original_roster_names, by = 'sample', all.x = T) %>% 
-#     mutate(sample = ifelse(is.na(name), sample, name)) %>%
-#     mutate(dataset = ifelse(is.na(name), 'discovery', 'original')) %>% 
-#     select(-name) %>% 
-#     merge(combined_meta_data, by = 'sample')
+sample_meta_data$`2022.01.14_combined_meta_data.csv` %>%
+  select(
+    'sample' = patient,
+    'sample_sku_patient_gender' = sex,
+    'sample_sku_patient_age_at_collection' = age,
+    'diagnosis' = condition
+  ) %>%
+  mutate(tmp = sample,
+         diagnosis = ifelse(diagnosis == 'ctrl', 'normal', diagnosis)) %>%
+  mutate(input_vol = as.numeric(
+      str_split_fixed(
+      string = str_split_fixed(string = tmp, pattern = '[.]', n = 2)[,2],
+      pattern = '[.]',
+      n = 2)[,2]
+    ) * 1000
+  ) %>%
+  select(-tmp) %>%
+  rbind(discovery_meta_data %>%
+          select(
+            sample,
+            sample_sku_patient_gender,
+            sample_sku_patient_age_at_collection,
+            diagnosis,
+            input_vol)) -> combined_meta_data
+
+ucsc.rmsk.salmon_quant$original_data$quant_meta <-
+  ucsc.rmsk.salmon_quant$original_data$quant_meta %>%
+    mutate(sample = str_split_fixed(sample, '_S', 2)[, 1]) %>%
+    merge(original_roster_names, by = 'sample', all.x = T) %>%
+    mutate(sample = ifelse(is.na(name), sample, name)) %>%
+    mutate(dataset = ifelse(is.na(name), 'discovery', 'original')) %>%
+    select(-name) %>%
+    merge(combined_meta_data, by = 'sample')
 
 ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$quant_meta <-
   merge(
@@ -594,7 +596,7 @@ import::from(.directory = r_code.dir,
 #                         ref_type = 'salmon',
 #                         dds_formula = as.formula('~age+diabetes+condition'))
 # 
-# salmon_quant$analysis_set$covid_ctrl$deseq <- 
+# salmon_quant$analysis_set$covid_ctrl$deseq <-
 #   run.de.seq.individual(input_se = salmon_quant$analysis_set$covid_ctrl,
 #                         type = 'gxi',
 #                         base_level = 'ctrl',
@@ -611,13 +613,13 @@ ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$deseq <-
                         dds_formula = 
                           as.formula('~sample_sku_patient_alcohol_history+sample_sku_patient_tobacco_history+sample_sku_patient_age_at_collection+input_vol+condition'))
 
-# ucsc.rmsk.salmon_quant$analysis_set$covid_ctrl$deseq <- 
-#   run.de.seq.individual(input_se = ucsc.rmsk.salmon_quant$analysis_set$covid_ctrl,
-#                         type = 'gxi',
-#                         base_level = 'ctrl',
-#                         top_level = 'covid',
-#                         ref_type = 'ucsc.rmsk',
-#                         dds_formula = as.formula('~age+condition'))
+ucsc.rmsk.salmon_quant$original_data$deseq <-
+  run.de.seq.individual(input_se = ucsc.rmsk.salmon_quant$original_data,
+                        type = 'gxi',
+                        base_level = 'ctrl',
+                        top_level = 'panc',
+                        ref_type = 'ucsc.rmsk',
+                        dds_formula = as.formula('~age+condition'))
 # 
 # 
 # SummarizedExperiment::assay(process.aware.salmon_quant$analysis_set$panc_ctrl$gxi.split, 'unspliced')

@@ -372,7 +372,7 @@ covid_samples <-
 
 orig_panc_samples <-
   ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$quant_meta %>%
-  filter(grepl('panc|BioIVT', sample)) %>%
+  filter(grepl('panc|BioIVT|bioIVT', sample)) %>%
   pull(sample)
 
 unknown_samples <-
@@ -410,6 +410,7 @@ ucsc.rmsk.salmon_quant$original_data <-
     ucsc.rmsk.salmon_quant$ucsc_rmsk_quant,
     filter_list = c(
       qc_fails,
+      normal_samples,
       # covid_samples,
       # orig_panc_samples,
       unknown_samples,
@@ -616,7 +617,7 @@ ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$deseq <-
 ucsc.rmsk.salmon_quant$original_data$deseq <-
   run.de.seq.individual(input_se = ucsc.rmsk.salmon_quant$original_data,
                         type = 'gxi',
-                        base_level = 'ctrl',
+                        base_level = 'normal',
                         top_level = 'panc',
                         ref_type = 'ucsc.rmsk',
                         dds_formula = as.formula('~age+condition'))

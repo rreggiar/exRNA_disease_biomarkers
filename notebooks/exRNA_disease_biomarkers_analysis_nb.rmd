@@ -3794,7 +3794,7 @@ binom_model <-
             y = y,
             family = 'binomial',
             type.measure = 'deviance',
-            nfolds = nrow(x_in)-1, 
+            nfolds = 20,#nrow(x_in)-1, 
             alpha = 0.75, 
             parallel = TRUE,
             keep = TRUE)
@@ -3811,7 +3811,59 @@ y_hat_matrix <- binom_model$fit.preval[,which(binom_model$lambda == binom_model$
 y_hat_predictions <- predict(object = binom_model, s = 'lambda.min', 
                              newx = x_in, newy = y_in, type = 'response')
 
+predictions <- ROCR::prediction(labels = sample_pred[,3], predictions = sample_pred[,2], label.ordering = c(0,1))
+
+performances <- ROCR::performance(prediction.obj = predictions, measure = "tpr", x.measure = "fpr")
+
+rocCurve <- as.data.frame(cbind(unlist(slot(performances,"x.values")[[1]]),
+                                unlist(slot(performances,"y.values")[[1]])))
+
+colnames(rocCurve) <- c("X","Y")
+
 binom_roc_out <- pROC::roc(response = y, predictor = y_hat_matrix)
+
+perf_list <- sens_at_spec_ROC(binom_roc_out, 1)
+
+y_hat_predictions <- ifelse(y_hat_predictions > perf_list$p.thresh, 1, 0)
+
+pROC::ggroc(binom_roc_out) -> binom_roc.plt
+
+binomial_model_response_prob <- inverse.logit.calc(y_hat_matrix)
+
+binomial_model_response_prob %>%
+  as.data.frame() %>%
+  rownames_to_column('sample') %>%
+  dplyr::rename('prob' = '.') %>%
+  merge(y_in %>% rownames_to_column('sample'), by = 'sample') %>%
+  mutate(condition = ifelse(condition == 1, 'panc', 'normal')) %>%
+  ggplot(aes(condition, prob)) +
+  geom_jitter(width = 0.125) +
+  geom_boxplot(outlier.colour = NA, fill = NA) + 
+  geom_hline(yintercept = perf_list$p.thresh, linetype = 'dashed') + 
+  annotate(geom = 'text', y = perf_list$p.thresh + 0.05, x = 1.5, 
+           label = '100% specificity prob. threshold', size = txt.mm_to_pts(0.8)) +
+  ylab('probability') + 
+  xlab('') -> binom_prob_thresh.plt
+
+binom_prob_thresh.plt
+
+orig_x_in <- t(ucsc.rmsk.salmon_quant$original_data$deseq$norm_counts.df)
+
+# x_in_filt <- x_in[, colnames(x_in) %in% c(de_ensg_names)]
+
+orig_y_in <- ucsc.rmsk.salmon_quant$original_data$deseq$scaled_quant_meta_for_de.df %>% 
+  rownames_to_column('sample') %>% 
+  select(sample, condition) %>% 
+  mutate(condition = ifelse(condition == 'normal', 0, 
+                            ifelse(condition == 'panc', 1, 2))) %>% 
+  column_to_rownames('sample')
+
+orig_y <- orig_y_in[match(rownames(orig_x_in), rownames(orig_y_in)), ]
+
+original_y_hat_predictions <- predict(object = binom_model, s = 'lambda.min', 
+                                      newx = orig_x_in, newy = orig_y_in, type = 'response')
+
+orig_binom_roc_out <- pROC::roc(response = orig_y, predictor = y_hat_matrix)
 
 perf_list <- sens_at_spec_ROC(binom_roc_out, 1.0)
 

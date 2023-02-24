@@ -3771,18 +3771,12 @@ sens_at_spec_ROC <- function(roc, spec) {
 
 doMC::registerDoMC(cores = 6)
 
-# filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
-#        padj < 0.01, !grepl('ENSG', ensg), ! gene %in% chrM.filter.list)$ensg ->
-#   de_ensg_names
-
 x_in <- t(ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$deseq$norm_counts.df)
-
-# x_in_filt <- x_in[, colnames(x_in) %in% c(de_ensg_names)]
 
 y_in <- ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$deseq$scaled_quant_meta_for_de.df %>% 
   rownames_to_column('sample') %>% 
   select(sample, condition) %>% 
-  mutate(condition = ifelse(condition == 'normal', 0, 1)) %>% 
+  mutate(condition = factor(ifelse(condition == 'normal', 0, 1), levels = c(0,1))) %>% 
   column_to_rownames('sample')
 
 y <- y_in[match(rownames(x_in), rownames(y_in)), ]
@@ -3791,11 +3785,11 @@ set.seed(123)
 
 binom_model <- 
   glmnet::cv.glmnet(x = x_in,
-            y = y,
+            y = y_in$condition,
             family = 'binomial',
             type.measure = 'deviance',
             nfolds = nrow(x_in)-1, 
-            alpha = 0.75, 
+            alpha = 0.55, 
             parallel = TRUE,
             keep = TRUE)
 
@@ -3810,18 +3804,14 @@ y_hat_matrix <- binom_model$fit.preval[,which(binom_model$lambda == binom_model$
 
 binomial_model_response_prob <- inverse.logit.calc(y_hat_matrix)
 
-classifications <- ifelse(binomial_model_response_prob > perf_list$p.thresh, 0, 1)
+classifications <- ifelse(binomial_model_response_prob > perf_list$p.thresh, 1, 0)
 
-# y_hat_predictions <- predict(object = binom_model, s = 'lambda.min', 
-#                              newx = x_in, newy = y_in, type = 'response')
 
-# binom_roc_out <- pROC::roc(response = y, predictor = y_hat_matrix)
-# 
-# perf_list <- sens_at_spec_ROC(binom_roc_out, 1)
-# 
-# y_hat_predictions <- ifelse(y_hat_predictions > perf_list$p.thresh, 1, 0)
+binom_roc_out <- pROC::roc(response = y, predictor = y_hat_matrix)
 
-predictions <- ROCR::prediction(labels = y, predictions = y_hat_matrix, label.ordering = c(1,0))
+perf_list <- sens_at_spec_ROC(binom_roc_out, 1)
+#
+predictions <- ROCR::prediction(labels = y, predictions = y_hat_matrix, label.ordering = c(0,1))
 # 
 performances <- ROCR::performance(prediction.obj = predictions, measure = "tpr", x.measure = "fpr")
 # 
@@ -3840,8 +3830,6 @@ ggplot(rocCurve, aes(x = X, y = Y)) +
   # scale_y_continuous(breaks = c(0, 0.25, 0.75, yint)) +
   # scale_x_continuous(breaks = c( 0.25, 0.5, 0.75, xint)) +
   theme_classic()
-
-pROC::ggroc(binom_roc_out) -> binom_roc.plt
 
 binomial_model_response_prob <- inverse.logit.calc(y_hat_matrix)
 
@@ -3862,9 +3850,10 @@ binomial_model_response_prob %>%
 
 binom_prob_thresh.plt
 
+```
+###
+```{r}
 orig_x_in <- t(ucsc.rmsk.salmon_quant$original_data$deseq$norm_counts.df)
-
-# x_in_filt <- x_in[, colnames(x_in) %in% c(de_ensg_names)]
 
 orig_y_in <- ucsc.rmsk.salmon_quant$original_data$deseq$scaled_quant_meta_for_de.df %>% 
   rownames_to_column('sample') %>% 
@@ -3878,11 +3867,31 @@ orig_y <- orig_y_in[match(rownames(orig_x_in), rownames(orig_y_in)), ]
 original_y_hat_predictions <- predict(object = binom_model, s = 'lambda.min', 
                                       newx = orig_x_in, newy = orig_y_in, type = 'response')
 
+predictions <- ROCR::prediction(labels = orig_y_in, predictions = original_y_hat_predictions, label.ordering = c(0,1,2))
+# 
+performances <- ROCR::performance(prediction.obj = predictions, measure = "tpr", x.measure = "fpr")
+# 
+rocCurve <- as.data.frame(cbind(unlist(slot(performances,"x.values")[[1]]),
+                                unlist(slot(performances,"y.values")[[1]])))
+
+colnames(rocCurve) <- c("X","Y")
+
+ggplot(rocCurve, aes(x = X, y = Y)) +
+  # geom_vline(xintercept = xint, linetype = 'dashed', alpha = 0.3) +
+  # geom_hline(yintercept = yint, linetype = 'dashed', alpha = 0.3) +
+  geom_line(color = "red") +
+  geom_abline(linetype = "dotted", color = "grey50") +
+  labs(x = "False Positive Rate", y = "True Positive Rate") +
+  ylim(0,1) + xlim(0,1) +
+  # scale_y_continuous(breaks = c(0, 0.25, 0.75, yint)) +
+  # scale_x_continuous(breaks = c( 0.25, 0.5, 0.75, xint)) +
+  theme_classic()
+
 orig_binom_roc_out <- pROC::roc(response = orig_y, predictor = y_hat_matrix)
 
 perf_list <- sens_at_spec_ROC(binom_roc_out, 1.0)
 
-y_hat_predictions <- ifelse(y_hat_predictions > perf_list$p.thresh, 1, 0)
+original_y_hat_predictions <- ifelse(original_y_hat_predictions > perf_list$p.thresh, 1, 0)
 
 pROC::ggroc(binom_roc_out) -> binom_roc.plt
 
@@ -3903,7 +3912,10 @@ binomial_model_response_prob %>%
   ylab('probability') + 
   xlab('') -> binom_prob_thresh.plt
 
+```
 
+####
+```{r}
 # beta %>%
 #   as.matrix() %>%
 #   as.data.frame() %>%
@@ -3949,6 +3961,9 @@ binomial_cm.tbl <- gtable::gtable_add_rows(binomial_cm.tbl, unit(1,"line"), 0)
 binomial_cm.tbl <- gtable::gtable_add_cols(binomial_cm.tbl, grid::grobWidth(lg), 0)
 binomial_cm.tbl <- gtable::gtable_add_grob(binomial_cm.tbl, tg, t = 1, l=3, r=ncol(binomial_cm.tbl))
 binomial_cm.tbl <- gtable::gtable_add_grob(binomial_cm.tbl, lg, l = 1, t=2)
+```
+
+
 ```
 ## Fig_modeling--gt_binom
 ```{r}

@@ -470,6 +470,9 @@ run.de.seq.individual <- function(type = 'gxi', base_level = 'ctrl',
   colnames(count_matrix.df) <- 
     str_split_fixed(colnames(count_matrix.df), '_S', 2)[,1]
   
+  print(colnames(count_matrix.df))
+  print(rownames(scaled_quant_meta_for_de.df))
+  
 
   scaled_quant_meta_for_de.df <- 
     scaled_quant_meta_for_de.df[match(colnames(count_matrix.df),

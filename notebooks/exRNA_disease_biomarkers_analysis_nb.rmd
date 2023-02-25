@@ -295,6 +295,54 @@ original_roster_names <- read_csv(
 ) %>%
   mutate(sample = str_split_fixed(sample, '_S', 2)[, 1])
 
+
+gut_meta_data <-
+  read_csv(file.path(meta_data.dir, 'ext_meta_data', 'GSE133684_meta.txt')) %>%
+  select(sample = Run,
+         dataset = BioProject,
+         diagnosis = disease_state)
+
+elife_meta_data <-
+  read_csv(file.path(meta_data.dir, 'ext_meta_data', 'GSE174302_meta.txt')) %>% 
+  select(
+    sample = Run,
+    age = Age,
+    dataset = BioProject,
+    diagnosis = disease,
+    sex = gender
+  ) %>%
+  mutate(diagnosis = str_replace_all(
+    string = diagnosis,
+    pattern = ' patient',
+    replacement = ''
+  ))
+
+npj_meta_data <- 
+  read_csv(file.path(meta_data.dir, 'ext_meta_data', 'GSE182824_meta.txt')) %>% 
+  select(
+    sample = Run,
+    age = Age,
+    cohort = Cohort,
+    dataset = BioProject,
+    diagnosis = source_name,
+    sex = gender
+  ) %>%
+  mutate(diagnosis = str_replace_all(
+    string = diagnosis,
+    pattern = ' plasma',
+    replacement = ''
+  )) %>% 
+  mutate(diagnosis = str_replace_all(
+    string = diagnosis,
+    pattern = 'Human ',
+    replacement = ''
+  )) %>% 
+  mutate(diagnosis = str_replace_all(
+    string = diagnosis,
+    pattern = ' donor',
+    replacement = ''
+  ))
+
 ```
 
 # import_data

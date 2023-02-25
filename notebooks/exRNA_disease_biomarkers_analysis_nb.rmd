@@ -313,7 +313,7 @@ import::from(
 # salmon_quant <- parse.tximeta.quant.metadata(salmon_quant)
 
 
-ucsc.rmsk.salmon_quant <- load.tximeta.object.list('external_data_ucsc_rmsk',
+ucsc.rmsk.salmon_quant <- load.tximeta.object.list('other_extData_ucsc_rmsk',
                                                    output_data.dir = output_data.dir)
 
 

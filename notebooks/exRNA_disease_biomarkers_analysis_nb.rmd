@@ -408,12 +408,13 @@ stage_IV_select_list <-
 
 preRad_preRes_select_list <-
   discovery_merge_meta_for_filt %>%
-  filter(
-    # NOT Pre Tx & Pre Tx
-    treatment_status_radiation_treatment_status != treatment_status_resection_treatment_status,
-    !grepl('^n', sample)
-  ) %>%
-  pull(name)
+  filter(if_any(
+    c(
+      treatment_status_radiation_treatment_status,
+      treatment_status_resection_treatment_status
+    ),
+    ~ . != 'Pre Tx'
+  ))
 
 
 ucsc.rmsk.salmon_quant$ucsc_rmsk_quant <-
@@ -612,6 +613,14 @@ ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$stage_III$quant_meta <-
 ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$stage_IV$quant_meta <-
   merge(
     ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$stage_IV$quant_meta %>%
+      mutate(sample = str_split_fixed(sample, '_S', 2)[, 1]),
+    discovery_meta_data,
+    by = 'sample'
+  )
+
+ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$preRad_preRes$quant_meta <-
+  merge(
+    ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$preRad_preRes$quant_meta %>%
       mutate(sample = str_split_fixed(sample, '_S', 2)[, 1]),
     discovery_meta_data,
     by = 'sample'

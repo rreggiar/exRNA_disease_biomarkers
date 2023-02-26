@@ -406,6 +406,16 @@ stage_IV_select_list <-
            !grepl('^n', sample)) %>% 
   pull(name)
 
+preRad_preRes_select_list <-
+  discovery_merge_meta_for_filt %>%
+  filter(
+    # NOT Pre Tx & Pre Tx
+    treatment_status_radiation_treatment_status != treatment_status_resection_treatment_status,
+    !grepl('^n', sample)
+  ) %>%
+  pull(name)
+
+
 ucsc.rmsk.salmon_quant$ucsc_rmsk_quant <-
   subset.tximeta.se(
     ucsc.rmsk.salmon_quant$ucsc_rmsk_quant,
@@ -461,6 +471,21 @@ ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$stage_IV <-
       pitts_samples,
       esoph_samples,
       stage_IV_select_list,
+      'e14_S32.salmon.out' # outlier
+    )
+  )
+
+ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$preRad_preRes <-
+  subset.tximeta.se(
+    ucsc.rmsk.salmon_quant$ucsc_rmsk_quant,
+    filter_list = c(
+      qc_fails,
+      covid_samples,
+      orig_panc_samples,
+      unknown_samples,
+      pitts_samples,
+      esoph_samples,
+      preRad_preRes_select_list,
       'e14_S32.salmon.out' # outlier
     )
   )

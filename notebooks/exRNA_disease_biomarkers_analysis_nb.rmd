@@ -1242,6 +1242,107 @@ total_annotated_rmsk_counts %>%
         by = 'sample') -> tidy_total_annotated_rmsk_counts
 
 
+
+tidy_total_annotated_rmsk_counts %>% 
+  # filter(! gene %in% top_n(panc_annotated_rmsk_de, 20, wt = baseMean)$gene) %>% 
+  group_by(sample, condition, clade) %>% 
+  summarize(clade_sum = sum(count)) %>% 
+  mutate(clade_frac = clade_sum/sum(clade_sum),
+         condition = factor(condition, levels = c('panc', 'normal', 'esoph', 'covid'))) %>% 
+  select(-clade_sum) %>% 
+  # mutate(clade_frac = log(clade_frac)) %>% 
+  pivot_wider(names_from = clade, values_from = clade_frac) %>% 
+  merge(ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$preRad_preRes$quant_meta, by = 'sample') -> chm_in
+
+hm_count_data_filt <- chm_in %>% 
+  select(sample, GENCODE_lncRNA:other) %>% 
+  column_to_rownames('sample') %>% 
+  as.matrix()
+
+meta_data <- chm_in %>% select(-GENCODE_coding:-other)
+rownames(meta_data) <- meta_data$sample
+meta_data <-
+  meta_data[match(rownames(meta_data), rownames(hm_count_data_filt)),]
+
+meta_data <- meta_data %>%
+  mutate(
+    sample_sku_primary_diagnosis = str_replace_all(sample_sku_primary_diagnosis, 'Pancreatic Cancer, ', '')
+  ) %>%
+  pull(sample_sku_primary_diagnosis)
+
+panc_color <- setNames(RColorBrewer::brewer.pal(name = 'Dark2', n = 4), c('panc', 'normal', 'esoph', 'covid'))
+
+left_hma <-
+  ComplexHeatmap::rowAnnotation(
+    df = meta_data %>% select(sample_sku_primary_diagnosis),
+    col = list(condition = panc_color),
+    show_annotation_name = F,
+    simple_anno_size = unit(.3, "cm"),
+    annotation_legend_param =
+      list(title_gp = grid::gpar(
+        fontsize = 6, fontface = 'bold'
+      ))
+  )
+
+## heatmap DE barpot annotation
+# mkp_de_sig %>%
+#   filter(gene %in% colnames(hm_count_data_filt)) %>%
+#   column_to_rownames('gene') -> toil_de
+# 
+# toil_de[order(match(rownames(toil_de), colnames(hm_count_data_filt))), , drop =
+#           F] -> toil_de
+# 
+# toil_de_list <- setNames(toil_de$log2FC, rownames(toil_de))
+# 
+# ComplexHeatmap::columnAnnotation(
+#   `MkP Log2FC` = ComplexHeatmap::anno_barplot(
+#     x = toil_de_list,
+#     bar_width = 1,
+#     which = 'row',
+#     gp = grid::gpar(col = "black", fill = 'purple'),
+#     border = FALSE,
+#     annotation_name_gp = grid::gpar(fontsize = 8),
+#     width = unit(0.75, "cm"),
+#     height = unit(1.25, "cm")
+#   ),
+#   show_annotation_name = TRUE,
+#   annotation_name_gp = grid::gpar(fontsize = 8)
+# ) -> log2fc_ha
+
+set.seed(2022 - 02 - 23)
+ComplexHeatmap::Heatmap(
+  as.matrix(hm_count_data_filt),
+  show_row_names = F,
+  show_column_names = T,
+  # col = viridis::plasma(n = 100),
+  # heatmap_width = figure_double_column_width * 1.125,
+  left_annotation = left_hma,
+  column_dend_height = unit(.45, "cm"),
+  heatmap_legend_param =
+    list(
+      legend_gp = grid::gpar(fontsize = 5),
+      title_gp = grid::gpar(fontsize = 6,
+                            fontface = 'bold')
+    ),
+  # top_annotation = log2fc_ha,
+  column_names_gp = grid::gpar(fontsize = 12),
+  name = 'Percent'
+) -> hsc_count.chm
+
+patchwork::wrap_elements(full = grid::grid.grabExpr(ComplexHeatmap::draw(hsc_count.chm),
+                                                    # width = figure_double_column_width* 1.125,
+                                                    merge_legend = T)) -> chm_plot
+
+chm_plot
+# ggsave(
+#   chm_plot,
+#   width = figure_double_column_width * 1.125,
+#   height = panel_height_1 * 1.65,
+#   filename = file.path(output_data.dir, 'mkp_de_heatmap.pdf'),
+#   units = 'mm'
+# )
+
+
 tidy_total_annotated_rmsk_counts %>% 
   # filter(! gene %in% top_n(panc_annotated_rmsk_de, 20, wt = baseMean)$gene) %>% 
   group_by(sample, condition, clade) %>% 
@@ -1287,7 +1388,7 @@ tidy_total_annotated_rmsk_counts %>%
 ```
 ## Fig_2B
 ```{r}
-ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$stage_IV$deseq$de_out %>% 
+ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$preRad_preRes$deseq$de_out %>% 
   merge(reference_meta_data$ucsc_rmsk_insert_info.df, by = 'gene', all.x = T) %>% 
   mutate(family = ifelse(ensg %in% reference_meta_data$gencode_lncRNA_gene_names.df$ensg,
                          'GENCODE_lncRNA', family),
@@ -1343,13 +1444,14 @@ gencode_layer.plt +
   geom_point(data = filter(panc_annotated_rmsk_de, clade != 'GENCODE_coding') %>% 
                mutate(clade = factor(clade, levels = te_aware_annotation_levels)),
              aes(log2FoldChange, -log10(padj), color = clade), size = 2, alpha = 0.8) +
-  geom_hline(yintercept = -log10(0.01), linetype = 'dashed', alpha = 0.4) +
+  geom_hline(yintercept = -log10(0.05), linetype = 'dashed', alpha = 0.4) +
   scale_color_manual(values = te_color_pal, name = 'biotype/clade') + 
   ggrepel::geom_text_repel(data = panc_annotated_rmsk_de %>% 
                mutate(clade = factor(clade, levels = te_aware_annotation_levels)),
-                      aes(label = ifelse(padj < 0.01, gene, '')), 
+                      aes(label = ifelse(padj < 0.05, gene, '')), 
                            show.legend = F, color = 'black', size = txt.mm_to_pts(1),
-               max.overlaps = 1000, box.padding = 0.3, segment.colour = 'grey')
+               max.overlaps = 1000, box.padding = 0.3, segment.colour = 'grey') +
+  theme(legend.position = c(0.99, 0.25))
 
 ```
 ## Fig_2C

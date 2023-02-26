@@ -496,7 +496,7 @@ run.de.seq.individual <- function(type = 'gxi', base_level = 'ctrl',
   
   input_set_dds_vst_counts <- as.data.frame(assay(vst(input_set_dds, blind = F)))
   
-  de_filter <- rowSums(counts(input_set_dds, normalized=T) >= 10) >= ncol(input_set_dds_norm_counts.df)*0.75
+  de_filter <- rowSums(counts(input_set_dds, normalized=T) >= 10) >= ncol(input_set_dds_norm_counts.df)*0.95
   
   input_set_dds <- DESeq(input_set_dds[de_filter,])
   

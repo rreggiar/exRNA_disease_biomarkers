@@ -1,6 +1,7 @@
 ---
 title: "exRNA_disease_biomarkers_nb"
 output: html_notebook
+date: "`r sys.Date()`"
 author:
 - name: "Roman E. Reggiardo"
   affiliation: "UC Santa Cruz Dept. of Biomolecular Engineering"
@@ -485,6 +486,23 @@ ucsc.rmsk.salmon_quant$ucsc_rmsk_quant <-
     )
   )
 
+merge(
+  ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$quant_meta %>%
+      mutate(name = sample, sample = str_split_fixed(sample, '_G', 2)[, 1]),
+    npj_meta_data,
+    by = 'sample'
+  ) -> npj_merge_meta_for_filt
+
+npj_select_list <-
+  filter(
+    ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$quant_meta,
+    !sample %in% npj_merge_meta_for_filt$name
+  ) %>% 
+  pull(sample)
+
+ucsc.rmsk.salmon_quant$ucsc_rmsk_quant <-
+  subset.tximeta.se(ucsc.rmsk.salmon_quant$ucsc_rmsk_quant,
+                    filter_list = c(npj_select_list))
 
 ```
 
@@ -588,6 +606,15 @@ ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$quant_meta <-
     ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$quant_meta %>%
       mutate(sample = str_split_fixed(sample, '_S', 2)[, 1]),
     discovery_meta_data,
+    by = 'sample'
+  )
+
+
+ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$quant_meta <-
+  merge(
+    ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$quant_meta %>%
+      mutate(sample = str_split_fixed(sample, '_G', 2)[, 1]),
+    npj_meta_data,
     by = 'sample'
   )
 

@@ -342,7 +342,8 @@ npj_meta_data <-
     string = diagnosis,
     pattern = ' donor',
     replacement = ''
-  ))
+  )) %>% 
+  mutate(input_vol = 3000)
 
 ```
 
@@ -489,7 +490,7 @@ ucsc.rmsk.salmon_quant$ucsc_rmsk_quant <-
 merge(
   ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$quant_meta %>%
       mutate(name = sample, sample = str_split_fixed(sample, '_G', 2)[, 1]),
-    npj_meta_data,
+    npj_meta_data %>% filter(diagnosis %in% c('non-cancer', 'liver cirrhosis')),
     by = 'sample'
   ) -> npj_merge_meta_for_filt
 
@@ -565,58 +566,62 @@ import::from(.directory = r_code.dir,
 #                        se_1 = 'bioIvt_panc_process.aware.salmon', 
 #                        analysis_set_2 = process.aware.salmon_quant$analysis_set$covid_ctrl,
 #                        sample_meta_in = sample_meta_data$`2022.01.14_combined_meta_data.csv`)
-sample_meta_data$`2022.01.14_combined_meta_data.csv` %>%
-  select(
-    'sample' = patient,
-    'sample_sku_patient_gender' = sex,
-    'sample_sku_patient_age_at_collection' = age,
-    'diagnosis' = condition
-  ) %>%
-  mutate(tmp = sample,
-         diagnosis = ifelse(diagnosis == 'ctrl', 'normal', diagnosis)) %>%
-  mutate(input_vol = as.numeric(
-      str_split_fixed(
-      string = str_split_fixed(string = tmp, pattern = '[.]', n = 2)[,2],
-      pattern = '[.]',
-      n = 2)[,2]
-    ) * 1000
-  ) %>%
-  select(-tmp) %>%
-  rbind(discovery_meta_data %>%
-          select(
-            sample,
-            sample_sku_patient_gender,
-            sample_sku_patient_age_at_collection,
-            diagnosis,
-            input_vol)) -> combined_meta_data
+# sample_meta_data$`2022.01.14_combined_meta_data.csv` %>%
+#   select(
+#     'sample' = patient,
+#     'sample_sku_patient_gender' = sex,
+#     'sample_sku_patient_age_at_collection' = age,
+#     'diagnosis' = condition
+#   ) %>%
+#   mutate(tmp = sample,
+#          diagnosis = ifelse(diagnosis == 'ctrl', 'normal', diagnosis)) %>%
+#   mutate(input_vol = as.numeric(
+#       str_split_fixed(
+#       string = str_split_fixed(string = tmp, pattern = '[.]', n = 2)[,2],
+#       pattern = '[.]',
+#       n = 2)[,2]
+#     ) * 1000
+#   ) %>%
+#   select(-tmp) %>%
+#   rbind(discovery_meta_data %>%
+#           select(
+#             sample,
+#             sample_sku_patient_gender,
+#             sample_sku_patient_age_at_collection,
+#             diagnosis,
+#             input_vol)) -> combined_meta_data
+# 
+# ucsc.rmsk.salmon_quant$original_data$quant_meta <-
+#   ucsc.rmsk.salmon_quant$original_data$quant_meta %>%
+#     mutate(tmp = sample,
+#            sample = str_split_fixed(sample, '_S', 2)[, 1]) %>%
+#     merge(original_roster_names, by = 'sample', all.x = T) %>%
+#     mutate(sample = ifelse(is.na(name), sample, name)) %>%
+#     mutate(dataset = ifelse(is.na(name), 'discovery', 'original')) %>%
+#     select(-name) %>%
+#     merge(combined_meta_data, by = 'sample') %>% 
+#     mutate(sample = str_split_fixed(tmp, '_S', 2)[, 1])
+# 
+# ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$quant_meta <-
+#   merge(
+#     ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$quant_meta %>%
+#       mutate(sample = str_split_fixed(sample, '_S', 2)[, 1]),
+#     discovery_meta_data,
+#     by = 'sample'
+#   )
 
-ucsc.rmsk.salmon_quant$original_data$quant_meta <-
-  ucsc.rmsk.salmon_quant$original_data$quant_meta %>%
-    mutate(tmp = sample,
-           sample = str_split_fixed(sample, '_S', 2)[, 1]) %>%
-    merge(original_roster_names, by = 'sample', all.x = T) %>%
-    mutate(sample = ifelse(is.na(name), sample, name)) %>%
-    mutate(dataset = ifelse(is.na(name), 'discovery', 'original')) %>%
-    select(-name) %>%
-    merge(combined_meta_data, by = 'sample') %>% 
-    mutate(sample = str_split_fixed(tmp, '_S', 2)[, 1])
 
 ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$quant_meta <-
   merge(
     ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$quant_meta %>%
-      mutate(sample = str_split_fixed(sample, '_S', 2)[, 1]),
-    discovery_meta_data,
-    by = 'sample'
-  )
-
-
-ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$quant_meta <-
-  merge(
-    ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$quant_meta %>%
-      mutate(sample = str_split_fixed(sample, '_G', 2)[, 1]),
+      mutate(name = sample, sample = str_split_fixed(sample, '_G', 2)[, 1]),
     npj_meta_data,
     by = 'sample'
-  )
+  ) %>% 
+  dplyr::rename('sample' = name, 
+                'name' = sample,
+                'sample_sku_patient_age_at_collection' = age) %>% 
+  column_to_rownames('name')
 
 
 ```
@@ -681,6 +686,15 @@ import::from(.directory = r_code.dir,
 #                         top_level = 'covid',
 #                         ref_type = 'salmon',
 #                         dds_formula = as.formula('~age+condition'))
+
+ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$deseq <- 
+  run.de.seq.individual(input_se = ucsc.rmsk.salmon_quant$ucsc_rmsk_quant,
+                        type = 'gxi',
+                        base_level = 'non-cancer',
+                        top_level = 'liver cancer',
+                        ref_type = 'ucsc.rmsk',
+                        dds_formula = 
+                          as.formula('~sample_sku_patient_age_at_collection+sex+diagnosis'))
 
 ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$deseq <- 
   run.de.seq.individual(input_se = ucsc.rmsk.salmon_quant$ucsc_rmsk_quant,
@@ -754,8 +768,12 @@ import::from(.directory = r_code.dir,
 #   extract.meta.pca.correlates(pca.out =
 #                             salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_out.df)
 
-disc_identity_color_pal <- setNames(RColorBrewer::brewer.pal(3, 'Dark2')[c(1,2)], 
-                                    c('normal', 'panc'))
+# disc_identity_color_pal <- setNames(RColorBrewer::brewer.pal(3, 'Dark2')[c(1,2)], 
+#                                     c('normal', 'panc'))
+
+disc_identity_color_pal <- setNames(RColorBrewer::brewer.pal(5, 'Dark2'),
+                                   unique(ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$quant_meta %>% pull(diagnosis)))
+
 # disc_pca <-
 #   run.pca(input_de = ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$deseq,
 #           identity_color_pal = disc_identity_color_pal)
@@ -785,12 +803,12 @@ print(as.data.frame(pcs.props) %>%
         geom_col())
 
 pca.out <- as.data.frame(non_zero_pca$x) %>% 
-  rownames_to_column('sample') %>% 
-  mutate(sample = str_split_fixed(sample, '_S', 2)[, 1]) %>%
-  merge(original_roster_names, by = 'sample', all.x = T) %>% 
-  mutate(sample = ifelse(is.na(name), sample, name)) %>% 
-  select(-name) %>% 
-  merge(input_de$scaled_quant_meta_for_de.df, by = 'sample')
+  rownames_to_column('name') %>% 
+  # mutate(name = str_split_fixed(sample, '_G', 2)[, 1]) %>% 
+  # merge(original_roster_names, by = 'sample', all.x = T) %>% 
+  # mutate(sample = ifelse(is.na(name), sample, name)) %>% 
+  # select(-name) %>% 
+  merge(input_de$scaled_quant_meta_for_de.df %>% rownames_to_column('name'), by = 'name')
 
 pca.out.summary <- 
   as.data.frame(summary(non_zero_pca)$importance) %>% 
@@ -799,11 +817,11 @@ pca.out.summary <-
   spread(metric, value)
 
 pca.out %>% 
-  mutate(stage = factor(stage, 
-                        levels = c(NA, 'I-B', 'II', 'II-B', 'III', 'IV', 'IV-B'),
-                        exclude = NULL)) %>% 
+  # mutate(stage = factor(stage, 
+  #                       levels = c(NA, 'I-B', 'II', 'II-B', 'III', 'IV', 'IV-B'),
+  #                       exclude = NULL)) %>% 
   ggplot(aes(PC1, PC2,
-             shape = condition, fill = stage)) +
+             color = condition, shape = sex)) +
   geom_point(size = txt.mm_to_pts(0.8), alpha = 0.8) +
   scale_shape_manual(values = c(21,25)) +
   xlab(paste('PC1', round(cumsum(pcs.props)[1], digits = 3)*100,'%',sep = ' ')) +
@@ -1186,12 +1204,13 @@ ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$deseq$norm_counts.df %>%
 
 total_annotated_rmsk_counts %>% 
   gather(sample, count, -gene, -clade, -family, -type) %>% 
-  mutate(sample = str_split_fixed(sample, '_S',2)[,1]) %>% 
+  # mutate(sample = str_split_fixed(sample, '_S',2)[,1]) %>% 
   filter(count > 0) %>% 
   # merge(original_roster_names, by = 'sample', all.x = T) %>% 
   # mutate(sample = ifelse(is.na(name), sample, name)) %>% 
   # select(-name) %>% 
   merge(ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$deseq$scaled_quant_meta_for_de.df %>%
+          rownames_to_column('sample') %>% 
           select(sample, condition, dataset), 
         by = 'sample') -> tidy_total_annotated_rmsk_counts
 
@@ -1200,15 +1219,16 @@ tidy_total_annotated_rmsk_counts %>%
   # filter(! gene %in% top_n(panc_annotated_rmsk_de, 20, wt = baseMean)$gene) %>% 
   group_by(sample, condition, clade) %>% 
   summarize(clade_sum = sum(count)) %>% 
-  mutate(clade_frac = clade_sum/sum(clade_sum),
-         condition = factor(condition, levels = c('panc', 'normal', 'esoph', 'covid'))) %>% 
-  merge(ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$quant_meta %>% select(-dataset), by = 'sample') %>% 
+  mutate(clade_frac = clade_sum/sum(clade_sum)) %>% 
+         # condition = factor(condition, levels = c('panc', 'normal', 'esoph', 'covid'))) %>% 
+  merge(ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$quant_meta, by = 'sample') %>% View()
   ggplot(aes(reorder(sample, input_vol), clade_frac, fill = clade, color = condition)) +
   geom_col(color = 'white', show.legend = F) + 
   scale_fill_manual(values = te_color_pal, name = 'biotype/clade') + 
   scale_color_manual(values = disc_identity_color_pal) +
-  # ggforce::facet_col(~condition, scales = 'free_x', space = 'free') +
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.5)) +
+  ggforce::facet_col(~condition, scales = 'free_x', space = 'free') +
+  # theme(axis.text.x = element_text(angle = 90, vjust = 0.5)) +
+  theme(axis.text.x = element_blank()) +
   scale_y_continuous(expand = c(0,0)) +
   xlab('') + ylab('normalized count fraction')
 

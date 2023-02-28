@@ -704,22 +704,49 @@ internal_quant$postTx <-
 ## external
 ```{r}
 merge(
-  ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$quant_meta %>%
+  external_quant$ucsc_rmsk_quant$quant_meta %>%
       mutate(name = sample, sample = str_split_fixed(sample, '_G', 2)[, 1]),
-    npj_meta_data %>% filter(diagnosis %in% c('non-cancer', 'liver cirrhosis')),
+    npj_meta_data,
     by = 'sample'
   ) -> npj_merge_meta_for_filt
 
+merge(
+  external_quant$ucsc_rmsk_quant$quant_meta %>%
+      mutate(name = sample, sample = str_split_fixed(sample, '_G', 2)[, 1]),
+    elife_meta_data,
+    by = 'sample'
+  ) -> elife_merge_meta_for_filt
+
 npj_select_list <-
   filter(
-    ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$quant_meta,
+    external_quant$ucsc_rmsk_quant$quant_meta,
     !sample %in% npj_merge_meta_for_filt$name
   ) %>% 
   pull(sample)
 
-ucsc.rmsk.salmon_quant$ucsc_rmsk_quant <-
-  subset.tximeta.se(ucsc.rmsk.salmon_quant$ucsc_rmsk_quant,
+elife_select_list <-
+  filter(
+    external_quant$ucsc_rmsk_quant$quant_meta,
+    !sample %in% elife_merge_meta_for_filt$name
+  ) %>% 
+  pull(sample)
+
+external_quant$npj <-
+  subset.tximeta.se(external_quant$ucsc_rmsk_quant,
                     filter_list = c(npj_select_list))
+
+external_quant$elife <-
+  subset.tximeta.se(external_quant$ucsc_rmsk_quant,
+                    filter_list = c(npj_select_list))
+```
+## gut
+```{r}
+merge(
+  gut_quant$ucsc_rmsk_quant$quant_meta %>%
+      mutate(name = sample, sample = str_split_fixed(sample, '_G', 2)[, 1]),
+    gut_meta_data,
+    by = 'sample'
+  ) -> gut_merge_meta_for_filt
 
 ```
 

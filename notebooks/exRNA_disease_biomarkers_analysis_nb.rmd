@@ -445,66 +445,42 @@ gut_quant <- parse.tximeta.quant.metadata(gut_quant)
 
 ```
 
-# analysis_INTERACTIVE
-## QC_filter
+# filter data
+## internal
 ```{r}
 import::from(.directory = r_code.dir,
              .from = 'helper_analysisFunctions.R',
              subset.tximeta.se)
 
-# salmon_quant$bioIvt_panc_salmon <-
-#   subset.tximeta.se(salmon_quant$bioIvt_panc_salmon,
-#                     filter_list = qc_fails)
-
-# ucsc.rmsk.salmon_quant$bioIvt_panc_ucsc.rmsk.salmon <-
-#   subset.tximeta.se(ucsc.rmsk.salmon_quant$bioIvt_panc_ucsc.rmsk.salmon,
-#                     filter_list = qc_fails)
-
-# process.aware.salmon_quant$bioIvt_panc_process.aware.salmon <-
-#   subset.tximeta.se(process.aware.salmon_quant$bioIvt_panc_process.aware.salmon,
-#                     filter_list = qc_fails)
-
-##
-
-# salmon_quant$bioIvt_covid_salmon <-
-#   subset.tximeta.se(salmon_quant$bioIvt_covid_salmon,
-#                     filter_list = qc_fails)
-
-# ucsc.rmsk.salmon_quant$bioIvt_covid_ucsc.rmsk.salmon <-
-#   subset.tximeta.se(ucsc.rmsk.salmon_quant$bioIvt_covid_ucsc.rmsk.salmon,
-#                     filter_list = qc_fails)
-
-# process.aware.salmon_quant$bioIvt_covid_process.aware.salmon <-
-#   subset.tximeta.se(process.aware.salmon_quant$bioIvt_covid_process.aware.salmon,
-#                     filter_list = qc_fails)
-
+## create merged df that matches colData names to metaData names
 merge(
-  ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$quant_meta %>%
+  internal_quant$ucsc_rmsk_quant$quant_meta %>%
       mutate(name = sample, sample = str_split_fixed(sample, '_S', 2)[, 1]),
     discovery_meta_data,
     by = 'sample'
   ) -> discovery_merge_meta_for_filt
 
-## discovery
-covid_samples <-
-  ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$quant_meta %>% filter(grepl('^HMN', sample)) %>% pull(sample)
+orig_covid_samples <-
+  internal_quant$ucsc_rmsk_quant$quant_meta %>% 
+  filter(grepl('^HMN', sample)) %>% 
+  pull(sample)
 
 orig_panc_samples <-
-  ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$quant_meta %>%
+  internal_quant$ucsc_rmsk_quant$quant_meta %>%
   filter(grepl('panc|BioIVT|bioIVT', sample)) %>%
   pull(sample)
 
 unknown_samples <-
-  ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$quant_meta %>% filter(grepl('^unknown', sample)) %>% pull(sample)
+  internal_quant$ucsc_rmsk_quant$quant_meta %>% filter(grepl('^unknown', sample)) %>% pull(sample)
 
 pitts_samples <-
-  ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$quant_meta %>% filter(grepl('^PH', sample)) %>% pull(sample)
+  internal_quant$ucsc_rmsk_quant$quant_meta %>% filter(grepl('^PH', sample)) %>% pull(sample)
 
 esoph_samples <-
-  ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$quant_meta %>% filter(grepl('^e', sample)) %>% pull(sample)
+  internal_quant$ucsc_rmsk_quant$quant_meta %>% filter(grepl('^e', sample)) %>% pull(sample)
 
 normal_samples <-
-  ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$quant_meta %>% filter(grepl('^n', sample)) %>% pull(sample)
+  internal_quant$ucsc_rmsk_quant$quant_meta %>% filter(grepl('^n', sample)) %>% pull(sample)
 
 stage_IandII_select_list <- 
   discovery_merge_meta_for_filt %>% 
@@ -555,7 +531,9 @@ ucsc.rmsk.salmon_quant$ucsc_rmsk_quant <-
       'e14_S32.salmon.out' # outlier
     )
   )
-
+```
+## external
+```{r}
 merge(
   ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$quant_meta %>%
       mutate(name = sample, sample = str_split_fixed(sample, '_G', 2)[, 1]),
@@ -719,6 +697,7 @@ ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$quant_meta <-
 # process.aware.salmon_quant$pittsburgh_ctrl_ucsc.rmsk.salmon <- 'NULL'
 ```
 
+# analysis_INTERACTIVE
 ## run_de_seq
 ```{r}
 import::from(.directory = r_code.dir, 

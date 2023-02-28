@@ -206,7 +206,8 @@ names(te_alone_color_pal) <- te_alone_annotation_levels
 
 ```
 
-## meta_data_construction
+# meta_data_construction
+### reference meta data
 ```{r}
 
 ## reference meta data
@@ -264,6 +265,9 @@ if (!file.exists(file.path(meta_data.dir, 'reference_meta_data_df.rds'))) {
   reference_meta_data <-
     readRDS(file.path(meta_data.dir, 'reference_meta_data_df.rds'))
 }
+```
+### original sample metadata
+```{r}
 
 ## sample_meta_data
 if (!file.exists(file.path(meta_data.dir, 'sample_meta_data_df.rds'))) {
@@ -283,33 +287,65 @@ if (!file.exists(file.path(meta_data.dir, 'sample_meta_data_df.rds'))) {
     readRDS(file.path(meta_data.dir, 'sample_meta_data_df.rds'))
 }
 
-discovery_meta_data <- read_csv(file.path(
-  meta_data.dir,
-  'discovery_meta_data_w_inputVol_2023-02-10.csv'
-))
-
-
 original_roster_names <- read_csv(
   file.path(meta_data.dir,
             "original_roster_data_2020-09-30.csv"),
   col_names = c('sample', 'name')
-) %>%
+  ) %>%
   mutate(sample = str_split_fixed(sample, '_S', 2)[, 1])
 
+original_panc_meta_data <- 
+  sample_meta_data$`2022.01.14_bioIVTAndPitts_meta_data.csv` %>% 
+  filter(condition == 'panc') %>% 
+  dplyr::rename(sample = patient, diagnosis = condition) %>% 
+  mutate(tmp = sample, dataset = 'pilot') %>% 
+  mutate(input_vol = as.numeric(
+      str_split_fixed(
+      string = str_split_fixed(string = tmp, pattern = '[.]', n = 2)[,2],
+      pattern = '[.]',
+      n = 2)[,2]
+    ) * 1000) # convert to uL
+
+original_covid_meta_data <- 
+  sample_meta_data$`2022.01.14_bioIVTCovid_meta_data.csv` %>% 
+  dplyr::rename(sample = patient) %>% 
+  mutate(tmp = sample, diagnosis = 'covid', dataset = 'pilot') %>% 
+  mutate(input_vol = as.numeric(
+      str_split_fixed(
+      string = str_split_fixed(string = tmp, pattern = '[.]', n = 2)[,2],
+      pattern = '[.]',
+      n = 2)[,2]
+    ) * 1000) #convert to uL
+
+```
+### discovery cohort metadata
+```{r}
+discovery_meta_data <- read_csv(file.path(
+  meta_data.dir,
+  'discovery_meta_data_w_inputVol_2023-02-10.csv'
+)) %>% 
+  mutate(dataset = 'discovery')
+
+colnames(discovery_meta_data) <-
+  str_remove(str_remove_all(str_remove_all(colnames(
+    discovery_meta_data
+  ), pattern = 'sample_sku_'), pattern = 'patient_'),
+  pattern = '_at_collection')
+```
+### external cohorts metadata
+```{r}
 
 gut_meta_data <-
   read_csv(file.path(meta_data.dir, 'ext_meta_data', 'GSE133684_meta.txt')) %>%
   select(sample = Run,
-         dataset = BioProject,
          diagnosis = disease_state) %>% 
-  mutate(input_vol = 1000)
+  mutate(input_vol = 1000, dataset = 'gut')
 
 elife_meta_data <-
   read_csv(file.path(meta_data.dir, 'ext_meta_data', 'GSE174302_meta.txt')) %>% 
   select(
     sample = Run,
     age = Age,
-    dataset = BioProject,
     diagnosis = disease,
     sex = gender
   ) %>%
@@ -318,7 +354,7 @@ elife_meta_data <-
     pattern = ' patient',
     replacement = ''
   )) %>% 
-  mutate(input_vol = 1000)
+  mutate(input_vol = 1000, dataset = 'elife')
 
 npj_meta_data <- 
   read_csv(file.path(meta_data.dir, 'ext_meta_data', 'GSE182824_meta.txt')) %>% 
@@ -326,7 +362,6 @@ npj_meta_data <-
     sample = Run,
     age = Age,
     cohort = Cohort,
-    dataset = BioProject,
     diagnosis = source_name,
     sex = gender
   ) %>%
@@ -345,7 +380,36 @@ npj_meta_data <-
     pattern = ' donor',
     replacement = ''
   )) %>% 
-  mutate(input_vol = 3000)
+  mutate(input_vol = 3000, dataset = 'precision_onc')
+```
+### united metadata
+```{r}
+df_list <-   setNames(
+  list(gut_meta_data,
+       elife_meta_data,
+       npj_meta_data,
+       discovery_meta_data,
+       original_panc_meta_data,
+       original_covid_meta_data),
+  c('gut_meta_data',
+    'elife_meta_data',
+    'npj_meta_data',
+    'discovery_meta_data',
+    'original_panc_meta_data',
+    'original_covid_meta_data')
+)
+
+
+
+Reduce(function(x, y) {
+  intersect(x, names(y))
+}, df_list, init = names(df_list[[1]])) -> shared_columns
+
+lapply(df_list, function(df){
+  
+  select(df, all_of(shared_columns))
+  
+}) %>% bind_rows() %>% distinct() -> united_metadata_df
 
 ```
 
@@ -359,11 +423,6 @@ import::from(
   parse.tximeta.quant.metadata
 )
 
-# salmon_quant <- load.tximeta.object.list('salmon',
-#                                          output_data.dir = output_data.dir)
-#
-# salmon_quant <- parse.tximeta.quant.metadata(salmon_quant)
-
 
 ucsc.rmsk.salmon_quant <- load.tximeta.object.list('other_extData_ucsc_rmsk',
                                                    output_data.dir = output_data.dir)
@@ -371,11 +430,6 @@ ucsc.rmsk.salmon_quant <- load.tximeta.object.list('other_extData_ucsc_rmsk',
 
 ucsc.rmsk.salmon_quant <- parse.tximeta.quant.metadata(ucsc.rmsk.salmon_quant)
 
-
-# process.aware.salmon_quant <- load.tximeta.object.list('process.aware.salmon',
-#                                                        output_data.dir = output_data.dir)
-#
-# process.aware.salmon_quant <- parse.tximeta.quant.metadata(process.aware.salmon_quant)
 ```
 
 # analysis_INTERACTIVE

@@ -162,9 +162,6 @@ chr_order <- c('chr1', 'chr2', 'chr3',
                'chr18', 'chr19', 'chr20', 
                'chr21', 'chr22', 'chrX', 'chrY')
 
-qc_fails <- c('panc.6.2.5', 'panc.7.2.5', 'panc.9.2.5', 
-              'panc.10.2.5', 'covid.427.0.80', 'covid.381.0.80')
-
 
 gencode_ver <- 39
 
@@ -460,6 +457,13 @@ merge(
     by = 'sample'
   ) -> discovery_merge_meta_for_filt
 
+qc_fails <- c('panc.6.2.5', 'panc.7.2.5', 'panc.9.2.5', 
+              'panc.10.2.5', 'covid.427.0.80', 'covid.381.0.80')
+
+original_roster_names %>% 
+  filter(name %in% qc_fails) %>% 
+  pull(name) ->qc_fail_names
+
 orig_covid_samples <-
   internal_quant$ucsc_rmsk_quant$quant_meta %>% 
   filter(grepl('^HMN', sample)) %>% 
@@ -548,53 +552,93 @@ postTx_select_list <-
   )) %>% 
   pull(name)
 
-ucsc.rmsk.salmon_quant$original_data <-
+internal_quant$original_data <-
   subset.tximeta.se(
-    ucsc.rmsk.salmon_quant$ucsc_rmsk_quant,
+    internal_quant$ucsc_rmsk_quant,
     filter_list = c(
-      qc_fails,
+      qc_fail_names,
       normal_samples,
-      # covid_samples,
-      # orig_panc_samples,
       unknown_samples,
-      # pitts_samples,
       esoph_samples,
       stage_IandII_select_list,
       stage_III_select_list,
       stage_IV_select_list,
-      'e14_S32.salmon.out' # outlier
+      pitts_samples
+    )
+  )
+
+internal_quant$origCovid_normal <-
+  subset.tximeta.se(
+    internal_quant$ucsc_rmsk_quant,
+    filter_list = c(
+      qc_fail_names,
+      unknown_samples,
+      esoph_samples,
+      stage_IandII_select_list,
+      stage_III_select_list,
+      stage_IV_select_list,
+      pitts_samples,
+      orig_panc_samples
+    )
+  )
+
+internal_quant$origPanc_normal <-
+  subset.tximeta.se(
+    internal_quant$ucsc_rmsk_quant,
+    filter_list = c(
+      qc_fail_names,
+      unknown_samples,
+      esoph_samples,
+      stage_IandII_select_list,
+      stage_III_select_list,
+      stage_IV_select_list,
+      pitts_samples,
+      orig_covid_samples
     )
   )
 
 
-
-
-ucsc.rmsk.salmon_quant$ucsc_rmsk_quant <-
+internal_quant$panc_normal <-
   subset.tximeta.se(
-    ucsc.rmsk.salmon_quant$ucsc_rmsk_quant,
+    internal_quant$ucsc_rmsk_quant,
     filter_list = c(
-      qc_fails,
-      covid_samples,
+      qc_fail_names,
       orig_panc_samples,
       unknown_samples,
       pitts_samples,
       esoph_samples,
-      'e14_S32.salmon.out' # outlier
+      pitts_samples,
+      orig_covid_samples
     )
   )
 
-ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$stage_IandII <-
+internal_quant$esoph_normal <-
   subset.tximeta.se(
-    ucsc.rmsk.salmon_quant$ucsc_rmsk_quant,
+    internal_quant$ucsc_rmsk_quant,
     filter_list = c(
-      qc_fails,
+      qc_fail_names,
+      orig_panc_samples,
+      unknown_samples,
+      pitts_samples,
+      stage_IandII_select_list,
+      stage_III_select_list,
+      stage_IV_select_list,
+      pitts_samples,
+      orig_covid_samples
+    )
+  )
+
+internal_quant$stage_IandII <-
+  subset.tximeta.se(
+    internal_quant$ucsc_rmsk_quant,
+    filter_list = c(
+      qc_fail_names,
       covid_samples,
       orig_panc_samples,
       unknown_samples,
       pitts_samples,
       esoph_samples,
       stage_IandII_select_list,
-      'e14_S32.salmon.out' # outlier
     )
   )
 
@@ -1077,8 +1121,15 @@ pca_corr_out.df <-
 ```
 ## 1vsall
 ```{r}
-PAAD_1vAll <- read_csv(file.path(output_data.dir, 'PAAD_vs_all.results'), skip = 7) %>% filter(log2FoldChange != 0)
+PAAD_1vAll <- read_csv(file.path(output_data.dir, 'PAAD_vs_all.results'), skip = 7) #%>% filter(log2FoldChange != 0)
 Pancreas_1vAll <- read_csv(file.path(output_data.dir, 'Pancreas_vs_all.results'), skip = 7) %>% filter(log2FoldChange > 1)
+
+
+PAAD_1vAll %>% 
+  # filter(name %in% reference_meta_data$ucsc_rmsk_insert_info.df$gene) %>% 
+  ggplot(aes(log2FoldChange, -log10(padj), label = name)) + 
+  geom_point()
+  ggrepel::geom_text_repel()
 
 PAAD_1vAll %>% 
   filter(! name %in% Pancreas_1vAll$name) %>% 

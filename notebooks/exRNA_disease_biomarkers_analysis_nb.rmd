@@ -130,7 +130,6 @@ theme_set_fun <- function(){
 
 txt.mm_to_pts <- function(ratio){ base_size * ratio * (25.4 / 72.27) }
 ```
-
 ## data_path_obj
 ```{r}
 figure.dir <- here::here('manuscript/figures')
@@ -141,7 +140,6 @@ meta_data.dir <- here::here('data/meta_data')
 reference.dir <- here::here('reference')
 r_code.dir <- here::here('R')
 ```
-
 ## figure_export
 ```{r}
 figure_single_column_width = unit(90, 'mm')
@@ -153,7 +151,6 @@ panel_height_1 = unit(170/3, 'mm')
 
 import::from(.directory = r_code.dir, .from = 'helper_analysisFunctions.R', save.manuscript.panel)
 ```
-
 ## analysis_const
 ```{r}
 chr_order <- c('chr1', 'chr2', 'chr3', 
@@ -207,7 +204,7 @@ names(te_alone_color_pal) <- te_alone_annotation_levels
 ```
 
 # meta_data_construction
-### reference meta data
+## reference meta data
 ```{r}
 
 ## reference meta data
@@ -266,7 +263,7 @@ if (!file.exists(file.path(meta_data.dir, 'reference_meta_data_df.rds'))) {
     readRDS(file.path(meta_data.dir, 'reference_meta_data_df.rds'))
 }
 ```
-### original sample metadata
+## original sample metadata
 ```{r}
 
 ## sample_meta_data
@@ -318,7 +315,7 @@ original_covid_meta_data <-
     ) * 1000) #convert to uL
 
 ```
-### discovery cohort metadata
+## discovery cohort metadata
 ```{r}
 discovery_meta_data <- read_csv(file.path(
   meta_data.dir,
@@ -332,7 +329,7 @@ colnames(discovery_meta_data) <-
   ), pattern = 'sample_sku_'), pattern = 'patient_'),
   pattern = '_at_collection')
 ```
-### external cohorts metadata
+## external cohorts metadata
 ```{r}
 
 gut_meta_data <-
@@ -382,7 +379,7 @@ npj_meta_data <-
   )) %>% 
   mutate(input_vol = 3000, dataset = 'precision_onc')
 ```
-### united metadata
+## united metadata
 ```{r}
 df_list <-   setNames(
   list(gut_meta_data,
@@ -424,11 +421,27 @@ import::from(
 )
 
 
-ucsc.rmsk.salmon_quant <- load.tximeta.object.list('other_extData_ucsc_rmsk',
-                                                   output_data.dir = output_data.dir)
+internal_quant <- load.tximeta.object.list('full_resub',
+                                           output_data.dir = output_data.dir)
 
 
-ucsc.rmsk.salmon_quant <- parse.tximeta.quant.metadata(ucsc.rmsk.salmon_quant)
+internal_quant <-
+  parse.tximeta.quant.metadata(internal_quant)
+
+external_quant <-
+  load.tximeta.object.list('other_extData_ucsc_rmsk',
+                           output_data.dir = output_data.dir)
+
+
+external_quant <-
+  parse.tximeta.quant.metadata(external_quant)
+
+gut_quant <- load.tximeta.object.list('final_extData_ucsc_rmsk',
+                                      output_data.dir = output_data.dir)
+
+
+gut_quant <- parse.tximeta.quant.metadata(gut_quant)
+
 
 ```
 

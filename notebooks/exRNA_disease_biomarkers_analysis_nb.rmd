@@ -301,7 +301,8 @@ gut_meta_data <-
   read_csv(file.path(meta_data.dir, 'ext_meta_data', 'GSE133684_meta.txt')) %>%
   select(sample = Run,
          dataset = BioProject,
-         diagnosis = disease_state)
+         diagnosis = disease_state) %>% 
+  mutate(input_vol = 1000)
 
 elife_meta_data <-
   read_csv(file.path(meta_data.dir, 'ext_meta_data', 'GSE174302_meta.txt')) %>% 
@@ -316,7 +317,8 @@ elife_meta_data <-
     string = diagnosis,
     pattern = ' patient',
     replacement = ''
-  ))
+  )) %>% 
+  mutate(input_vol = 1000)
 
 npj_meta_data <- 
   read_csv(file.path(meta_data.dir, 'ext_meta_data', 'GSE182824_meta.txt')) %>% 

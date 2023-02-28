@@ -471,16 +471,24 @@ orig_panc_samples <-
   pull(sample)
 
 unknown_samples <-
-  internal_quant$ucsc_rmsk_quant$quant_meta %>% filter(grepl('^unknown', sample)) %>% pull(sample)
+  internal_quant$ucsc_rmsk_quant$quant_meta %>% 
+  filter(grepl('^unknown', sample)) %>% 
+  pull(sample)
 
 pitts_samples <-
-  internal_quant$ucsc_rmsk_quant$quant_meta %>% filter(grepl('^PH', sample)) %>% pull(sample)
+  internal_quant$ucsc_rmsk_quant$quant_meta %>% 
+  filter(grepl('^PH', sample)) %>% 
+  pull(sample)
 
 esoph_samples <-
-  internal_quant$ucsc_rmsk_quant$quant_meta %>% filter(grepl('^e', sample)) %>% pull(sample)
+  internal_quant$ucsc_rmsk_quant$quant_meta %>% 
+  filter(grepl('^e', sample)) %>% 
+  pull(sample)
 
 normal_samples <-
-  internal_quant$ucsc_rmsk_quant$quant_meta %>% filter(grepl('^n', sample)) %>% pull(sample)
+  internal_quant$ucsc_rmsk_quant$quant_meta %>% 
+  filter(grepl('^n', sample)) %>% 
+  pull(sample)
 
 stage_IandII_select_list <- 
   discovery_merge_meta_for_filt %>% 
@@ -498,6 +506,46 @@ stage_IV_select_list <-
   discovery_merge_meta_for_filt %>% 
     filter(!stage %in% c('IV', 'IV-B'),
            !grepl('^n', sample)) %>% 
+  pull(name)
+
+stage_IandII_select_list <- 
+  discovery_merge_meta_for_filt %>% 
+    filter(!stage %in% c('I-B', 'II-B', 'II'),
+           !grepl('^n', sample)) %>% 
+  pull(name)
+
+stage_III_select_list <- 
+  discovery_merge_meta_for_filt %>% 
+    filter(!stage %in% c('III'),
+           !grepl('^n', sample)) %>% 
+  pull(name)
+
+stage_IV_select_list <- 
+  discovery_merge_meta_for_filt %>% 
+    filter(!stage %in% c('IV', 'IV-B'),
+           !grepl('^n', sample)) %>% 
+  pull(name)
+
+preTx_select_list <-
+  discovery_merge_meta_for_filt %>%
+  filter(if_any(
+    c(
+      treatment_status_radiation_treatment_status,
+      treatment_status_resection_treatment_status
+    ),
+    ~ . != 'Pre Tx'
+  )) %>% 
+  pull(name)
+
+postTx_select_list <-
+  discovery_merge_meta_for_filt %>%
+  filter(if_all(
+    c(
+      treatment_status_radiation_treatment_status,
+      treatment_status_resection_treatment_status
+    ),
+    ~ . == 'Pre Tx'
+  )) %>% 
   pull(name)
 
 ucsc.rmsk.salmon_quant$original_data <-
@@ -518,34 +566,7 @@ ucsc.rmsk.salmon_quant$original_data <-
     )
   )
 
-stage_IandII_select_list <- 
-  discovery_merge_meta_for_filt %>% 
-    filter(!stage %in% c('I-B', 'II-B', 'II'),
-           !grepl('^n', sample)) %>% 
-  pull(name)
 
-stage_III_select_list <- 
-  discovery_merge_meta_for_filt %>% 
-    filter(!stage %in% c('III'),
-           !grepl('^n', sample)) %>% 
-  pull(name)
-
-stage_IV_select_list <- 
-  discovery_merge_meta_for_filt %>% 
-    filter(!stage %in% c('IV', 'IV-B'),
-           !grepl('^n', sample)) %>% 
-  pull(name)
-
-preRad_preRes_select_list <-
-  discovery_merge_meta_for_filt %>%
-  filter(if_any(
-    c(
-      treatment_status_radiation_treatment_status,
-      treatment_status_resection_treatment_status
-    ),
-    ~ . != 'Pre Tx'
-  )) %>% 
-  pull(name)
 
 
 ucsc.rmsk.salmon_quant$ucsc_rmsk_quant <-

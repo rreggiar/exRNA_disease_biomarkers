@@ -497,41 +497,42 @@ normal_samples <-
 stage_IandII_select_list <- 
   discovery_merge_meta_for_filt %>% 
     filter(!stage %in% c('I-B', 'II-B', 'II'),
-           !grepl('^n', sample)) %>% 
+           diagnosis == 'panc') %>% 
   pull(name)
 
 stage_III_select_list <- 
   discovery_merge_meta_for_filt %>% 
     filter(!stage %in% c('III'),
-           !grepl('^n', sample)) %>% 
+           diagnosis == 'panc') %>% 
   pull(name)
 
 stage_IV_select_list <- 
   discovery_merge_meta_for_filt %>% 
     filter(!stage %in% c('IV', 'IV-B'),
-           !grepl('^n', sample)) %>% 
+           diagnosis == 'panc') %>% 
   pull(name)
 
 stage_IandII_select_list <- 
   discovery_merge_meta_for_filt %>% 
     filter(!stage %in% c('I-B', 'II-B', 'II'),
-           !grepl('^n', sample)) %>% 
+           diagnosis == 'panc') %>% 
   pull(name)
 
 stage_III_select_list <- 
   discovery_merge_meta_for_filt %>% 
     filter(!stage %in% c('III'),
-           !grepl('^n', sample)) %>% 
+           diagnosis == 'panc') %>% 
   pull(name)
 
 stage_IV_select_list <- 
   discovery_merge_meta_for_filt %>% 
     filter(!stage %in% c('IV', 'IV-B'),
-           !grepl('^n', sample)) %>% 
+           diagnosis == 'panc') %>% 
   pull(name)
 
 preTx_select_list <-
   discovery_merge_meta_for_filt %>%
+  filter(diagnosis == 'panc') %>% 
   filter(if_any(
     c(
       treatment_status_radiation_treatment_status,
@@ -543,6 +544,7 @@ preTx_select_list <-
 
 postTx_select_list <-
   discovery_merge_meta_for_filt %>%
+  filter(diagnosis == 'panc') %>% 
   filter(if_all(
     c(
       treatment_status_radiation_treatment_status,
@@ -633,57 +635,68 @@ internal_quant$stage_IandII <-
     internal_quant$ucsc_rmsk_quant,
     filter_list = c(
       qc_fail_names,
-      covid_samples,
+      orig_covid_samples,
       orig_panc_samples,
       unknown_samples,
       pitts_samples,
       esoph_samples,
-      stage_IandII_select_list,
+      stage_IandII_select_list
     )
   )
 
-ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$stage_III <-
+internal_quant$stage_III <-
   subset.tximeta.se(
-    ucsc.rmsk.salmon_quant$ucsc_rmsk_quant,
+    internal_quant$ucsc_rmsk_quant,
     filter_list = c(
-      qc_fails,
-      covid_samples,
+      qc_fail_names,
+      orig_covid_samples,
       orig_panc_samples,
       unknown_samples,
       pitts_samples,
       esoph_samples,
-      stage_III_select_list,
-      'e14_S32.salmon.out' # outlier
+      stage_III_select_list
     )
   )
 
-ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$stage_IV <-
+internal_quant$stage_IV <-
   subset.tximeta.se(
-    ucsc.rmsk.salmon_quant$ucsc_rmsk_quant,
+    internal_quant$ucsc_rmsk_quant,
     filter_list = c(
-      qc_fails,
-      covid_samples,
+      qc_fail_names,
+      orig_covid_samples,
       orig_panc_samples,
       unknown_samples,
       pitts_samples,
       esoph_samples,
-      stage_IV_select_list,
-      'e14_S32.salmon.out' # outlier
+      stage_IV_select_list
     )
   )
 
-ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$preRad_preRes <-
+internal_quant$preTx <-
   subset.tximeta.se(
-    ucsc.rmsk.salmon_quant$ucsc_rmsk_quant,
+    internal_quant$ucsc_rmsk_quant,
     filter_list = c(
-      qc_fails,
-      covid_samples,
+      qc_fail_names,
+      orig_covid_samples,
       orig_panc_samples,
       unknown_samples,
       pitts_samples,
       esoph_samples,
-      preRad_preRes_select_list,
-      'e14_S32.salmon.out' # outlier
+      preTx_select_list
+    )
+  )
+
+internal_quant$postTx <-
+  subset.tximeta.se(
+    internal_quant$ucsc_rmsk_quant,
+    filter_list = c(
+      qc_fail_names,
+      orig_covid_samples,
+      orig_panc_samples,
+      unknown_samples,
+      pitts_samples,
+      esoph_samples,
+      postTx_select_list
     )
   )
 

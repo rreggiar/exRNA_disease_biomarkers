@@ -530,6 +530,16 @@ stage_IV_select_list <-
            diagnosis == 'panc') %>% 
   pull(name)
 
+discovery_male_select_list <-
+  discovery_merge_meta_for_filt %>% 
+    filter(gender != 'Male' & diagnosis %in% c('panc', 'normal')) %>% 
+  pull(name)
+  
+discovery_female_select_list <-
+  discovery_merge_meta_for_filt %>% 
+    filter(gender != 'Female' & diagnosis %in% c('panc', 'normal')) %>% 
+  pull(name)
+
 preTx_select_list <-
   discovery_merge_meta_for_filt %>%
   filter(diagnosis == 'panc') %>% 
@@ -860,11 +870,7 @@ ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$quant_meta <-
       mutate(name = sample, sample = str_split_fixed(sample, '_G', 2)[, 1]),
     npj_meta_data,
     by = 'sample'
-  ) %>% 
-  dplyr::rename('sample' = name, 
-                'name' = sample,
-                'sample_sku_patient_age_at_collection' = age) %>% 
-  column_to_rownames('name')
+  ) 
 
 ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$stage_IandII$quant_meta <-
   merge(
@@ -1001,6 +1007,16 @@ import::from(.directory = r_code.dir,
 
 ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$preRad_preRes$deseq <- 
   run.de.seq.individual(input_se = ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$preRad_preRes,
+                        type = 'gxi',
+                        base_level = 'non-cancer',
+                        top_level = 'liver cancer',
+                        ref_type = 'ucsc.rmsk',
+                        dds_formula = 
+                          as.formula('~sample_sku_patient_age_at_collection+sex+diagnosis'))
+
+
+gut_quant$ucsc_rmsk_quant$deseq <- 
+  run.de.seq.individual(input_se = gut_quant$ucsc_rmsk_quant,
                         type = 'gxi',
                         base_level = 'non-cancer',
                         top_level = 'liver cancer',

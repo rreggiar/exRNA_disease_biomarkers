@@ -486,16 +486,16 @@ run.de.seq.individual <- function(type = 'gxi', base_level = 'ctrl',
   
   input_set_dds_norm_counts.df <- as.data.frame(counts(input_set_dds, normalized=T))
   
-  condition_aware_age_cor_filter <- 
-    input_set_dds_norm_counts.df %>% 
-    rownames_to_column('ensg') %>% 
-    gather(sample, count, -ensg) %>% 
-    merge(input_se$quant_meta %>% select(sample, sample_sku_patient_age_at_collection, diagnosis), by = 'sample') %>% 
-    group_by(diagnosis, ensg) %>% 
-    summarize(age_cor = cor(count, sample_sku_patient_age_at_collection, method = 'pearson')) %>% 
-    drop_na() %>% 
-    filter(abs(age_cor) >= 0.70) %>% 
-    spread(diagnosis, age_cor)
+  # condition_aware_age_cor_filter <- 
+  #   input_set_dds_norm_counts.df %>% 
+  #   rownames_to_column('ensg') %>% 
+  #   gather(sample, count, -ensg) %>% 
+  #   merge(input_se$quant_meta %>% select(sample, diagnosis), by = 'sample') %>% 
+  #   group_by(diagnosis, ensg) %>% 
+  #   summarize(age_cor = cor(count, sample_sku_patient_age_at_collection, method = 'pearson')) %>% 
+  #   drop_na() %>% 
+  #   filter(abs(age_cor) >= 0.70) %>% 
+  #   spread(diagnosis, age_cor)
   
   input_set_dds_vst_counts <- as.data.frame(assay(vst(input_set_dds, blind = F)))
   
@@ -543,7 +543,7 @@ run.de.seq.individual <- function(type = 'gxi', base_level = 'ctrl',
   } else { 
     
     message('ucsc.rmsk')
-    print(condition_aware_age_cor_filter)
+    # print(condition_aware_age_cor_filter)
     de_out <- 
       lfcShrink(input_set_dds, coef = coef_list[[1]]) %>% 
       as.data.frame() %>% 
@@ -557,7 +557,7 @@ run.de.seq.individual <- function(type = 'gxi', base_level = 'ctrl',
   
   lst('norm_counts.df' = input_set_dds_norm_counts.df,
       'vst_counts.df' = input_set_dds_vst_counts,
-      'age_filter.df' = condition_aware_age_cor_filter,
+      # 'age_filter.df' = condition_aware_age_cor_filter,
       'sex_filter.df' = gencode_sex_filter.df,
       'dds_object' = input_set_dds,
       'de_out' = de_out,

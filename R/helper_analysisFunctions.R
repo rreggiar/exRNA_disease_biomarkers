@@ -85,7 +85,7 @@ parse.tximeta.quant.metadata <- function(se_list, qc_data.dir = here::here('data
 
 	  colnames(salmon_meta_tmp) <- paste0('salmon_', colnames(salmon_meta_tmp))
 
-	  salmon_meta_tmp %>% mutate(sample = names) -> salmon_meta_tmp
+	  salmon_meta_tmp %>% mutate(sample = str_split_fixed(names, '[_S, _G]', 2)[, 1]) -> salmon_meta_tmp
 	  
 	  process_aware = F
 	  if(grepl('process.aware', project)) {process_aware = T}

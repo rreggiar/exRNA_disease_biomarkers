@@ -716,15 +716,13 @@ internal_quant$postTx <-
 ## external
 ```{r}
 merge(
-  external_quant$ucsc_rmsk_quant$quant_meta %>%
-      mutate(name = sample, sample = str_split_fixed(sample, '_G', 2)[, 1]),
+  external_quant$ucsc_rmsk_quant$quant_meta,
     npj_meta_data,
     by = 'sample'
   ) -> npj_merge_meta_for_filt
 
 merge(
-  external_quant$ucsc_rmsk_quant$quant_meta %>%
-      mutate(name = sample, sample = str_split_fixed(sample, '_G', 2)[, 1]),
+  external_quant$ucsc_rmsk_quant$quant_meta,
     elife_meta_data,
     by = 'sample'
   ) -> elife_merge_meta_for_filt
@@ -732,18 +730,22 @@ merge(
 npj_select_list <-
   filter(
     external_quant$ucsc_rmsk_quant$quant_meta,
-    !sample %in% npj_merge_meta_for_filt$name
+    !sample %in% npj_merge_meta_for_filt$sample
   ) %>% 
   pull(sample)
 
 elife_select_list <-
   filter(
     external_quant$ucsc_rmsk_quant$quant_meta,
-    !sample %in% elife_merge_meta_for_filt$name
+    !sample %in% elife_merge_meta_for_filt$sample
   ) %>% 
   pull(sample)
 
 external_quant$npj <-
+  subset.tximeta.se(external_quant$ucsc_rmsk_quant,
+                    filter_list = c(npj_select_list))
+
+external_quant$npj_liverCancer <-
   subset.tximeta.se(external_quant$ucsc_rmsk_quant,
                     filter_list = c(npj_select_list))
 
@@ -754,17 +756,16 @@ external_quant$elife <-
 ## gut
 ```{r}
 merge(
-  gut_quant$ucsc_rmsk_quant$quant_meta %>%
-      mutate(name = sample, sample = str_split_fixed(sample, '_G', 2)[, 1]),
+  gut_quant$ucsc_rmsk_quant$quant_meta,
     gut_meta_data,
     by = 'sample'
   ) -> gut_merge_meta_for_filt
 
 ```
 
-# quant meta rename
+# merge metadata
 ```{r}
-# internal_quant$original_data$quant_meta <-
+internal_quant$original_data$quant_meta <-
   merge(
     internal_quant$original_data$quant_meta,
     original_normal_meta_data,
@@ -773,50 +774,51 @@ merge(
 
 internal_quant$origCovid_normal$quant_meta <-
   merge(
-    internal_quant$origCovid_normal$quant_meta %>%
-      mutate(tmp = sample, sample = str_split_fixed(sample, '_S', 2)[, 1]),
-    origCovid_normal_meta_data,
+    internal_quant$origCovid_normal$quant_meta,
+    original_normal_meta_data,
     by = 'sample'
-  ) %>% mutate(name = sample, sample = tmp) %>% select(-tmp)
+  )
 
-ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$stage_IandII$quant_meta <-
+internal_quant$origPanc_normal$quant_meta <-
   merge(
-    ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$stage_IandII$quant_meta %>%
-      mutate(sample = str_split_fixed(sample, '_S', 2)[, 1]),
+    internal_quant$origCovid_normal$quant_meta,
+    original_normal_meta_data,
+    by = 'sample'
+  )
+
+internal_quant$panc_normal$quant_meta <-
+  merge(
+    internal_quant$panc_normal$quant_meta,
     discovery_meta_data,
     by = 'sample'
   )
 
-ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$stage_III$quant_meta <-
+internal_quant$esoph_normal$quant_meta <-
   merge(
-    ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$stage_III$quant_meta %>%
-      mutate(sample = str_split_fixed(sample, '_S', 2)[, 1]),
+    internal_quant$esoph_normal$quant_meta,
     discovery_meta_data,
     by = 'sample'
   )
 
-ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$stage_IV$quant_meta <-
+internal_quant$preTx$quant_meta <-
   merge(
-    ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$stage_IV$quant_meta %>%
-      mutate(sample = str_split_fixed(sample, '_S', 2)[, 1]),
+    internal_quant$preTx$quant_meta,
     discovery_meta_data,
     by = 'sample'
   )
 
-ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$preRad_preRes$quant_meta <-
+internal_quant$postTx$quant_meta <-
   merge(
-    ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$preRad_preRes$quant_meta %>%
-      mutate(sample = str_split_fixed(sample, '_S', 2)[, 1]),
+    internal_quant$postTx$quant_meta,
     discovery_meta_data,
     by = 'sample'
   )
 
 gut_quant$ucsc_rmsk_quant$quant_meta <- 
   merge(
-    gut_quant$ucsc_rmsk_quant$quant_meta %>%
-      mutate(name = str_split_fixed(sample, '_G', 2)[, 1]),
+    gut_quant$ucsc_rmsk_quant$quant_meta,
     gut_meta_data,
-    by.x = 'name', by.y = 'sample'
+    by = 'sample'
   )
 ```
 

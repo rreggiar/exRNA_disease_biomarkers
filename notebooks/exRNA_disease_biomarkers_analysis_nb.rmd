@@ -378,32 +378,24 @@ npj_meta_data <-
 ```
 ## united metadata
 ```{r}
-df_list <-   setNames(
-  list(gut_meta_data,
-       elife_meta_data,
-       npj_meta_data,
-       discovery_meta_data,
-       original_panc_meta_data,
-       original_covid_meta_data),
-  c('gut_meta_data',
-    'elife_meta_data',
-    'npj_meta_data',
-    'discovery_meta_data',
-    'original_panc_meta_data',
-    'original_covid_meta_data')
+import::from(.directory = r_code.dir, 
+             .from = 'helper_analysisFunctions.R', 
+             matching_rbind)
+
+united_metadata_df <- matching_rbind(
+  'gut_meta_data',
+  'elife_meta_data',
+  'npj_meta_data',
+  'discovery_meta_data',
+  'original_panc_meta_data',
+  'original_covid_meta_data'
 )
 
+origCovid_normal_meta_data <-
+  matching_rbind('original_covid_meta_data',
+                 'discovery_meta_data') %>% 
+  filter(diagnosis %in% c('covid', 'normal'))
 
-
-Reduce(function(x, y) {
-  intersect(x, names(y))
-}, df_list, init = names(df_list[[1]])) -> shared_columns
-
-lapply(df_list, function(df){
-  
-  select(df, all_of(shared_columns))
-  
-}) %>% bind_rows() %>% distinct() -> united_metadata_df
 
 ```
 
@@ -760,6 +752,67 @@ merge(
 
 ```
 
+# quant meta rename
+```{r}
+
+internal_quant$original_data$quant_meta <-
+  merge(
+    internal_quant$original_data$quant_meta %>%
+      mutate(tmp = sample, sample = str_split_fixed(sample, '_S', 2)[, 1]),
+    original_roster_names,
+    by = 'sample'
+  ) %>% mutate(sample = tmp) %>% select(-tmp)
+
+internal_quant$origCovid_normal$quant_meta <-
+  merge(
+    internal_quant$origCovid_normal$quant_meta %>%
+      mutate(tmp = sample, sample = str_split_fixed(sample, '_S', 2)[, 1]),
+    original_roster_names,
+    by = 'sample'
+  ) %>% mutate(sample = tmp) %>% select(-tmp)
+
+ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$stage_IandII$quant_meta <-
+  merge(
+    ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$stage_IandII$quant_meta %>%
+      mutate(sample = str_split_fixed(sample, '_S', 2)[, 1]),
+    discovery_meta_data,
+    by = 'sample'
+  )
+
+ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$stage_III$quant_meta <-
+  merge(
+    ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$stage_III$quant_meta %>%
+      mutate(sample = str_split_fixed(sample, '_S', 2)[, 1]),
+    discovery_meta_data,
+    by = 'sample'
+  )
+
+ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$stage_IV$quant_meta <-
+  merge(
+    ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$stage_IV$quant_meta %>%
+      mutate(sample = str_split_fixed(sample, '_S', 2)[, 1]),
+    discovery_meta_data,
+    by = 'sample'
+  )
+
+ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$preRad_preRes$quant_meta <-
+  merge(
+    ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$preRad_preRes$quant_meta %>%
+      mutate(sample = str_split_fixed(sample, '_S', 2)[, 1]),
+    discovery_meta_data,
+    by = 'sample'
+  )
+
+gut_quant$ucsc_rmsk_quant$quant_meta <- 
+  merge(
+    gut_quant$ucsc_rmsk_quant$quant_meta %>%
+      mutate(name = str_split_fixed(sample, '_G', 2)[, 1]),
+    gut_meta_data,
+    by.x = 'name', by.y = 'sample'
+  )
+```
+
+
 ## construct_analysis_sets
 ```{r}
 import::from(.directory = r_code.dir, 
@@ -864,53 +917,7 @@ import::from(.directory = r_code.dir,
 #   )
 
 
-ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$quant_meta <-
-  merge(
-    ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$quant_meta %>%
-      mutate(name = sample, sample = str_split_fixed(sample, '_G', 2)[, 1]),
-    npj_meta_data,
-    by = 'sample'
-  ) 
 
-ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$stage_IandII$quant_meta <-
-  merge(
-    ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$stage_IandII$quant_meta %>%
-      mutate(sample = str_split_fixed(sample, '_S', 2)[, 1]),
-    discovery_meta_data,
-    by = 'sample'
-  )
-
-ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$stage_III$quant_meta <-
-  merge(
-    ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$stage_III$quant_meta %>%
-      mutate(sample = str_split_fixed(sample, '_S', 2)[, 1]),
-    discovery_meta_data,
-    by = 'sample'
-  )
-
-ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$stage_IV$quant_meta <-
-  merge(
-    ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$stage_IV$quant_meta %>%
-      mutate(sample = str_split_fixed(sample, '_S', 2)[, 1]),
-    discovery_meta_data,
-    by = 'sample'
-  )
-
-ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$preRad_preRes$quant_meta <-
-  merge(
-    ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$preRad_preRes$quant_meta %>%
-      mutate(sample = str_split_fixed(sample, '_S', 2)[, 1]),
-    discovery_meta_data,
-    by = 'sample'
-  )
-
-gut_quant$ucsc_rmsk_quant$quant_meta <- 
-  merge(
-    gut_quant$ucsc_rmsk_quant$quant_meta %>%
-      mutate(name = str_split_fixed(sample, '_G', 2)[, 1]),
-    gut_meta_data,
-    by.x = 'name', by.y = 'sample'
-  )
 
 ```
 

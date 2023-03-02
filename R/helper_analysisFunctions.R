@@ -796,3 +796,24 @@ load.in.tcga.counts <- function(type) {
   vroom::vroom_write(x = luad_tidy_counts.df, file = file.path(meta_data.dir, 'LUAD_tidy_counts_gxi.tsv'))
   
 }
+
+matching_rbind <- function(x, y, ...) {
+  # df_list <- list( !!x, eval(y))
+  df_list <- lapply(list(x, y, ...), function(name){
+    if(!is.null(name)){
+      return(get(name))
+    }
+  })
+  
+  names(df_list) <- c(x, y, ...)[!is.na(c(x, y, ...))]
+  
+  Reduce(function(x, y) {
+    intersect(x, names(y))
+  }, df_list, init = names(df_list[[1]])) -> shared_columns
+  
+  lapply(df_list, function(df) {
+    select(df, all_of(shared_columns))
+    
+  }) %>% bind_rows() %>% distinct()
+  
+}

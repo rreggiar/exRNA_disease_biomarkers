@@ -61,11 +61,14 @@ load.tximeta.object.list <- function(reference, output_data.dir = here::here('da
 	)
 }
 
-parse.tximeta.quant.metadata <- function(se_list, qc_data.dir = here::here('data/output_data/rna_qc')) { 
+parse.tximeta.quant.metadata <- function(se_list, 
+                                         qc_data.dir = here::here('data/output_data/rna_qc'),
+                                         extra_merge = NULL) { 
   
   import::here(.from = "purrr", imap) 
   import::here(.from = "tibble", lst)
   import::here(.from = 'readr', read_tsv)
+  # import::here(.from = 'SummarizedExperiment', colData)
   
   salmon_quant_cols_of_interest <-
     c("frag_length_mean", "frag_length_mean", "frag_length_sd",
@@ -91,12 +94,24 @@ parse.tximeta.quant.metadata <- function(se_list, qc_data.dir = here::here('data
 	                           str_split_fixed(names, '_S', 2)[, 1])
 	           )-> salmon_meta_tmp
 	  
+	  if(!is.null(extra_merge)){
+	    salmon_meta_tmp %>% 
+	      merge(extra_merge, by = 'sample', all.x = T) %>% 
+	      mutate(sample = ifelse(is.na(name), 
+	                             sample,
+	                             name)) %>% 
+	      select(-name) -> salmon_meta_tmp
+	  }
+	  
 	  process_aware = F
 	  if(grepl('process.aware', project)) {process_aware = T}
 
 	  project <- sub('_salmon', '', project)
 	  project <- sub('_ucsc.rmsk.salmon', '', project)
 	  project <- sub('_process.aware.salmon', '', project)
+	  
+	  rownames(SummarizedExperiment::colData(data$txi)) <- salmon_meta_tmp$sample
+	  rownames(SummarizedExperiment::colData(data$gxi)) <- salmon_meta_tmp$sample
 	  
 # 	  star_meta_tmp_path <- Sys.glob(file.path(qc_data.dir,
 #     					                     'star',
@@ -471,8 +486,8 @@ run.de.seq.individual <- function(type = 'gxi', base_level = 'ctrl',
     
   }
   
-  colnames(count_matrix.df) <- 
-    str_split_fixed(colnames(count_matrix.df), '_S', 2)[,1]
+  colnames(count_matrix.df) <-
+    rownames(scaled_quant_meta_for_de.df)
   
   print(colnames(count_matrix.df))
   print(rownames(scaled_quant_meta_for_de.df))

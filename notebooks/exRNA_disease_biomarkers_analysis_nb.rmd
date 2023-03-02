@@ -391,6 +391,11 @@ united_metadata_df <- matching_rbind(
   'original_covid_meta_data'
 )
 
+original_normal_meta_data <- 
+  matching_rbind('original_covid_meta_data',
+                 'original_panc_meta_data',
+                 'discovery_meta_data')
+
 origCovid_normal_meta_data <-
   matching_rbind('original_covid_meta_data',
                  'discovery_meta_data') %>% 
@@ -454,28 +459,21 @@ import::from(.directory = r_code.dir,
              subset.tximeta.se)
 
 ## create merged df that matches colData names to metaData names
-merge(
-  internal_quant$ucsc_rmsk_quant$quant_meta %>%
-      mutate(name = sample, sample = str_split_fixed(sample, '_S', 2)[, 1]),
-    discovery_meta_data,
-    by = 'sample'
-  ) -> discovery_merge_meta_for_filt
+merge(internal_quant$ucsc_rmsk_quant$quant_meta,
+      discovery_meta_data,
+      by = 'sample') -> discovery_merge_meta_for_filt
 
 qc_fails <- c('panc.6.2.5', 'panc.7.2.5', 'panc.9.2.5', 
               'panc.10.2.5', 'covid.427.0.80', 'covid.381.0.80')
 
-original_roster_names %>% 
-  filter(name %in% qc_fails) %>% 
-  pull(name) ->qc_fail_names
-
 orig_covid_samples <-
   internal_quant$ucsc_rmsk_quant$quant_meta %>% 
-  filter(grepl('^HMN', sample)) %>% 
+  filter(grepl('^covid', sample)) %>% 
   pull(sample)
 
 orig_panc_samples <-
   internal_quant$ucsc_rmsk_quant$quant_meta %>%
-  filter(grepl('panc|BioIVT|bioIVT', sample)) %>%
+  filter(grepl('^panc', sample)) %>%
   pull(sample)
 
 unknown_samples <-
@@ -502,47 +500,47 @@ stage_IandII_select_list <-
   discovery_merge_meta_for_filt %>% 
     filter(!stage %in% c('I-B', 'II-B', 'II'),
            diagnosis == 'panc') %>% 
-  pull(name)
+  pull(sample)
 
 stage_III_select_list <- 
   discovery_merge_meta_for_filt %>% 
     filter(!stage %in% c('III'),
            diagnosis == 'panc') %>% 
-  pull(name)
+  pull(sample)
 
 stage_IV_select_list <- 
   discovery_merge_meta_for_filt %>% 
     filter(!stage %in% c('IV', 'IV-B'),
            diagnosis == 'panc') %>% 
-  pull(name)
+  pull(sample)
 
 stage_IandII_select_list <- 
   discovery_merge_meta_for_filt %>% 
     filter(!stage %in% c('I-B', 'II-B', 'II'),
            diagnosis == 'panc') %>% 
-  pull(name)
+  pull(sample)
 
 stage_III_select_list <- 
   discovery_merge_meta_for_filt %>% 
     filter(!stage %in% c('III'),
            diagnosis == 'panc') %>% 
-  pull(name)
+  pull(sample)
 
 stage_IV_select_list <- 
   discovery_merge_meta_for_filt %>% 
     filter(!stage %in% c('IV', 'IV-B'),
            diagnosis == 'panc') %>% 
-  pull(name)
+  pull(sample)
 
 discovery_male_select_list <-
   discovery_merge_meta_for_filt %>% 
     filter(gender != 'Male' & diagnosis %in% c('panc', 'normal')) %>% 
-  pull(name)
+  pull(sample)
   
 discovery_female_select_list <-
   discovery_merge_meta_for_filt %>% 
     filter(gender != 'Female' & diagnosis %in% c('panc', 'normal')) %>% 
-  pull(name)
+  pull(sample)
 
 preTx_select_list <-
   discovery_merge_meta_for_filt %>%
@@ -554,7 +552,7 @@ preTx_select_list <-
     ),
     ~ . != 'Pre Tx'
   )) %>% 
-  pull(name)
+  pull(sample)
 
 postTx_select_list <-
   discovery_merge_meta_for_filt %>%
@@ -566,13 +564,13 @@ postTx_select_list <-
     ),
     ~ . == 'Pre Tx'
   )) %>% 
-  pull(name)
+  pull(sample)
 
 internal_quant$original_data <-
   subset.tximeta.se(
     internal_quant$ucsc_rmsk_quant,
     filter_list = c(
-      qc_fail_names,
+      qc_fails,
       normal_samples,
       unknown_samples,
       esoph_samples,
@@ -587,7 +585,7 @@ internal_quant$origCovid_normal <-
   subset.tximeta.se(
     internal_quant$ucsc_rmsk_quant,
     filter_list = c(
-      qc_fail_names,
+      qc_fails,
       unknown_samples,
       esoph_samples,
       stage_IandII_select_list,
@@ -602,7 +600,7 @@ internal_quant$origPanc_normal <-
   subset.tximeta.se(
     internal_quant$ucsc_rmsk_quant,
     filter_list = c(
-      qc_fail_names,
+      qc_fails,
       unknown_samples,
       esoph_samples,
       stage_IandII_select_list,
@@ -618,7 +616,7 @@ internal_quant$panc_normal <-
   subset.tximeta.se(
     internal_quant$ucsc_rmsk_quant,
     filter_list = c(
-      qc_fail_names,
+      qc_fails,
       orig_panc_samples,
       unknown_samples,
       pitts_samples,
@@ -632,7 +630,7 @@ internal_quant$esoph_normal <-
   subset.tximeta.se(
     internal_quant$ucsc_rmsk_quant,
     filter_list = c(
-      qc_fail_names,
+      qc_fails,
       orig_panc_samples,
       unknown_samples,
       pitts_samples,
@@ -648,7 +646,7 @@ internal_quant$stage_IandII <-
   subset.tximeta.se(
     internal_quant$ucsc_rmsk_quant,
     filter_list = c(
-      qc_fail_names,
+      qc_fails,
       orig_covid_samples,
       orig_panc_samples,
       unknown_samples,
@@ -662,7 +660,7 @@ internal_quant$stage_III <-
   subset.tximeta.se(
     internal_quant$ucsc_rmsk_quant,
     filter_list = c(
-      qc_fail_names,
+      qc_fails,
       orig_covid_samples,
       orig_panc_samples,
       unknown_samples,
@@ -676,7 +674,7 @@ internal_quant$stage_IV <-
   subset.tximeta.se(
     internal_quant$ucsc_rmsk_quant,
     filter_list = c(
-      qc_fail_names,
+      qc_fails,
       orig_covid_samples,
       orig_panc_samples,
       unknown_samples,
@@ -690,7 +688,7 @@ internal_quant$preTx <-
   subset.tximeta.se(
     internal_quant$ucsc_rmsk_quant,
     filter_list = c(
-      qc_fail_names,
+      qc_fails,
       orig_covid_samples,
       orig_panc_samples,
       unknown_samples,
@@ -704,7 +702,7 @@ internal_quant$postTx <-
   subset.tximeta.se(
     internal_quant$ucsc_rmsk_quant,
     filter_list = c(
-      qc_fail_names,
+      qc_fails,
       orig_covid_samples,
       orig_panc_samples,
       unknown_samples,
@@ -766,13 +764,12 @@ merge(
 
 # quant meta rename
 ```{r}
-internal_quant$original_data$quant_meta <-
+# internal_quant$original_data$quant_meta <-
   merge(
-    internal_quant$original_data$quant_meta %>%
-      mutate(tmp = sample, sample = str_split_fixed(sample, '_S', 2)[, 1]),
-    original_roster_names,
+    internal_quant$original_data$quant_meta,
+    original_normal_meta_data,
     by = 'sample'
-  ) %>% mutate(sample = tmp) %>% select(-tmp)
+  )
 
 internal_quant$origCovid_normal$quant_meta <-
   merge(

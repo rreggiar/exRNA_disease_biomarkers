@@ -396,6 +396,11 @@ origCovid_normal_meta_data <-
                  'discovery_meta_data') %>% 
   filter(diagnosis %in% c('covid', 'normal'))
 
+origCovid_normal_meta_data <-
+  matching_rbind('original_covid_meta_data',
+                 'discovery_meta_data') %>% 
+  filter(diagnosis %in% c('covid', 'normal'))
+
 
 ```
 
@@ -417,6 +422,14 @@ internal_quant <- load.tximeta.object.list('full_resub',
 internal_quant <-
   parse.tximeta.quant.metadata(internal_quant)
 
+internal_quant$ucsc_rmsk_quant$quant_meta <- 
+  internal_quant$ucsc_rmsk_quant$quant_meta %>% 
+    merge(original_roster_names, by = 'sample', all.x = T) %>% 
+    mutate(sample = ifelse(is.na(name), 
+                           sample,
+                           name)) %>% 
+    select(-name)
+
 external_quant <-
   load.tximeta.object.list('other_extData_ucsc_rmsk',
                            output_data.dir = output_data.dir)
@@ -430,7 +443,6 @@ gut_quant <- load.tximeta.object.list('final_extData_ucsc_rmsk',
 
 
 gut_quant <- parse.tximeta.quant.metadata(gut_quant)
-
 
 ```
 
@@ -754,7 +766,6 @@ merge(
 
 # quant meta rename
 ```{r}
-
 internal_quant$original_data$quant_meta <-
   merge(
     internal_quant$original_data$quant_meta %>%
@@ -767,9 +778,9 @@ internal_quant$origCovid_normal$quant_meta <-
   merge(
     internal_quant$origCovid_normal$quant_meta %>%
       mutate(tmp = sample, sample = str_split_fixed(sample, '_S', 2)[, 1]),
-    original_roster_names,
+    origCovid_normal_meta_data,
     by = 'sample'
-  ) %>% mutate(sample = tmp) %>% select(-tmp)
+  ) %>% mutate(name = sample, sample = tmp) %>% select(-tmp)
 
 ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$stage_IandII$quant_meta <-
   merge(

@@ -852,6 +852,35 @@ external_quant$elife$quant_meta <-
 import::from(.directory = r_code.dir, 
              .from = 'helper_analysisFunctions.R', 
              build.analysis.set)
+
+
+
+rbind(
+  internal_quant$ucsc_rmsk_quant$quant_meta,
+  external_quant$ucsc_rmsk_quant$quant_meta,
+  gut_quant$ucsc_rmsk_quant$quant_meta[, colnames(gut_quant$ucsc_rmsk_quant$quant_meta) %in% colnames(external_quant$ucsc_rmsk_quant$quant_meta)]
+) -> united_quant_meta
+
+
+united_quant_meta %>% 
+  merge(united_metadata_df, by = 'sample') -> united_quant_meta
+
+united_gxi_tmp <-
+      SparseSummarizedExperiment::cbind(internal_quant$ucsc_rmsk_quant$gxi,
+                                        external_quant$ucsc_rmsk_quant$gxi)
+
+united_gxi <-
+      SparseSummarizedExperiment::cbind(united_gxi_tmp,
+                                        gut_quant$ucsc_rmsk_quant$gxi)
+
+rm(united_gxi_tmp)
+
+
+meta_analysis_set <- 
+  build.analysis.set(se_list = internal_quant,
+                     se_1 = 'ucsc.rmsk.quant',
+                     analysis_set_2 = external_quant$ucsc_rmsk_quant,
+                     sample_meta_in = united_metadata_df)
 ##
 # salmon_quant$analysis_set$panc_ctrl <- 
 #   build.analysis.set(se_list = salmon_quant, 
@@ -906,53 +935,6 @@ import::from(.directory = r_code.dir,
 #                        se_1 = 'bioIvt_panc_process.aware.salmon', 
 #                        analysis_set_2 = process.aware.salmon_quant$analysis_set$covid_ctrl,
 #                        sample_meta_in = sample_meta_data$`2022.01.14_combined_meta_data.csv`)
-# sample_meta_data$`2022.01.14_combined_meta_data.csv` %>%
-#   select(
-#     'sample' = patient,
-#     'sample_sku_patient_gender' = sex,
-#     'sample_sku_patient_age_at_collection' = age,
-#     'diagnosis' = condition
-#   ) %>%
-#   mutate(tmp = sample,
-#          diagnosis = ifelse(diagnosis == 'ctrl', 'normal', diagnosis)) %>%
-#   mutate(input_vol = as.numeric(
-#       str_split_fixed(
-#       string = str_split_fixed(string = tmp, pattern = '[.]', n = 2)[,2],
-#       pattern = '[.]',
-#       n = 2)[,2]
-#     ) * 1000
-#   ) %>%
-#   select(-tmp) %>%
-#   rbind(discovery_meta_data %>%
-#           select(
-#             sample,
-#             sample_sku_patient_gender,
-#             sample_sku_patient_age_at_collection,
-#             diagnosis,
-#             input_vol)) -> combined_meta_data
-# 
-# ucsc.rmsk.salmon_quant$original_data$quant_meta <-
-#   ucsc.rmsk.salmon_quant$original_data$quant_meta %>%
-#     mutate(tmp = sample,
-#            sample = str_split_fixed(sample, '_S', 2)[, 1]) %>%
-#     merge(original_roster_names, by = 'sample', all.x = T) %>%
-#     mutate(sample = ifelse(is.na(name), sample, name)) %>%
-#     mutate(dataset = ifelse(is.na(name), 'discovery', 'original')) %>%
-#     select(-name) %>%
-#     merge(combined_meta_data, by = 'sample') %>% 
-#     mutate(sample = str_split_fixed(tmp, '_S', 2)[, 1])
-# 
-# ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$quant_meta <-
-#   merge(
-#     ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$quant_meta %>%
-#       mutate(sample = str_split_fixed(sample, '_S', 2)[, 1]),
-#     discovery_meta_data,
-#     by = 'sample'
-#   )
-
-
-
-
 ```
 
 ## save memory

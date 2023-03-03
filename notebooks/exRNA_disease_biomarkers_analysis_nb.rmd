@@ -1077,86 +1077,47 @@ external_quant$elife$deseq <-
 
 ## calculate feature entropy
 ```{r}
-internal_quant$panc_normal$deseq$norm_counts.df %>% 
-  rownames_to_column('gene') %>% 
-  # filter(gene %in% reference_meta_data$ucsc_rmsk_insert_info.df$gene) %>%
-  filter(gene %in% reference_meta_data$gencode_lncRNA_gene_names.df$ensg) %>%
-  mutate(across(where(is.numeric), ~.x/sum(.x))) %>% 
-  pivot_longer(names_to = 'sample', values_to = 'frequency', cols = -gene) %>% 
-  group_by(sample) %>% 
-  filter(frequency > 0) %>% 
-  summarize(entropy = -sum((frequency)*log2(frequency))) %>% 
-  merge(discovery_meta_data, by = 'sample') %>% 
-  # ggplot(aes(diagnosis, entropy)) + 
-  # geom_boxplot(fill = NA) +
-  # geom_jitter(shape = 21)
-  ggplot(aes(entropy, fill = diagnosis)) + 
-  geom_density(alpha = 0.3)
-
-internal_quant$origPanc_normal$deseq$norm_counts.df %>% 
-  rownames_to_column('gene') %>% 
-  # filter(gene %in% reference_meta_data$ucsc_rmsk_insert_info.df$gene) %>%
-  filter(gene %in% reference_meta_data$gencode_lncRNA_gene_names.df$ensg) %>%
-  mutate(across(where(is.numeric), ~.x/sum(.x))) %>% 
-  pivot_longer(names_to = 'sample', values_to = 'frequency', cols = -gene) %>% 
-  group_by(sample) %>% 
-  filter(frequency > 0) %>% 
-  summarize(entropy = -sum((frequency)*log2(frequency))) %>% 
-  merge(original_normal_meta_data, by = 'sample') %>% 
-  # ggplot(aes(diagnosis, entropy)) + 
-  # geom_boxplot(fill = NA) +
-  # geom_jitter(shape = 21)
-  ggplot(aes(entropy, fill = diagnosis)) + 
-  geom_density(alpha = 0.3)
 
 
-external_quant$elife$deseq$norm_counts.df %>% 
+calc_entropy <- function(norm_counts.df, meta_data, grouping_level) {
+  
+  norm_counts.df %>% 
   rownames_to_column('gene') %>% 
-  # filter(gene %in% reference_meta_data$ucsc_rmsk_insert_info.df$gene) %>%
-  filter(gene %in% reference_meta_data$gencode_lncRNA_gene_names.df$ensg) %>%
-  mutate(across(where(is.numeric), ~.x/sum(.x))) %>% 
-  pivot_longer(names_to = 'sample', values_to = 'frequency', cols = -gene) %>% 
-  group_by(sample) %>% 
-  filter(frequency > 0) %>% 
-  summarize(entropy = -sum((frequency)*log2(frequency))) %>% 
-  merge(elife_meta_data, by = 'sample') %>% 
-  # ggplot(aes(diagnosis, entropy)) + 
+  merge(reference_meta_data$ucsc_rmsk_insert_info.df, by = 'gene', all.x = T) %>% 
+  mutate(family = ifelse(gene %in% reference_meta_data$gencode_lncRNA_gene_names.df$ensg,
+                         'GENCODE_lncRNA', family),
+         family = ifelse(is.na(family), 'GENCODE_coding', family),
+         clade = ifelse(grepl('GENCODE', family), family, clade),
+         type = ifelse(grepl('GENCODE',family), 'GENCODE', 'TE')) %>% 
+  group_by(!! sym(grouping_level)) %>% 
+  summarize(across(where(is.numeric), ~.x/sum(.x))) %>% 
+  pivot_longer(names_to = 'sample', values_to = 'frequency', cols = where(is.numeric)) %>% 
+  filter(frequency > 0) %>%
+  group_by(sample, !! sym(grouping_level)) %>% 
+  summarize(entropy = -sum((frequency)*log2(frequency))) %>%
+  merge(meta_data, by = 'sample')
+  # ggplot(aes(diagnosis, entropy)) +
   # geom_boxplot(fill = NA) +
-  # geom_jitter(shape = 21)
-  ggplot(aes(entropy, fill = diagnosis)) + 
-  geom_density(alpha = 0.3)
+  # geom_jitter(shape = 21) +
+  # # ggplot(aes(entropy, fill = diagnosis)) +
+  # # geom_density(alpha = 0.3) +
+  # facet_wrap(~clade)
+  
+  
+}
 
-external_quant$npj$deseq$norm_counts.df %>% 
-  rownames_to_column('gene') %>% 
-  # filter(gene %in% reference_meta_data$ucsc_rmsk_insert_info.df$gene) %>%
-  filter(gene %in% reference_meta_data$gencode_lncRNA_gene_names.df$ensg) %>%
-  mutate(across(where(is.numeric), ~.x/sum(.x))) %>% 
-  pivot_longer(names_to = 'sample', values_to = 'frequency', cols = -gene) %>% 
-  group_by(sample) %>% 
-  filter(frequency > 0) %>% 
-  summarize(entropy = -sum((frequency)*log2(frequency))) %>% 
-  merge(npj_meta_data, by = 'sample') %>% 
-  # ggplot(aes(diagnosis, entropy)) + 
-  # geom_boxplot(fill = NA) +
-  # geom_jitter(shape = 21)
-  ggplot(aes(entropy, fill = diagnosis)) + 
-  geom_density(alpha = 0.3)
+calc_entropy(
+  external_quant$npj$deseq$norm_counts.df,
+  npj_meta_data,
+  grouping_level = 'type'
+) %>%
+  ggplot(aes(diagnosis, entropy)) +
+  geom_boxplot(fill = NA) +
+  geom_jitter(shape = 21) +
+  # ggplot(aes(entropy, fill = diagnosis)) +
+  # geom_density(alpha = 0.3) +
+  facet_wrap(~ type)
 
-gut_quant$ucsc_rmsk_quant$deseq$norm_counts.df %>% 
-  rownames_to_column('gene') %>% 
-  filter(gene %in% reference_meta_data$ucsc_rmsk_insert_info.df$gene) %>%
-  # filter(gene %in% reference_meta_data$gencode_lncRNA_gene_names.df$ensg) %>%
-  mutate(across(where(is.numeric), ~.x/sum(.x))) %>% 
-  pivot_longer(names_to = 'sample', values_to = 'frequency', cols = -gene) %>% 
-  group_by(sample) %>% 
-  filter(frequency > 0) %>% 
-  summarize(entropy = -sum((frequency)*log2(frequency))) %>% 
-  merge(gut_meta_data, by = 'sample') %>% 
-  # ggplot(aes(diagnosis, entropy)) + 
-  # geom_boxplot(fill = NA) +
-  # geom_jitter(shape = 21)
-  ggplot(aes(entropy, fill = diagnosis)) + 
-  geom_density(alpha = 0.3)
 ```
 
 

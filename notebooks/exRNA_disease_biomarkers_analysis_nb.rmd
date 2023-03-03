@@ -1160,14 +1160,14 @@ pca_corr_out.df <-
   extract.meta.pca.correlates(pca.out = pca.out)
 
 
-uwot::umap(pca_tmp_in_zero_sd, n_neighbors = 10, pca = 100) -> umap_out
+uwot::umap(pca_tmp_in_zero_sd, n_neighbors = 20, pca = 100) -> umap_out
 
 umap_out %>% 
   as.data.frame() %>% 
   rownames_to_column('sample') %>% 
   merge(united_analysis_set$deseq$scaled_quant_meta_for_de.df %>% rownames_to_column('sample'), by = 'sample') %>% 
   ggplot(aes(V1, V2,
-             color = diagnosis)) +
+             color = dataset)) +
   # scale_shape_manual(values = c(21)) +
   geom_point(size = txt.mm_to_pts(0.8), aes(fill = after_scale(alpha(color, 0.3))), shape = 21)
  

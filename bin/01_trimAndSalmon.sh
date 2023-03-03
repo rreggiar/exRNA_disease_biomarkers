@@ -24,6 +24,8 @@ for inputDir in "$sampleDir"/*; do
 
 	set -x 
 
+	echo "$inputDir"
+
 	./01a_trimmomaticRun.sh "$inputDir" "$adapterChoice"
 
 	./01b_salmonRun.sh "$inputDir" "$salmonIndex" "$dateStamp"
@@ -40,4 +42,4 @@ for inputDir in "$sampleDir"/*; do
 
 done
 
-./01c_fastqQualityCheck.sh "$sampleDir" "$qc_output"
+#./01c_fastqQualityCheck.sh "$sampleDir" "$qc_output"

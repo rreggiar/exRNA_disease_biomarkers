@@ -1109,14 +1109,14 @@ calc_entropy <- function(norm_counts.df, meta_data, grouping_level) {
 calc_entropy(
   external_quant$npj$deseq$norm_counts.df,
   npj_meta_data,
-  grouping_level = 'type'
+  grouping_level = 'clade'
 ) %>%
   ggplot(aes(diagnosis, entropy)) +
   geom_boxplot(fill = NA) +
   geom_jitter(shape = 21) +
   # ggplot(aes(entropy, fill = diagnosis)) +
   # geom_density(alpha = 0.3) +
-  facet_wrap(~ type)
+  facet_wrap(~ clade)
 
 ```
 

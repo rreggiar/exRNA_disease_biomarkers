@@ -572,6 +572,16 @@ internal_quant$original_data <-
     )
   )
 
+internal_quant$filtered_data <-
+  subset.tximeta.se(
+    internal_quant$ucsc_rmsk_quant,
+    filter_list = c(
+      qc_fails,
+      unknown_samples,
+      pitts_samples
+    )
+  )
+
 internal_quant$origCovid_normal <-
   subset.tximeta.se(
     internal_quant$ucsc_rmsk_quant,
@@ -854,33 +864,36 @@ import::from(.directory = r_code.dir,
              build.analysis.set)
 
 
+united_analysis_set <- list()
 
 rbind(
-  internal_quant$ucsc_rmsk_quant$quant_meta,
-  external_quant$ucsc_rmsk_quant$quant_meta,
-  gut_quant$ucsc_rmsk_quant$quant_meta[, colnames(gut_quant$ucsc_rmsk_quant$quant_meta) %in% colnames(external_quant$ucsc_rmsk_quant$quant_meta)]
+  internal_quant$filtered_data$quant_meta,
+  external_quant$elife$quant_meta %>% select(sample, contains('salmon')),
+  external_quant$npj$quant_meta %>% select(sample, contains('salmon')),
+  gut_quant$ucsc_rmsk_quant$quant_meta %>% select(sample, contains('salmon'))
 ) -> united_quant_meta
 
-
 united_quant_meta %>% 
-  merge(united_metadata_df, by = 'sample') -> united_quant_meta
+  merge(united_metadata_df, by = 'sample') -> united_analysis_set$quant_meta
+
+rm(united_quant_meta)
 
 united_gxi_tmp <-
-      SparseSummarizedExperiment::cbind(internal_quant$ucsc_rmsk_quant$gxi,
+      SparseSummarizedExperiment::cbind(internal_quant$filtered_data$gxi,
                                         external_quant$ucsc_rmsk_quant$gxi)
 
-united_gxi <-
+united_analysis_set$gxi <-
       SparseSummarizedExperiment::cbind(united_gxi_tmp,
                                         gut_quant$ucsc_rmsk_quant$gxi)
 
+united_analysis_set$gxi <-
+  SummarizedExperiment::subset(
+    united_analysis_set$gxi,
+    select = SummarizedExperiment::colData(united_analysis_set$gxi)$names %in% united_analysis_set$quant_meta$sample
+  )
+
 rm(united_gxi_tmp)
 
-
-meta_analysis_set <- 
-  build.analysis.set(se_list = internal_quant,
-                     se_1 = 'ucsc.rmsk.quant',
-                     analysis_set_2 = external_quant$ucsc_rmsk_quant,
-                     sample_meta_in = united_metadata_df)
 ##
 # salmon_quant$analysis_set$panc_ctrl <- 
 #   build.analysis.set(se_list = salmon_quant, 
@@ -1015,6 +1028,16 @@ external_quant$elife$deseq <-
                         dds_formula = 
                           as.formula('~age+gender+diagnosis'))
 
+united_analysis_set$deseq <- 
+  run.de.seq.individual(input_se = united_analysis_set,
+                        type = 'gxi',
+                        base_level = 'normal',
+                        top_level = 'PDAC',
+                        ref_type = 'ucsc.rmsk',
+                        dds_formula = 
+                          as.formula('~diagnosis'))
+
+
 # 
 # 
 # SummarizedExperiment::assay(process.aware.salmon_quant$analysis_set$panc_ctrl$gxi.split, 'unspliced')
@@ -1075,16 +1098,13 @@ import::from(.directory = r_code.dir,
 #                                     c('normal', 'panc'))
 
 disc_identity_color_pal <- setNames(RColorBrewer::brewer.pal(5, 'Dark2'),
-                                   unique(ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$quant_meta %>% pull(diagnosis)))
+                                   unique(united_analysis_set$quant_meta %>% pull(dataset)))
 
-# disc_pca <-
-#   run.pca(input_de = ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$deseq,
-#           identity_color_pal = disc_identity_color_pal)
 
-input_de <- ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$preRad_preRes$deseq
+input_de <- united_analysis_set$deseq
 
 input_de$vst_counts.df[!rownames(input_de$vst_counts.df) %in%
-                           c(ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$preRad_preRes$deseq$sex_filter.df$group_name), ] %>%
+                           c(united_analysis_set$deseq$sex_filter.df$group_name), ] %>%
     t() -> pca_tmp_in
 
 # input_de$vst_counts.df[rownames(input_de$vst_counts.df) %in% 
@@ -1106,12 +1126,12 @@ print(as.data.frame(pcs.props) %>%
         geom_col())
 
 pca.out <- as.data.frame(non_zero_pca$x) %>% 
-  rownames_to_column('name') %>% 
+  rownames_to_column('sample') %>% 
   # mutate(name = str_split_fixed(sample, '_G', 2)[, 1]) %>% 
   # merge(original_roster_names, by = 'sample', all.x = T) %>% 
   # mutate(sample = ifelse(is.na(name), sample, name)) %>% 
   # select(-name) %>% 
-  merge(input_de$scaled_quant_meta_for_de.df %>% rownames_to_column('name'), by = 'name')
+  merge(input_de$scaled_quant_meta_for_de.df %>% rownames_to_column('sample'), by = 'sample')
 
 
 pca.out.summary <- 
@@ -1125,17 +1145,32 @@ pca.out %>%
   #                       levels = c(NA, 'I-B', 'II', 'II-B', 'III', 'IV', 'IV-B'),
   #                       exclude = NULL)) %>% 
   ggplot(aes(PC1, PC2,
-             color = condition, shape = sex)) +
-  geom_point(size = txt.mm_to_pts(0.8), alpha = 0.8) +
-  scale_shape_manual(values = c(21,25)) +
+             color = diagnosis)) +
+  geom_point(size = txt.mm_to_pts(0.8), shape = 21, aes(fill = after_scale(alpha(color, 0.3)))) +
+  # scale_shape_manual(values = c(21,25)) +
   xlab(paste('PC1', round(cumsum(pcs.props)[1], digits = 3)*100,'%',sep = ' ')) +
   ylab(paste('PC2', round(cumsum(pcs.props)[2] - cumsum(pcs.props)[1], digits = 3)*100,'%',sep = ' ')) +
   geom_vline(xintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) +
   geom_hline(yintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) + 
-  scale_fill_grey(na.value = 'lightgreen', end = 0.25, start = 1)
+  scale_fill_grey(na.value = 'lightgreen', end = 0.25, start = 1) + 
+  xlim(-100,250) + 
+  ylim(-50,100)
 
 pca_corr_out.df <-
   extract.meta.pca.correlates(pca.out = pca.out)
+
+
+uwot::umap(pca_tmp_in_zero_sd, n_neighbors = 10, pca = 100) -> umap_out
+
+umap_out %>% 
+  as.data.frame() %>% 
+  rownames_to_column('sample') %>% 
+  merge(united_analysis_set$deseq$scaled_quant_meta_for_de.df %>% rownames_to_column('sample'), by = 'sample') %>% 
+  ggplot(aes(V1, V2,
+             color = diagnosis)) +
+  # scale_shape_manual(values = c(21)) +
+  geom_point(size = txt.mm_to_pts(0.8), aes(fill = after_scale(alpha(color, 0.3))), shape = 21)
+ 
 # 
 # 
 # te_only_deseq <- ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$deseq
@@ -4483,8 +4518,6 @@ binomial_cm.tbl <- gtable::gtable_add_grob(binomial_cm.tbl, tg, t = 1, l=3, r=nc
 binomial_cm.tbl <- gtable::gtable_add_grob(binomial_cm.tbl, lg, l = 1, t=2)
 ```
 
-
-```
 ## Fig_modeling--gt_binom
 ```{r}
 doMC::registerDoMC(cores = 6)

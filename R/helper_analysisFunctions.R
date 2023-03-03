@@ -110,6 +110,9 @@ parse.tximeta.quant.metadata <- function(se_list,
 	  project <- sub('_ucsc.rmsk.salmon', '', project)
 	  project <- sub('_process.aware.salmon', '', project)
 	  
+	  SummarizedExperiment::colData(data$txi)$names <- salmon_meta_tmp$sample
+	  SummarizedExperiment::colData(data$gxi)$names <- salmon_meta_tmp$sample
+	  
 	  rownames(SummarizedExperiment::colData(data$txi)) <- salmon_meta_tmp$sample
 	  rownames(SummarizedExperiment::colData(data$gxi)) <- salmon_meta_tmp$sample
 	  
@@ -440,6 +443,7 @@ run.de.seq.individual <- function(type = 'gxi', base_level = 'ctrl',
     mutate(input_vol = as.numeric(input_vol),
            condition = relevel(as.factor(diagnosis), ref = base_level)) %>% 
     mutate_if(is.numeric, ~scale(., center = T)) %>% 
+    mutate(across(where(is.character), ~replace_na(.x, 'none'))) %>% 
     mutate_if(is.character, ~as.factor(.)) %>% 
     remove_rownames() %>% 
     column_to_rownames('sample')
@@ -486,17 +490,18 @@ run.de.seq.individual <- function(type = 'gxi', base_level = 'ctrl',
     
   }
   
-  colnames(count_matrix.df) <-
-    rownames(scaled_quant_meta_for_de.df)
+  # colnames(count_matrix.df) <-
+  #   rownames(scaled_quant_meta_for_de.df)
   
   print(colnames(count_matrix.df))
-  print(rownames(scaled_quant_meta_for_de.df))
   
-
   scaled_quant_meta_for_de.df <- 
     scaled_quant_meta_for_de.df[match(colnames(count_matrix.df),
                                       rownames(scaled_quant_meta_for_de.df)), ]
   
+  print(rownames(scaled_quant_meta_for_de.df))
+  
+
   input_set_dds <- DESeqDataSetFromMatrix(countData = count_matrix.df, 
                                           colData = scaled_quant_meta_for_de.df, 
                                           design = dds_formula)

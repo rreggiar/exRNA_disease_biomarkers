@@ -578,7 +578,11 @@ internal_quant$filtered_data <-
     filter_list = c(
       qc_fails,
       unknown_samples,
-      pitts_samples
+      normal_samples,
+      esoph_samples,
+      stage_IandII_select_list,
+      stage_III_select_list,
+      stage_IV_select_list
     )
   )
 
@@ -855,8 +859,6 @@ external_quant$elife$quant_meta <-
   )
 ```
 
-
-
 ## construct_analysis_sets
 ```{r}
 import::from(.directory = r_code.dir, 
@@ -873,8 +875,18 @@ rbind(
   gut_quant$ucsc_rmsk_quant$quant_meta %>% select(sample, contains('salmon'))
 ) -> united_quant_meta
 
-united_quant_meta %>% 
-  merge(united_metadata_df, by = 'sample') -> united_analysis_set$quant_meta
+united_quant_meta %>%
+  merge(united_metadata_df, by = 'sample') %>%
+  mutate(diagnosis = ifelse(
+    diagnosis %in% c('Lung Cancer', 'non-cancer', 'PDAC', 'Liver Cancer'),
+    case_when(
+      diagnosis == 'Lung Cancer' ~ 'lung cancer',
+      diagnosis == 'non-cancer' ~ 'healthy',
+      diagnosis == 'PDAC' ~ 'panc',
+      diagnosis == 'Liver Cancer' ~ 'liver cancer'
+    ),
+    diagnosis
+  )) -> united_analysis_set$quant_meta
 
 rm(united_quant_meta)
 
@@ -950,11 +962,6 @@ rm(united_gxi_tmp)
 #                        sample_meta_in = sample_meta_data$`2022.01.14_combined_meta_data.csv`)
 ```
 
-## save memory
-```{r}
-# internal_quant$
-```
-
 # analysis_INTERACTIVE
 ## run_de_seq
 ```{r}
@@ -981,24 +988,24 @@ internal_quant$origCovid_normal$deseq <-
                         dds_formula = 
                           as.formula('~age+gender+diagnosis'))
 
-internal_quant$panc_normal$deseq <- 
-  run.de.seq.individual(input_se = internal_quant$panc_normal,
-                        type = 'gxi',
-                        base_level = 'normal',
-                        top_level = 'panc',
-                        ref_type = 'ucsc.rmsk',
-                        dds_formula = 
-                          as.formula('~age+gender+input_vol+diagnosis'))
-
-
-internal_quant$esoph_normal$deseq <- 
-  run.de.seq.individual(input_se = internal_quant$esoph_normal,
-                        type = 'gxi',
-                        base_level = 'normal',
-                        top_level = 'esoph',
-                        ref_type = 'ucsc.rmsk',
-                        dds_formula = 
-                          as.formula('~age+gender+input_vol+diagnosis'))
+# internal_quant$panc_normal$deseq <- 
+#   run.de.seq.individual(input_se = internal_quant$panc_normal,
+#                         type = 'gxi',
+#                         base_level = 'normal',
+#                         top_level = 'panc',
+#                         ref_type = 'ucsc.rmsk',
+#                         dds_formula = 
+#                           as.formula('~age+gender+input_vol+diagnosis'))
+# 
+# 
+# internal_quant$esoph_normal$deseq <- 
+#   run.de.seq.individual(input_se = internal_quant$esoph_normal,
+#                         type = 'gxi',
+#                         base_level = 'normal',
+#                         top_level = 'esoph',
+#                         ref_type = 'ucsc.rmsk',
+#                         dds_formula = 
+#                           as.formula('~age+gender+input_vol+diagnosis'))
 
 
 gut_quant$ucsc_rmsk_quant$deseq <- 
@@ -1031,7 +1038,7 @@ external_quant$elife$deseq <-
 united_analysis_set$deseq <- 
   run.de.seq.individual(input_se = united_analysis_set,
                         type = 'gxi',
-                        base_level = 'normal',
+                        base_level = 'healthy',
                         top_level = 'PDAC',
                         ref_type = 'ucsc.rmsk',
                         dds_formula = 
@@ -1097,8 +1104,13 @@ import::from(.directory = r_code.dir,
 # disc_identity_color_pal <- setNames(RColorBrewer::brewer.pal(3, 'Dark2')[c(1,2)], 
 #                                     c('normal', 'panc'))
 
-disc_identity_color_pal <- setNames(RColorBrewer::brewer.pal(5, 'Dark2'),
+
+
+dataset_identity_color_pal <- setNames(RColorBrewer::brewer.pal(4, 'Dark2'),
                                    unique(united_analysis_set$quant_meta %>% pull(dataset)))
+
+diagnosis_identity_color_pal <- setNames(RColorBrewer::brewer.pal(8, 'Dark2'),
+                                   unique(united_analysis_set$quant_meta %>% pull(diagnosis)))
 
 
 input_de <- united_analysis_set$deseq
@@ -1131,7 +1143,7 @@ pca.out <- as.data.frame(non_zero_pca$x) %>%
   # merge(original_roster_names, by = 'sample', all.x = T) %>% 
   # mutate(sample = ifelse(is.na(name), sample, name)) %>% 
   # select(-name) %>% 
-  merge(input_de$scaled_quant_meta_for_de.df %>% rownames_to_column('sample'), by = 'sample')
+  merge(united_analysis_set$quant_meta, by = 'sample')
 
 
 pca.out.summary <- 
@@ -1145,14 +1157,30 @@ pca.out %>%
   #                       levels = c(NA, 'I-B', 'II', 'II-B', 'III', 'IV', 'IV-B'),
   #                       exclude = NULL)) %>% 
   ggplot(aes(PC1, PC2,
-             color = diagnosis)) +
-  geom_point(size = txt.mm_to_pts(0.8), shape = 21, aes(fill = after_scale(alpha(color, 0.3)))) +
+             fill = dataset)) +
+  geom_point(size = txt.mm_to_pts(0.8), shape = 21, alpha = 0.8, aes(color = after_scale(alpha(color, 1)))) +
   # scale_shape_manual(values = c(21,25)) +
   xlab(paste('PC1', round(cumsum(pcs.props)[1], digits = 3)*100,'%',sep = ' ')) +
   ylab(paste('PC2', round(cumsum(pcs.props)[2] - cumsum(pcs.props)[1], digits = 3)*100,'%',sep = ' ')) +
   geom_vline(xintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) +
   geom_hline(yintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) + 
-  scale_fill_grey(na.value = 'lightgreen', end = 0.25, start = 1) + 
+  scale_fill_manual(values = dataset_identity_color_pal) + 
+  xlim(-100,250) + 
+  ylim(-50,100)
+
+pca.out %>% 
+  # mutate(stage = factor(stage, 
+  #                       levels = c(NA, 'I-B', 'II', 'II-B', 'III', 'IV', 'IV-B'),
+  #                       exclude = NULL)) %>% 
+  ggplot(aes(PC1, PC2,
+             fill = diagnosis)) +
+  geom_point(size = txt.mm_to_pts(0.8), shape = 21, alpha = 0.75, aes(color = after_scale(alpha(color, 1)))) +
+  # scale_shape_manual(values = c(21,25)) +
+  xlab(paste('PC1', round(cumsum(pcs.props)[1], digits = 3)*100,'%',sep = ' ')) +
+  ylab(paste('PC2', round(cumsum(pcs.props)[2] - cumsum(pcs.props)[1], digits = 3)*100,'%',sep = ' ')) +
+  geom_vline(xintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) +
+  geom_hline(yintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) + 
+  scale_fill_manual(values = diagnosis_identity_color_pal) + 
   xlim(-100,250) + 
   ylim(-50,100)
 
@@ -1165,11 +1193,12 @@ uwot::umap(pca_tmp_in_zero_sd, n_neighbors = 20, pca = 100) -> umap_out
 umap_out %>% 
   as.data.frame() %>% 
   rownames_to_column('sample') %>% 
-  merge(united_analysis_set$deseq$scaled_quant_meta_for_de.df %>% rownames_to_column('sample'), by = 'sample') %>% 
+  merge(united_analysis_set$quant_meta, by = 'sample') %>% 
   ggplot(aes(V1, V2,
-             color = dataset)) +
-  # scale_shape_manual(values = c(21)) +
-  geom_point(size = txt.mm_to_pts(0.8), aes(fill = after_scale(alpha(color, 0.3))), shape = 21)
+             fill = diagnosis)) +
+  scale_fill_manual(values = diagnosis_identity_color_pal) + 
+  geom_point(size = txt.mm_to_pts(0.8), shape = 21, alpha = 0.75, aes(color = after_scale(alpha(color, 1))))
+
  
 # 
 # 
@@ -1530,7 +1559,7 @@ save.manuscript.panel(figure = 1,
 # Fig_2
 ## Fig_2A
 ```{r}
-external_quant$elife$deseq$norm_counts.df %>% 
+internal_quant$origCovid$deseq$norm_counts.df %>% 
   rownames_to_column('gene') %>% 
   merge(reference_meta_data$ucsc_rmsk_insert_info.df, by = 'gene', all.x = T) %>% 
   mutate(family = ifelse(gene %in% reference_meta_data$gencode_lncRNA_gene_names.df$ensg,
@@ -1549,17 +1578,21 @@ external_quant$elife$deseq$norm_counts.df %>%
   filter(!gene %in% chrM.filter.list) -> total_annotated_rmsk_counts
 
 total_annotated_rmsk_counts %>% 
-  filter(is.na(clade)) %>% 
   gather(sample, count, -gene, -clade, -family, -type) %>% 
   # mutate(sample = str_split_fixed(sample, '_S',2)[,1]) %>% 
   filter(count > 0) %>% 
   # merge(original_roster_names, by = 'sample', all.x = T) %>% 
   # mutate(sample = ifelse(is.na(name), sample, name)) %>% 
   # select(-name) %>% 
-  merge(external_quant$elife$deseq$scaled_quant_meta_for_de.df %>%
-          rownames_to_column('sample') %>% 
-          select(sample, condition, dataset), 
+  merge(internal_quant$origCovid$quant_meta, 
         by = 'sample') -> tidy_total_annotated_rmsk_counts
+
+
+
+tidy_total_annotated_rmsk_counts %>% 
+  filter(gene == 'L1PA3') %>% 
+  ggplot(aes(diagnosis, count)) +
+  geom_boxplot()
 
 
 
@@ -1665,12 +1698,12 @@ chm_plot
 
 tidy_total_annotated_rmsk_counts %>% 
   # filter(! gene %in% top_n(panc_annotated_rmsk_de, 20, wt = baseMean)$gene) %>% 
-  group_by(sample, condition, clade) %>% 
+  group_by(sample, diagnosis, clade) %>% 
   summarize(clade_sum = sum(count)) %>% 
   mutate(clade_frac = clade_sum/sum(clade_sum)) %>% 
          # condition = factor(condition, levels = c('panc', 'normal', 'esoph', 'covid'))) %>% 
-  merge(external_quant$elife$quant_meta, by = 'sample') %>% 
-  ggplot(aes(reorder(sample, input_vol), clade_frac, fill = clade, color = condition)) +
+  merge(internal_quant$origCovid_normal$quant_meta, by = 'sample') %>% 
+  ggplot(aes(reorder(sample, input_vol), clade_frac, fill = clade, color = diagnosis)) +
   geom_col(color = 'white', show.legend = T) + 
   scale_fill_manual(values = te_color_pal, name = 'biotype/clade') + 
   # scale_color_manual(values = disc_identity_color_pal) +
@@ -1720,7 +1753,7 @@ tidy_total_annotated_rmsk_counts %>%
 ```
 ## Fig_2B
 ```{r}
-gut_quant$ucsc_rmsk_quant$deseq$de_out %>% 
+internal_quant$origCovid_normal$deseq$de_out %>% 
   merge(reference_meta_data$ucsc_rmsk_insert_info.df, by = 'gene', all.x = T) %>% 
   mutate(family = ifelse(ensg %in% reference_meta_data$gencode_lncRNA_gene_names.df$ensg,
                          'GENCODE_lncRNA', family),

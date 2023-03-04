@@ -196,7 +196,14 @@ te_alone_annotation_levels <- c('LINE',
 te_alone_color_pal <- RColorBrewer::brewer.pal(n = 8, 'Dark2')[2:8]
 names(te_alone_color_pal) <- te_alone_annotation_levels
 
+import::from(.from = 'SummarizedExperiment',
+             rowRanges)
 
+rowRanges(gut_quant$ucsc_rmsk_quant$gxi) %>% 
+  as.data.frame() %>% 
+  filter(seqnames == 'chrM') %>% 
+  select(group_name) %>% 
+  unlist() %>% unname() -> chrM.filter.list
 
 ```
 
@@ -1107,15 +1114,15 @@ calc_entropy <- function(norm_counts.df, meta_data, grouping_level) {
 }
 
 calc_entropy(
-  external_quant$npj$deseq$norm_counts.df,
-  npj_meta_data,
+  gut_quant$ucsc_rmsk_quant$deseq$norm_counts.df,
+  gut_meta_data,
   grouping_level = 'clade'
 ) %>%
-  ggplot(aes(diagnosis, entropy)) +
-  geom_boxplot(fill = NA) +
-  geom_jitter(shape = 21) +
-  # ggplot(aes(entropy, fill = diagnosis)) +
-  # geom_density(alpha = 0.3) +
+  # ggplot(aes(diagnosis, entropy)) +
+  # geom_boxplot(fill = NA) +
+  # geom_jitter(shape = 21) +
+  ggplot(aes(entropy, fill = diagnosis)) +
+  geom_density(alpha = 0.3) +
   facet_wrap(~ clade)
 
 ```
@@ -1265,18 +1272,6 @@ import::from(.directory = r_code.dir,
 
 process.aware.salmon_quant$analysis_set$ctrl_panc_covid$unsplice_data.df <- 
   generate.unsplice.data(process.aware.salmon_quant$analysis_set$ctrl_panc_covid)
-```
-
-## extract chrM
-```{r}
-import::from(.from = 'SummarizedExperiment',
-             rowRanges)
-
-rowRanges(gut_quant$ucsc_rmsk_quant$gxi) %>% 
-  as.data.frame() %>% 
-  filter(seqnames == 'chrM') %>% 
-  select(group_name) %>% 
-  unlist() %>% unname() -> chrM.filter.list
 ```
 
 ## meta table re number

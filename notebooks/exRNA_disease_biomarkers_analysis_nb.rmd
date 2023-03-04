@@ -318,6 +318,18 @@ original_covid_meta_data <-
       n = 2)[,2]
     ) * 1000) #convert to uL
 
+
+original_meta_data <- 
+  sample_meta_data$`2022.01.14_combined_meta_data.csv` %>% 
+  dplyr::rename(sample = patient, diagnosis = condition, gender = sex) %>% 
+  mutate(tmp = sample, dataset = 'pilot') %>% 
+  mutate(input_vol = as.numeric(
+      str_split_fixed(
+      string = str_split_fixed(string = tmp, pattern = '[.]', n = 2)[,2],
+      pattern = '[.]',
+      n = 2)[,2]
+    ) * 1000)
+
 ```
 ## discovery cohort metadata
 ```{r}
@@ -397,6 +409,10 @@ united_metadata_df <- matching_rbind(
   'original_panc_meta_data',
   'original_covid_meta_data'
 )
+
+original_discovery_meta_data <- 
+  matching_rbind('original_meta_data',
+                 'discovery_meta_data')
 
 original_normal_meta_data <- 
   matching_rbind('original_covid_meta_data',
@@ -569,12 +585,13 @@ internal_quant$original_data <-
     internal_quant$ucsc_rmsk_quant,
     filter_list = c(
       qc_fails,
-      normal_samples,
+      # normal_samples,
+      orig_covid_samples,
       unknown_samples,
       esoph_samples,
-      stage_IandII_select_list,
-      stage_III_select_list,
-      stage_IV_select_list,
+      # stage_IandII_select_list,
+      # stage_III_select_list,
+      # stage_IV_select_list,
       pitts_samples
     )
   )
@@ -782,7 +799,7 @@ merge(
 internal_quant$original_data$quant_meta <-
   merge(
     internal_quant$original_data$quant_meta,
-    original_normal_meta_data,
+    original_discovery_meta_data,
     by = 'sample'
   )
 
@@ -975,8 +992,8 @@ import::from(.directory = r_code.dir,
               run.de.seq,
               run.de.seq.individual)
 
-internal_quant$origPanc_normal$deseq <- 
-  run.de.seq.individual(input_se = internal_quant$origPanc_normal,
+internal_quant$original_data$deseq <- 
+  run.de.seq.individual(input_se = internal_quant$original_data,
                         type = 'gxi',
                         base_level = 'normal',
                         top_level = 'panc',
@@ -984,8 +1001,8 @@ internal_quant$origPanc_normal$deseq <-
                         dds_formula = 
                           as.formula('~age+gender+input_vol+diagnosis'))
 
-internal_quant$origCovid_normal$deseq <- 
-  run.de.seq.individual(input_se = internal_quant$origCovid_normal,
+internal_quant$origPanc_normal$deseq <- 
+  run.de.seq.individual(input_se = internal_quant$origPanc_normal,
                         type = 'gxi',
                         base_level = 'normal',
                         top_level = 'covid',
@@ -1095,7 +1112,7 @@ calc_entropy <- function(norm_counts.df, meta_data, grouping_level) {
                          'GENCODE_lncRNA', family),
          family = ifelse(is.na(family), 'GENCODE_coding', family),
          clade = ifelse(grepl('GENCODE', family), family, clade),
-         type = ifelse(grepl('GENCODE',family), 'GENCODE', 'TE')) %>% 
+         type = ifelse(grepl('GENCODE',family), family, 'TE')) %>% 
   group_by(!! sym(grouping_level)) %>% 
   summarize(across(where(is.numeric), ~.x/sum(.x))) %>% 
   pivot_longer(names_to = 'sample', values_to = 'frequency', cols = where(is.numeric)) %>% 
@@ -1116,14 +1133,63 @@ calc_entropy <- function(norm_counts.df, meta_data, grouping_level) {
 calc_entropy(
   gut_quant$ucsc_rmsk_quant$deseq$norm_counts.df,
   gut_meta_data,
-  grouping_level = 'clade'
+  grouping_level = 'type'
+) %>%
+  ggplot(aes(diagnosis, entropy)) +
+  geom_boxplot(fill = NA) +
+  geom_jitter(shape = 21) +
+  # ggplot(aes(entropy, fill = diagnosis)) +
+  # geom_density(alpha = 0.3) +
+  facet_wrap(~ type)
+
+calc_entropy(
+  external_quant$npj$deseq$norm_counts.df,
+  npj_meta_data,
+  grouping_level = 'type'
+) %>%
+  ggplot(aes(diagnosis, entropy)) +
+  geom_boxplot(fill = NA) +
+  geom_jitter(shape = 21) +
+  # ggplot(aes(entropy, fill = diagnosis)) +
+  # geom_density(alpha = 0.3) +
+  facet_wrap(~ type)
+
+calc_entropy(
+  external_quant$elife$deseq$norm_counts.df,
+  elife_meta_data,
+  grouping_level = 'type'
+) %>%
+  ggplot(aes(diagnosis, entropy)) +
+  geom_boxplot(fill = NA) +
+  geom_jitter(shape = 21) +
+  # ggplot(aes(entropy, fill = diagnosis)) +
+  # geom_density(alpha = 0.3) +
+  facet_wrap(~ type)
+
+calc_entropy(
+  internal_quant$original_data$deseq$norm_counts.df,
+  original_discovery_meta_data,
+  grouping_level = 'type'
 ) %>%
   # ggplot(aes(diagnosis, entropy)) +
   # geom_boxplot(fill = NA) +
   # geom_jitter(shape = 21) +
   ggplot(aes(entropy, fill = diagnosis)) +
   geom_density(alpha = 0.3) +
-  facet_wrap(~ clade)
+  facet_wrap(~ dataset+type)
+
+
+original_discovery_meta_data %>% 
+  filter(
+    !sample %in% c(
+      stage_IandII_select_list,
+      stage_III_select_list,
+      stage_IV_select_list
+    ),
+    diagnosis != 'luad'
+  ) %>% 
+  ggplot(aes(diagnosis, age)) + 
+  geom_boxplot()
 
 ```
 
@@ -1144,18 +1210,19 @@ import::from(.directory = r_code.dir,
 
 # disc_identity_color_pal <- setNames(RColorBrewer::brewer.pal(3, 'Dark2')[c(1,2)], 
 #                                     c('normal', 'panc'))
+input_de <- internal_quant$origPanc_normal$deseq
 
-disc_identity_color_pal <- setNames(RColorBrewer::brewer.pal(5, 'Dark2'),
-                                   unique(ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$quant_meta %>% pull(diagnosis)))
+disc_identity_color_pal <- setNames(RColorBrewer::brewer.pal(2, 'Dark2'),
+                                   unique(input_de$quant_meta %>% pull(diagnosis)))
 
 # disc_pca <-
 #   run.pca(input_de = ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$deseq,
 #           identity_color_pal = disc_identity_color_pal)
 
-input_de <- ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$preRad_preRes$deseq
+
 
 input_de$vst_counts.df[!rownames(input_de$vst_counts.df) %in%
-                           c(ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$preRad_preRes$deseq$sex_filter.df$group_name), ] %>%
+                           c(input_de$sex_filter.df$group_name), ] %>%
     t() -> pca_tmp_in
 
 # input_de$vst_counts.df[rownames(input_de$vst_counts.df) %in% 
@@ -1196,14 +1263,15 @@ pca.out %>%
   #                       levels = c(NA, 'I-B', 'II', 'II-B', 'III', 'IV', 'IV-B'),
   #                       exclude = NULL)) %>% 
   ggplot(aes(PC1, PC2,
-             color = condition, shape = sex)) +
-  geom_point(size = txt.mm_to_pts(0.8), alpha = 0.8) +
+             color = condition, shape = dataset)) +
+  geom_point(size = txt.mm_to_pts(0.8), aes(fill = after_scale(alpha(color, 0.2)))) +
   scale_shape_manual(values = c(21,25)) +
   xlab(paste('PC1', round(cumsum(pcs.props)[1], digits = 3)*100,'%',sep = ' ')) +
   ylab(paste('PC2', round(cumsum(pcs.props)[2] - cumsum(pcs.props)[1], digits = 3)*100,'%',sep = ' ')) +
   geom_vline(xintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) +
   geom_hline(yintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) + 
-  scale_fill_grey(na.value = 'lightgreen', end = 0.25, start = 1)
+  scale_fill_grey(na.value = 'lightgreen', end = 0.25, start = 1) +
+  scale_color_manual(values = disc_identity_color_pal)
 
 pca_corr_out.df <-
   extract.meta.pca.correlates(pca.out = pca.out)

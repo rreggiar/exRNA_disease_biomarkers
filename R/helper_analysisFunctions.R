@@ -493,14 +493,15 @@ run.de.seq.individual <- function(type = 'gxi', base_level = 'ctrl',
   # colnames(count_matrix.df) <-
   #   rownames(scaled_quant_meta_for_de.df)
   
-  print(colnames(count_matrix.df))
+  # print(colnames(count_matrix.df))
   
   scaled_quant_meta_for_de.df <- 
     scaled_quant_meta_for_de.df[match(colnames(count_matrix.df),
                                       rownames(scaled_quant_meta_for_de.df)), ]
   
-  print(rownames(scaled_quant_meta_for_de.df))
+  # print(rownames(scaled_quant_meta_for_de.df))
   
+  print(rownames(scaled_quant_meta_for_de.df) == colnames(count_matrix.df))
 
   input_set_dds <- DESeqDataSetFromMatrix(countData = count_matrix.df, 
                                           colData = scaled_quant_meta_for_de.df, 

@@ -1181,15 +1181,11 @@ calc_entropy(
 
 original_discovery_meta_data %>% 
   filter(
-    !sample %in% c(
-      stage_IandII_select_list,
-      stage_III_select_list,
-      stage_IV_select_list
-    ),
     diagnosis != 'luad'
   ) %>% 
-  ggplot(aes(diagnosis, age)) + 
-  geom_boxplot()
+  ggplot(aes(diagnosis, input_vol)) + 
+  geom_boxplot() +
+  facet_wrap(~dataset, scales = 'free_x')
 
 ```
 
@@ -1291,8 +1287,8 @@ pca_corr_out.df <-
 ```
 ## 1vsall
 ```{r}
-PAAD_1vAll <- read_csv(file.path(output_data.dir, 'PAAD_vs_all.results'), skip = 7) %>% filter(log2FoldChange != 0)
-Pancreas_1vAll <- read_csv(file.path(output_data.dir, 'Pancreas_vs_all.results'), skip = 7) %>% filter(log2FoldChange > 1)
+# PAAD_1vAll <- read_csv(file.path(output_data.dir, 'PAAD_vs_all.results'), skip = 7) %>% filter(log2FoldChange != 0)
+PAAD_v_Pancreas <- read_csv(file.path(output_data.dir, 'Pancreas_vs_all.results.lfcShrink'), skip = 6)
 
 
 # PAAD_1vAll %>% 

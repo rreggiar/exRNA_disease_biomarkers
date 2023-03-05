@@ -199,11 +199,6 @@ names(te_alone_color_pal) <- te_alone_annotation_levels
 import::from(.from = 'SummarizedExperiment',
              rowRanges)
 
-# rowRanges(gut_quant$ucsc_rmsk_quant$gxi) %>% 
-#   as.data.frame() %>% 
-#   filter(seqnames == 'chrM') %>% 
-#   select(group_name) %>% 
-#   unlist() %>% unname() -> chrM.filter.list
 
 ```
 
@@ -619,6 +614,13 @@ internal_rmsk_quant$covid_ctrl <-
     )
   )
 
+rowRanges(internal_rmsk_quant$rmsk$gxi) %>%
+  as.data.frame() %>%
+  filter(seqnames == 'chrM') %>%
+  select(group_name) %>%
+  unlist() %>% unname() -> chrM.filter.list
+
+
 ```
 ## external elife
 ```{r}
@@ -855,7 +857,7 @@ elife_rmsk_quant$rmsk$deseq <-
                         top_level = 'Lung Cancer',
                         ref_type = 'ucsc.rmsk',
                         dds_formula = 
-                          as.formula('~age+gender+input_vol+diagnosis'))
+                          as.formula('~age+gender+diagnosis'))
 
 internal_quant$origPanc_normal$deseq <- 
   run.de.seq.individual(input_se = internal_quant$origPanc_normal,
@@ -997,16 +999,17 @@ calc_entropy <- function(norm_counts.df, meta_data, grouping_level) {
 }
 
 calc_entropy(
-  gut_quant$ucsc_rmsk_quant$deseq$norm_counts.df,
-  gut_meta_data,
-  grouping_level = 'type'
+  elife_rmsk_quant$rmsk$deseq$norm_counts.df,
+  elife_meta_data,
+  grouping_level = 'clade'
 ) %>%
   ggplot(aes(diagnosis, entropy)) +
   geom_boxplot(fill = NA) +
   geom_jitter(shape = 21) +
   # ggplot(aes(entropy, fill = diagnosis)) +
   # geom_density(alpha = 0.3) +
-  facet_wrap(~ type)
+  facet_wrap(~ clade) + 
+  theme(axis.text.x = element_text(angle = 40, hjust = 1))
 
 calc_entropy(
   external_quant$npj$deseq$norm_counts.df,
@@ -1496,7 +1499,7 @@ save.manuscript.panel(figure = 1,
 # Fig_2
 ## Fig_2A
 ```{r}
-internal_quant$origCovid$deseq$norm_counts.df %>% 
+elife_rmsk_quant$rmsk$deseq$norm_counts.df %>% 
   rownames_to_column('gene') %>% 
   merge(reference_meta_data$ucsc_rmsk_insert_info.df, by = 'gene', all.x = T) %>% 
   mutate(family = ifelse(gene %in% reference_meta_data$gencode_lncRNA_gene_names.df$ensg,
@@ -1521,116 +1524,108 @@ total_annotated_rmsk_counts %>%
   # merge(original_roster_names, by = 'sample', all.x = T) %>% 
   # mutate(sample = ifelse(is.na(name), sample, name)) %>% 
   # select(-name) %>% 
-  merge(internal_quant$origCovid$quant_meta, 
+  merge(elife_rmsk_quant$rmsk$quant_meta, 
         by = 'sample') -> tidy_total_annotated_rmsk_counts
 
 
-
-tidy_total_annotated_rmsk_counts %>% 
-  filter(gene == 'L1PA3') %>% 
-  ggplot(aes(diagnosis, count)) +
-  geom_boxplot()
-
-
-
-tidy_total_annotated_rmsk_counts %>% 
-  # filter(! gene %in% top_n(panc_annotated_rmsk_de, 20, wt = baseMean)$gene) %>% 
-  group_by(sample, condition, clade) %>% 
-  summarize(clade_sum = sum(count)) %>% 
-  mutate(clade_frac = clade_sum/sum(clade_sum),
-         condition = factor(condition, levels = c('healthy', 'PDAC'))) %>% 
-  select(-clade_sum) %>% 
-  # mutate(clade_frac = log(clade_frac)) %>% 
-  pivot_wider(names_from = clade, values_from = clade_frac) %>% 
-  merge(gut_quant$ucsc_rmsk_quant$preRad_preRes$quant_meta, by = 'sample') -> chm_in
-
-hm_count_data_filt <- chm_in %>% 
-  select(sample, GENCODE_lncRNA:other) %>% 
-  column_to_rownames('sample') %>% 
-  as.matrix()
-
-meta_data <- chm_in %>% select(-GENCODE_coding:-other)
-rownames(meta_data) <- meta_data$sample
-meta_data <-
-  meta_data[match(rownames(meta_data), rownames(hm_count_data_filt)),]
-
-meta_data <- meta_data %>%
-  mutate(
-    sample_sku_primary_diagnosis = str_replace_all(sample_sku_primary_diagnosis, 'Pancreatic Cancer, ', '')
-  ) %>%
-  pull(sample_sku_primary_diagnosis)
-
-panc_color <- setNames(RColorBrewer::brewer.pal(name = 'Dark2', n = 4), c('panc', 'normal', 'esoph', 'covid'))
-
-left_hma <-
-  ComplexHeatmap::rowAnnotation(
-    df = meta_data %>% select(sample_sku_primary_diagnosis),
-    col = list(condition = panc_color),
-    show_annotation_name = F,
-    simple_anno_size = unit(.3, "cm"),
-    annotation_legend_param =
-      list(title_gp = grid::gpar(
-        fontsize = 6, fontface = 'bold'
-      ))
-  )
-
-## heatmap DE barpot annotation
-# mkp_de_sig %>%
-#   filter(gene %in% colnames(hm_count_data_filt)) %>%
-#   column_to_rownames('gene') -> toil_de
+# tidy_total_annotated_rmsk_counts %>% 
+#   # filter(! gene %in% top_n(panc_annotated_rmsk_de, 20, wt = baseMean)$gene) %>% 
+#   group_by(sample, condition, clade) %>% 
+#   summarize(clade_sum = sum(count)) %>% 
+#   mutate(clade_frac = clade_sum/sum(clade_sum),
+#          condition = factor(condition, levels = c('healthy', 'PDAC'))) %>% 
+#   select(-clade_sum) %>% 
+#   # mutate(clade_frac = log(clade_frac)) %>% 
+#   pivot_wider(names_from = clade, values_from = clade_frac) %>% 
+#   merge(gut_quant$ucsc_rmsk_quant$preRad_preRes$quant_meta, by = 'sample') -> chm_in
 # 
-# toil_de[order(match(rownames(toil_de), colnames(hm_count_data_filt))), , drop =
-#           F] -> toil_de
+# hm_count_data_filt <- chm_in %>% 
+#   select(sample, GENCODE_lncRNA:other) %>% 
+#   column_to_rownames('sample') %>% 
+#   as.matrix()
 # 
-# toil_de_list <- setNames(toil_de$log2FC, rownames(toil_de))
+# meta_data <- chm_in %>% select(-GENCODE_coding:-other)
+# rownames(meta_data) <- meta_data$sample
+# meta_data <-
+#   meta_data[match(rownames(meta_data), rownames(hm_count_data_filt)),]
 # 
-# ComplexHeatmap::columnAnnotation(
-#   `MkP Log2FC` = ComplexHeatmap::anno_barplot(
-#     x = toil_de_list,
-#     bar_width = 1,
-#     which = 'row',
-#     gp = grid::gpar(col = "black", fill = 'purple'),
-#     border = FALSE,
-#     annotation_name_gp = grid::gpar(fontsize = 8),
-#     width = unit(0.75, "cm"),
-#     height = unit(1.25, "cm")
-#   ),
-#   show_annotation_name = TRUE,
-#   annotation_name_gp = grid::gpar(fontsize = 8)
-# ) -> log2fc_ha
-
-set.seed(2022 - 02 - 23)
-ComplexHeatmap::Heatmap(
-  as.matrix(hm_count_data_filt),
-  show_row_names = F,
-  show_column_names = T,
-  # col = viridis::plasma(n = 100),
-  # heatmap_width = figure_double_column_width * 1.125,
-  left_annotation = left_hma,
-  column_dend_height = unit(.45, "cm"),
-  heatmap_legend_param =
-    list(
-      legend_gp = grid::gpar(fontsize = 5),
-      title_gp = grid::gpar(fontsize = 6,
-                            fontface = 'bold')
-    ),
-  # top_annotation = log2fc_ha,
-  column_names_gp = grid::gpar(fontsize = 12),
-  name = 'Percent'
-) -> hsc_count.chm
-
-patchwork::wrap_elements(full = grid::grid.grabExpr(ComplexHeatmap::draw(hsc_count.chm),
-                                                    # width = figure_double_column_width* 1.125,
-                                                    merge_legend = T)) -> chm_plot
-
-chm_plot
-# ggsave(
-#   chm_plot,
-#   width = figure_double_column_width * 1.125,
-#   height = panel_height_1 * 1.65,
-#   filename = file.path(output_data.dir, 'mkp_de_heatmap.pdf'),
-#   units = 'mm'
-# )
+# meta_data <- meta_data %>%
+#   mutate(
+#     sample_sku_primary_diagnosis = str_replace_all(sample_sku_primary_diagnosis, 'Pancreatic Cancer, ', '')
+#   ) %>%
+#   pull(sample_sku_primary_diagnosis)
+# 
+# panc_color <- setNames(RColorBrewer::brewer.pal(name = 'Dark2', n = 4), c('panc', 'normal', 'esoph', 'covid'))
+# 
+# left_hma <-
+#   ComplexHeatmap::rowAnnotation(
+#     df = meta_data %>% select(sample_sku_primary_diagnosis),
+#     col = list(condition = panc_color),
+#     show_annotation_name = F,
+#     simple_anno_size = unit(.3, "cm"),
+#     annotation_legend_param =
+#       list(title_gp = grid::gpar(
+#         fontsize = 6, fontface = 'bold'
+#       ))
+#   )
+# 
+# ## heatmap DE barpot annotation
+# # mkp_de_sig %>%
+# #   filter(gene %in% colnames(hm_count_data_filt)) %>%
+# #   column_to_rownames('gene') -> toil_de
+# # 
+# # toil_de[order(match(rownames(toil_de), colnames(hm_count_data_filt))), , drop =
+# #           F] -> toil_de
+# # 
+# # toil_de_list <- setNames(toil_de$log2FC, rownames(toil_de))
+# # 
+# # ComplexHeatmap::columnAnnotation(
+# #   `MkP Log2FC` = ComplexHeatmap::anno_barplot(
+# #     x = toil_de_list,
+# #     bar_width = 1,
+# #     which = 'row',
+# #     gp = grid::gpar(col = "black", fill = 'purple'),
+# #     border = FALSE,
+# #     annotation_name_gp = grid::gpar(fontsize = 8),
+# #     width = unit(0.75, "cm"),
+# #     height = unit(1.25, "cm")
+# #   ),
+# #   show_annotation_name = TRUE,
+# #   annotation_name_gp = grid::gpar(fontsize = 8)
+# # ) -> log2fc_ha
+# 
+# set.seed(2022 - 02 - 23)
+# ComplexHeatmap::Heatmap(
+#   as.matrix(hm_count_data_filt),
+#   show_row_names = F,
+#   show_column_names = T,
+#   # col = viridis::plasma(n = 100),
+#   # heatmap_width = figure_double_column_width * 1.125,
+#   left_annotation = left_hma,
+#   column_dend_height = unit(.45, "cm"),
+#   heatmap_legend_param =
+#     list(
+#       legend_gp = grid::gpar(fontsize = 5),
+#       title_gp = grid::gpar(fontsize = 6,
+#                             fontface = 'bold')
+#     ),
+#   # top_annotation = log2fc_ha,
+#   column_names_gp = grid::gpar(fontsize = 12),
+#   name = 'Percent'
+# ) -> hsc_count.chm
+# 
+# patchwork::wrap_elements(full = grid::grid.grabExpr(ComplexHeatmap::draw(hsc_count.chm),
+#                                                     # width = figure_double_column_width* 1.125,
+#                                                     merge_legend = T)) -> chm_plot
+# 
+# chm_plot
+# # ggsave(
+# #   chm_plot,
+# #   width = figure_double_column_width * 1.125,
+# #   height = panel_height_1 * 1.65,
+# #   filename = file.path(output_data.dir, 'mkp_de_heatmap.pdf'),
+# #   units = 'mm'
+# # )
 
 
 tidy_total_annotated_rmsk_counts %>% 
@@ -1639,8 +1634,8 @@ tidy_total_annotated_rmsk_counts %>%
   summarize(clade_sum = sum(count)) %>% 
   mutate(clade_frac = clade_sum/sum(clade_sum)) %>% 
          # condition = factor(condition, levels = c('panc', 'normal', 'esoph', 'covid'))) %>% 
-  merge(internal_quant$origCovid_normal$quant_meta, by = 'sample') %>% 
-  ggplot(aes(reorder(sample, input_vol), clade_frac, fill = clade, color = diagnosis)) +
+  # merge(elife_rmsk_quant$rmsk$quant_meta, by = 'sample')
+  ggplot(aes(sample, clade_frac, fill = clade, color = diagnosis)) +
   geom_col(color = 'white', show.legend = T) + 
   scale_fill_manual(values = te_color_pal, name = 'biotype/clade') + 
   # scale_color_manual(values = disc_identity_color_pal) +

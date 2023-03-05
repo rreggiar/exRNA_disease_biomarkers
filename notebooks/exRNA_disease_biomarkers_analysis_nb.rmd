@@ -199,11 +199,11 @@ names(te_alone_color_pal) <- te_alone_annotation_levels
 import::from(.from = 'SummarizedExperiment',
              rowRanges)
 
-rowRanges(gut_quant$ucsc_rmsk_quant$gxi) %>% 
-  as.data.frame() %>% 
-  filter(seqnames == 'chrM') %>% 
-  select(group_name) %>% 
-  unlist() %>% unname() -> chrM.filter.list
+# rowRanges(gut_quant$ucsc_rmsk_quant$gxi) %>% 
+#   as.data.frame() %>% 
+#   filter(seqnames == 'chrM') %>% 
+#   select(group_name) %>% 
+#   unlist() %>% unname() -> chrM.filter.list
 
 ```
 
@@ -443,25 +443,34 @@ import::from(
 )
 
 
-internal_quant <- load.tximeta.object.list('full_resub',
-                                           output_data.dir = output_data.dir)
+internal_rmsk_quant <- load.tximeta.object.list('internal_rmsk_quant',
+                                                 'rmsk')
 
-internal_quant <-
-  parse.tximeta.quant.metadata(internal_quant, extra_merge = original_roster_names)
+internal_rmsk_quant <-
+  parse.tximeta.quant.metadata(internal_rmsk_quant, extra_merge = original_roster_names)
 
-external_quant <-
-  load.tximeta.object.list('other_extData_ucsc_rmsk',
-                           output_data.dir = output_data.dir)
+internal_gencode_quant <- load.tximeta.object.list('internal_rmsk_quant',
+                                                    'txonly')
+internal_gencode_quant <-
+  parse.tximeta.quant.metadata(internal_gencode_quant, extra_merge = original_roster_names)
 
+npj_rmsk_quant <-
+  load.tximeta.object.list('npj_rmsk_quant',
+                           'rmsk')
+npj_rmsk_quant <-
+  parse.tximeta.quant.metadata(npj_rmsk_quant)
 
-external_quant <-
-  parse.tximeta.quant.metadata(external_quant)
+elife_rmsk_quant <-
+  load.tximeta.object.list('elife_rmsk_quant',
+                           'rmsk')
+elife_rmsk_quant <-
+  parse.tximeta.quant.metadata(elife_rmsk_quant)
 
-gut_quant <- load.tximeta.object.list('final_extData_ucsc_rmsk',
-                                      output_data.dir = output_data.dir)
-
-
-gut_quant <- parse.tximeta.quant.metadata(gut_quant)
+gut_rmsk_quant <-
+  load.tximeta.object.list('gut_rmsk_quant',
+                           'rmsk')
+gut_rmsk_quant <-
+  parse.tximeta.quant.metadata(gut_rmsk_quant)
 
 ```
 

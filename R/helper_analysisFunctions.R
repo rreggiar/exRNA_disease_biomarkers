@@ -26,11 +26,13 @@ save.manuscript.panel <- function(figure,
 	       plot = plot.in, device = cairo_pdf)
 }
 
-load.tximeta.object.list <- function(reference, output_data.dir = here::here('data/output_data')) {
+load.tximeta.object.list <- function(data_path,
+                                     type,
+                                     output_data.dir = here::here('data/output_data/final_datasets')) {
 	import::here(.from = "HDF5Array", loadHDF5SummarizedExperiment)
 	import::here(.from = "purrr", imap)
 
-	output_data_path <- file.path(output_data.dir, paste0(reference, '_quant'))
+	output_data_path <- file.path(output_data.dir, data_path, type)
 	message(output_data_path)
 
 	list.files(output_data_path) -> tximeta_obj.list
@@ -50,7 +52,7 @@ load.tximeta.object.list <- function(reference, output_data.dir = here::here('da
 									       paste0(sample, '_gene_h5_se')))
 
 
-			     if (reference == 'process.aware.salmon'){
+			     if (type == 'process.aware.salmon'){
 				     gxi.split <- loadHDF5SummarizedExperiment(dir=file.path(output_data_path,
 											     paste0(sample, '_gene_split_h5_se')))
 				     return(list('txi' = txi, 'gxi' = gxi, 'gxi.split' = gxi.split)) 

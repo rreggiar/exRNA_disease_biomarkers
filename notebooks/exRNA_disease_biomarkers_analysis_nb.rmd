@@ -482,7 +482,7 @@ import::from(.directory = r_code.dir,
              subset.tximeta.se)
 
 ## create merged df that matches colData names to metaData names
-merge(internal_quant$ucsc_rmsk_quant$quant_meta,
+merge(internal_rmsk_quant$rmsk$quant_meta,
       discovery_meta_data,
       by = 'sample') -> discovery_merge_meta_for_filt
 
@@ -490,32 +490,32 @@ qc_fails <- c('panc.6.2.5', 'panc.7.2.5', 'panc.9.2.5',
               'panc.10.2.5', 'covid.427.0.80', 'covid.381.0.80')
 
 orig_covid_samples <-
-  internal_quant$ucsc_rmsk_quant$quant_meta %>% 
+  internal_rmsk_quant$rmsk$quant_meta %>% 
   filter(grepl('^covid', sample)) %>% 
   pull(sample)
 
 orig_panc_samples <-
-  internal_quant$ucsc_rmsk_quant$quant_meta %>%
+  internal_rmsk_quant$rmsk$quant_meta %>%
   filter(grepl('^panc', sample)) %>%
   pull(sample)
 
 unknown_samples <-
-  internal_quant$ucsc_rmsk_quant$quant_meta %>% 
+  internal_rmsk_quant$rmsk$quant_meta %>% 
   filter(grepl('^unknown', sample)) %>% 
   pull(sample)
 
 pitts_samples <-
-  internal_quant$ucsc_rmsk_quant$quant_meta %>% 
+  internal_rmsk_quant$rmsk$quant_meta %>% 
   filter(grepl('^ctrl.', sample)) %>% 
   pull(sample)
 
 esoph_samples <-
-  internal_quant$ucsc_rmsk_quant$quant_meta %>% 
+  internal_rmsk_quant$rmsk$quant_meta %>% 
   filter(grepl('^e', sample)) %>% 
   pull(sample)
 
 normal_samples <-
-  internal_quant$ucsc_rmsk_quant$quant_meta %>% 
+  internal_rmsk_quant$rmsk$quant_meta %>% 
   filter(grepl('^n', sample)) %>% 
   pull(sample)
 
@@ -589,198 +589,69 @@ postTx_select_list <-
   )) %>% 
   pull(sample)
 
-internal_quant$original_data <-
+internal_rmsk_quant$panc_normal <-
   subset.tximeta.se(
-    internal_quant$ucsc_rmsk_quant,
+    internal_rmsk_quant$rmsk,
     filter_list = c(
       qc_fails,
-      # normal_samples,
       orig_covid_samples,
       unknown_samples,
       esoph_samples,
-      # stage_IandII_select_list,
-      # stage_III_select_list,
-      # stage_IV_select_list,
+      stage_IandII_select_list,
+      stage_III_select_list,
+      stage_IV_select_list,
       pitts_samples
     )
   )
 
-internal_quant$filtered_data <-
+internal_rmsk_quant$covid_ctrl <-
   subset.tximeta.se(
-    internal_quant$ucsc_rmsk_quant,
+    internal_rmsk_quant$rmsk,
     filter_list = c(
       qc_fails,
-      unknown_samples,
       normal_samples,
+      unknown_samples,
+      orig_panc_samples,
       esoph_samples,
       stage_IandII_select_list,
       stage_III_select_list,
       stage_IV_select_list
-    )
-  )
-
-internal_quant$origCovid_normal <-
-  subset.tximeta.se(
-    internal_quant$ucsc_rmsk_quant,
-    filter_list = c(
-      qc_fails,
-      unknown_samples,
-      esoph_samples,
-      stage_IandII_select_list,
-      stage_III_select_list,
-      stage_IV_select_list,
-      pitts_samples,
-      orig_panc_samples
-    )
-  )
-
-internal_quant$origPanc_normal <-
-  subset.tximeta.se(
-    internal_quant$ucsc_rmsk_quant,
-    filter_list = c(
-      qc_fails,
-      unknown_samples,
-      esoph_samples,
-      stage_IandII_select_list,
-      stage_III_select_list,
-      stage_IV_select_list,
-      pitts_samples,
-      orig_covid_samples
-    )
-  )
-
-
-internal_quant$origPanc_normal$quant_meta
-
-SummarizedExperiment::colData(internal_quant$origPanc_normal$gxi)$names
-
-
-internal_quant$panc_normal <-
-  subset.tximeta.se(
-    internal_quant$ucsc_rmsk_quant,
-    filter_list = c(
-      qc_fails,
-      orig_panc_samples,
-      unknown_samples,
-      pitts_samples,
-      esoph_samples,
-      pitts_samples,
-      orig_covid_samples
-    )
-  )
-
-internal_quant$esoph_normal <-
-  subset.tximeta.se(
-    internal_quant$ucsc_rmsk_quant,
-    filter_list = c(
-      qc_fails,
-      orig_panc_samples,
-      unknown_samples,
-      pitts_samples,
-      stage_IandII_select_list,
-      stage_III_select_list,
-      stage_IV_select_list,
-      pitts_samples,
-      orig_covid_samples
-    )
-  )
-
-internal_quant$stage_IandII <-
-  subset.tximeta.se(
-    internal_quant$ucsc_rmsk_quant,
-    filter_list = c(
-      qc_fails,
-      orig_covid_samples,
-      orig_panc_samples,
-      unknown_samples,
-      pitts_samples,
-      esoph_samples,
-      stage_IandII_select_list
-    )
-  )
-
-internal_quant$stage_III <-
-  subset.tximeta.se(
-    internal_quant$ucsc_rmsk_quant,
-    filter_list = c(
-      qc_fails,
-      orig_covid_samples,
-      orig_panc_samples,
-      unknown_samples,
-      pitts_samples,
-      esoph_samples,
-      stage_III_select_list
-    )
-  )
-
-internal_quant$stage_IV <-
-  subset.tximeta.se(
-    internal_quant$ucsc_rmsk_quant,
-    filter_list = c(
-      qc_fails,
-      orig_covid_samples,
-      orig_panc_samples,
-      unknown_samples,
-      pitts_samples,
-      esoph_samples,
-      stage_IV_select_list
-    )
-  )
-
-internal_quant$preTx <-
-  subset.tximeta.se(
-    internal_quant$ucsc_rmsk_quant,
-    filter_list = c(
-      qc_fails,
-      orig_covid_samples,
-      orig_panc_samples,
-      unknown_samples,
-      pitts_samples,
-      esoph_samples,
-      preTx_select_list
-    )
-  )
-
-internal_quant$postTx <-
-  subset.tximeta.se(
-    internal_quant$ucsc_rmsk_quant,
-    filter_list = c(
-      qc_fails,
-      orig_covid_samples,
-      orig_panc_samples,
-      unknown_samples,
-      pitts_samples,
-      esoph_samples,
-      postTx_select_list
     )
   )
 
 ```
-## external
+## external elife
 ```{r}
-merge(
-  external_quant$ucsc_rmsk_quant$quant_meta,
-    npj_meta_data,
-    by = 'sample'
-  ) -> npj_merge_meta_for_filt
 
 merge(
-  external_quant$ucsc_rmsk_quant$quant_meta,
+  elife_rmsk_quant$rmsk$quant_meta,
     elife_meta_data,
     by = 'sample'
   ) -> elife_merge_meta_for_filt
+
+# elife_select_list <-
+#   filter(
+#     elife_rmsk_quant$rmsk$quant_meta,
+#     !sample %in% elife_merge_meta_for_filt$sample
+#   ) %>% 
+#   pull(sample)
+# 
+# external_quant$elife <-
+#   subset.tximeta.se(elife_rmsk_quant$rmsk,
+#                     filter_list = c(elife_select_list))
+```
+## external npj
+```{r}
+merge(
+  npj_rmsk_quant$rmsk$quant_meta,
+    npj_meta_data,
+    by = 'sample'
+  ) -> npj_merge_meta_for_filt
 
 npj_select_list <-
   filter(
     external_quant$ucsc_rmsk_quant$quant_meta,
     !sample %in% npj_merge_meta_for_filt$sample
-  ) %>% 
-  pull(sample)
-
-elife_select_list <-
-  filter(
-    external_quant$ucsc_rmsk_quant$quant_meta,
-    !sample %in% elife_merge_meta_for_filt$sample
   ) %>% 
   pull(sample)
 
@@ -802,11 +673,10 @@ external_quant$npj_liverCirrhosis <-
                                       filter(!diagnosis %in% c('liver cirrhosis', 'non-cancer')) %>% 
                                       pull(sample)))
 
-external_quant$elife <-
-  subset.tximeta.se(external_quant$ucsc_rmsk_quant,
-                    filter_list = c(elife_select_list))
+
 ```
-## gut
+
+## external gut
 ```{r}
 merge(
   gut_quant$ucsc_rmsk_quant$quant_meta,

@@ -689,63 +689,33 @@ merge(
 # merge metadata
 ## internal
 ```{r}
-internal_quant$original_data$quant_meta <-
+internal_rmsk_quant$panc_normal$quant_meta <-
   merge(
-    internal_quant$original_data$quant_meta,
+    internal_rmsk_quant$panc_normal$quant_meta,
     original_discovery_meta_data,
     by = 'sample'
   )
 
-internal_quant$origCovid_normal$quant_meta <-
+internal_rmsk_quant$covid_ctrl$quant_meta <-
   merge(
-    internal_quant$origCovid_normal$quant_meta,
-    original_normal_meta_data,
+    internal_rmsk_quant$covid_ctrl$quant_meta,
+    original_discovery_meta_data,
     by = 'sample'
   )
 
-internal_quant$origPanc_normal$quant_meta <-
-  merge(
-    internal_quant$origPanc_normal$quant_meta,
-    original_normal_meta_data,
-    by = 'sample'
-  )
+```
 
-internal_quant$panc_normal$quant_meta <-
+## external elife
+```{r}
+elife_rmsk_quant$rmsk$quant_meta <- 
   merge(
-    internal_quant$panc_normal$quant_meta,
-    discovery_meta_data,
-    by = 'sample'
-  )
-
-internal_quant$esoph_normal$quant_meta <-
-  merge(
-    internal_quant$esoph_normal$quant_meta,
-    discovery_meta_data,
-    by = 'sample'
-  )
-
-internal_quant$preTx$quant_meta <-
-  merge(
-    internal_quant$preTx$quant_meta,
-    discovery_meta_data,
-    by = 'sample'
-  )
-
-internal_quant$postTx$quant_meta <-
-  merge(
-    internal_quant$postTx$quant_meta,
-    discovery_meta_data,
-    by = 'sample'
-  )
-
-gut_quant$ucsc_rmsk_quant$quant_meta <- 
-  merge(
-    gut_quant$ucsc_rmsk_quant$quant_meta,
-    gut_meta_data,
+    elife_rmsk_quant$rmsk$quant_meta,
+    elife_meta_data,
     by = 'sample'
   )
 ```
-## external
+
+## external npj
 ```{r}
 external_quant$npj$quant_meta <- 
   merge(
@@ -753,14 +723,19 @@ external_quant$npj$quant_meta <-
     npj_meta_data,
     by = 'sample'
   )
+```
 
-external_quant$elife$quant_meta <- 
+## external gut
+```{r}
+gut_quant$ucsc_rmsk_quant$quant_meta <- 
   merge(
-    external_quant$elife$quant_meta,
-    elife_meta_data,
+    gut_quant$ucsc_rmsk_quant$quant_meta,
+    gut_meta_data,
     by = 'sample'
   )
 ```
+
+
 
 ## construct_analysis_sets
 ```{r}
@@ -873,11 +848,11 @@ import::from(.directory = r_code.dir,
               run.de.seq,
               run.de.seq.individual)
 
-internal_quant$original_data$deseq <- 
-  run.de.seq.individual(input_se = internal_quant$original_data,
+elife_rmsk_quant$rmsk$deseq <- 
+  run.de.seq.individual(input_se = elife_rmsk_quant$rmsk,
                         type = 'gxi',
-                        base_level = 'normal',
-                        top_level = 'panc',
+                        base_level = 'Healthy donor',
+                        top_level = 'Lung Cancer',
                         ref_type = 'ucsc.rmsk',
                         dds_formula = 
                           as.formula('~age+gender+input_vol+diagnosis'))

@@ -677,7 +677,6 @@ external_quant$npj_liverCirrhosis <-
 
 
 ```
-
 ## external gut
 ```{r}
 merge(
@@ -706,7 +705,6 @@ internal_rmsk_quant$covid_ctrl$quant_meta <-
   )
 
 ```
-
 ## external elife
 ```{r}
 elife_rmsk_quant$rmsk$quant_meta <- 
@@ -716,7 +714,6 @@ elife_rmsk_quant$rmsk$quant_meta <-
     by = 'sample'
   )
 ```
-
 ## external npj
 ```{r}
 external_quant$npj$quant_meta <- 
@@ -726,7 +723,6 @@ external_quant$npj$quant_meta <-
     by = 'sample'
   )
 ```
-
 ## external gut
 ```{r}
 gut_quant$ucsc_rmsk_quant$quant_meta <- 
@@ -736,8 +732,6 @@ gut_quant$ucsc_rmsk_quant$quant_meta <-
     by = 'sample'
   )
 ```
-
-
 
 ## construct_analysis_sets
 ```{r}
@@ -859,14 +853,15 @@ elife_rmsk_quant$rmsk$deseq <-
                         dds_formula = 
                           as.formula('~age+gender+diagnosis'))
 
-internal_quant$origPanc_normal$deseq <- 
-  run.de.seq.individual(input_se = internal_quant$origPanc_normal,
+internal_rmsk_quant$panc_normal$deseq <- 
+  run.de.seq.individual(input_se = internal_rmsk_quant$panc_normal,
                         type = 'gxi',
                         base_level = 'normal',
-                        top_level = 'covid',
+                        top_level = 'panc',
                         ref_type = 'ucsc.rmsk',
                         dds_formula = 
-                          as.formula('~age+gender+diagnosis'))
+                          as.formula('~age+gender+input_vol+diagnosis'))
+
 
 # internal_quant$panc_normal$deseq <- 
 #   run.de.seq.individual(input_se = internal_quant$panc_normal,
@@ -888,41 +883,41 @@ internal_quant$origPanc_normal$deseq <-
 #                           as.formula('~age+gender+input_vol+diagnosis'))
 
 
-gut_quant$ucsc_rmsk_quant$deseq <- 
-  run.de.seq.individual(input_se = gut_quant$ucsc_rmsk_quant,
-                        type = 'gxi',
-                        base_level = 'healthy',
-                        top_level = 'PDAC',
-                        ref_type = 'ucsc.rmsk',
-                        dds_formula = 
-                          as.formula('~diagnosis'))
-
-external_quant$npj$deseq <- 
-  run.de.seq.individual(input_se = external_quant$npj,
-                        type = 'gxi',
-                        base_level = 'non-cancer',
-                        top_level = 'MGUS',
-                        ref_type = 'ucsc.rmsk',
-                        dds_formula = 
-                          as.formula('~age+gender+diagnosis'))
-
-external_quant$elife$deseq <- 
-  run.de.seq.individual(input_se = external_quant$elife,
-                        type = 'gxi',
-                        base_level = 'Lung Cancer',
-                        top_level = 'Liver Cancer',
-                        ref_type = 'ucsc.rmsk',
-                        dds_formula = 
-                          as.formula('~age+gender+diagnosis'))
-
-united_analysis_set$deseq <- 
-  run.de.seq.individual(input_se = united_analysis_set,
-                        type = 'gxi',
-                        base_level = 'healthy',
-                        top_level = 'PDAC',
-                        ref_type = 'ucsc.rmsk',
-                        dds_formula = 
-                          as.formula('~diagnosis'))
+# gut_quant$ucsc_rmsk_quant$deseq <- 
+#   run.de.seq.individual(input_se = gut_quant$ucsc_rmsk_quant,
+#                         type = 'gxi',
+#                         base_level = 'healthy',
+#                         top_level = 'PDAC',
+#                         ref_type = 'ucsc.rmsk',
+#                         dds_formula = 
+#                           as.formula('~diagnosis'))
+# 
+# external_quant$npj$deseq <- 
+#   run.de.seq.individual(input_se = external_quant$npj,
+#                         type = 'gxi',
+#                         base_level = 'non-cancer',
+#                         top_level = 'MGUS',
+#                         ref_type = 'ucsc.rmsk',
+#                         dds_formula = 
+#                           as.formula('~age+gender+diagnosis'))
+# 
+# external_quant$elife$deseq <- 
+#   run.de.seq.individual(input_se = external_quant$elife,
+#                         type = 'gxi',
+#                         base_level = 'Lung Cancer',
+#                         top_level = 'Liver Cancer',
+#                         ref_type = 'ucsc.rmsk',
+#                         dds_formula = 
+#                           as.formula('~age+gender+diagnosis'))
+# 
+# united_analysis_set$deseq <- 
+#   run.de.seq.individual(input_se = united_analysis_set,
+#                         type = 'gxi',
+#                         base_level = 'healthy',
+#                         top_level = 'PDAC',
+#                         ref_type = 'ucsc.rmsk',
+#                         dds_formula = 
+#                           as.formula('~diagnosis'))
 
 
 # 
@@ -999,16 +994,16 @@ calc_entropy <- function(norm_counts.df, meta_data, grouping_level) {
 }
 
 calc_entropy(
-  elife_rmsk_quant$rmsk$deseq$norm_counts.df,
-  elife_meta_data,
-  grouping_level = 'clade'
+  internal_rmsk_quant$panc_normal$deseq$norm_counts.df,
+  original_discovery_meta_data,
+  grouping_level = 'type'
 ) %>%
   ggplot(aes(diagnosis, entropy)) +
   geom_boxplot(fill = NA) +
   geom_jitter(shape = 21) +
   # ggplot(aes(entropy, fill = diagnosis)) +
   # geom_density(alpha = 0.3) +
-  facet_wrap(~ clade) + 
+  facet_wrap(~ type) + 
   theme(axis.text.x = element_text(angle = 40, hjust = 1))
 
 calc_entropy(
@@ -1064,6 +1059,27 @@ original_discovery_meta_data %>%
 import::from(.directory = r_code.dir, 
              .from = 'helper_analysisFunctions.R', 
               run.pca, extract.meta.pca.correlates)
+
+internal_rmsk_quant$panc_normal$pca <- 
+  run.pca(input_de = internal_rmsk_quant$panc_normal$deseq)
+
+
+disc_identity_color_pal <- setNames(RColorBrewer::brewer.pal(2, 'Dark2'),
+                                   unique(internal_rmsk_quant$panc_normal$quant_meta %>% pull(diagnosis)))
+
+pcs.props <- internal_rmsk_quant$panc_normal$pca$pc_props
+
+internal_rmsk_quant$panc_normal$pca$pca_out.df %>% 
+    ggplot(aes(PC1, PC2,
+             color = condition, shape = gender)) +
+  geom_point(size = txt.mm_to_pts(0.8), aes(fill = after_scale(alpha(color, 0.4)))) +
+  scale_shape_manual(values = c(21,25)) +
+  xlab(paste('PC1', round(cumsum(pcs.props)[1], digits = 3)*100,'%',sep = ' ')) +
+  ylab(paste('PC2', round(cumsum(pcs.props)[2] - cumsum(pcs.props)[1], digits = 3)*100,'%',sep = ' ')) +
+  geom_vline(xintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) +
+  geom_hline(yintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) + 
+  scale_fill_grey(na.value = 'lightgreen', end = 0.25, start = 1) +
+  scale_color_manual(values = disc_identity_color_pal)
 
 # salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca <-
 #   run.pca(input_de = salmon_quant$analysis_set$ctrl_panc_covid$deseq,

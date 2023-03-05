@@ -592,9 +592,7 @@ run.de.seq.individual <- function(type = 'gxi', base_level = 'ctrl',
   
 }
 
-run.pca <- function(input_de, 
-                    identity_color_pal, 
-                    plot_tag = 'A') {
+run.pca <- function(input_de) {
   
   import::here(.from = 'tibble', lst)
   import::here(.from = 'stats', prcomp)
@@ -621,7 +619,7 @@ run.pca <- function(input_de,
   
   pca.out <- as.data.frame(non_zero_pca$x) %>% 
     rownames_to_column('sample') %>% 
-    merge(input_de$scaled_quant_meta_for_de.df, by = 'sample')
+    merge(input_de$scaled_quant_meta_for_de.df %>% rownames_to_column('sample'), by = 'sample')
   
   pca.out.summary <- 
     as.data.frame(summary(non_zero_pca)$importance) %>% 
@@ -629,47 +627,10 @@ run.pca <- function(input_de,
     gather(pc, value, -metric) %>% 
     spread(metric, value)
   
-  pca.out %>% 
-    ggplot(aes(PC1, PC2,
-               color = condition)) +
-    geom_point(size = rel(1), alpha = 0.8) + 
-    # scale_shape_manual(values = c(21,25)) +
-    xlab(paste('PC1', round(cumsum(pcs.props)[1], digits = 3), sep = ' ')) +
-    ylab(paste('PC2', round(cumsum(pcs.props)[2] - cumsum(pcs.props)[1], digits = 3), sep = ' ')) +
-    geom_vline(xintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) +
-    geom_hline(yintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) + 
-    scale_color_manual(values = identity_color_pal) + 
-    # theme(axis.title.x = element_blank()) +
-    xlim(-200,200) -> pca_1v2.plt
-  
-  pca.out %>% 
-    ggplot(aes(PC2, PC3,
-               color = condition)) +
-    geom_point(size = rel(1), alpha = 0.8) + 
-    # scale_shape_manual(values = c(21,25)) +
-    xlab(paste('PC2', round(cumsum(pcs.props)[2] - cumsum(pcs.props)[1], digits = 3), sep = ' ')) +
-    ylab(paste('PC3', round(cumsum(pcs.props)[3] - cumsum(pcs.props)[2], digits = 3), sep = ' ')) +
-    geom_vline(xintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) +
-    geom_hline(yintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) + 
-    scale_color_manual(values = identity_color_pal) + 
-    ylim(-200,200) -> pca_2v3.plt
-  
-  pca.out %>% 
-    ggplot(aes(PC3, PC4,
-               color = condition)) +
-    geom_point(size = rel(1), alpha = 0.8) + 
-    # scale_shape_manual(values = c(21,25)) +
-    xlab(paste('PC3', round(cumsum(pcs.props)[3] - cumsum(pcs.props)[2], digits = 3), sep = ' ')) +
-    ylab(paste('PC4', round(cumsum(pcs.props)[4] - cumsum(pcs.props)[3], digits = 3), sep = ' ')) +
-    geom_vline(xintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) +
-    geom_hline(yintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) + 
-    scale_color_manual(values = identity_color_pal) + 
-    ylim(-200,200) -> pca_3v4.plt
-  
   lst('pca_out.df' = pca.out,
-      'pca_1v2.plt' = pca_1v2.plt,
-      'pca_2v3.plt' = pca_2v3.plt,
-      'pca_3v4.plt' = pca_3v4.plt)
+      'pca_out' = non_zero_pca,
+      'pc_props' = pcs.props,
+      'summary' = pca.out.summary)
 }
 
 

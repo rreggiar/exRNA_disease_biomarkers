@@ -1399,29 +1399,31 @@ fig.1C.plt <-
 ```
 ## Fig_1D
 ```{r 1D}
-ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$quant_meta %>% 
-  gather(var, value, -sample, -condition, -sex, -context) %>% 
-  mutate(value = as.numeric(value),
-         condition = factor(condition, levels = c('panc', 'ctrl', 'covid'))) %>% 
-  filter(var == 'salmon_percent_mapped') %>% 
-  dplyr::rename('Repeat-aware' = value) %>% 
-  merge(tidy_quant_meta.df %>% select(sample, var, value) %>% 
-        filter(var == 'salmon_percent_mapped') %>% 
-               dplyr::rename('GENCODE' = value) %>% 
-          select(-var), by = 'sample') -> mapping_rate_compare.df
 
-mapping_rate_compare.df %>% 
-  gather(var, value, -sample, -context, -sex, -condition, -var) %>% 
-  ggplot(aes(var, value, color = condition)) + 
-  geom_boxplot(fill = NA, outlier.colour = NA, show.legend = F) + 
-  geom_point(size = rel(1), alpha = 0.8) +
-  geom_line(aes(group = sample), alpha = 0.2, show.legend = F) +
-  ylab('% mapped') + xlab('') + 
-  ggforce::facet_row(~condition, strip.position = 'bottom') +
-  scale_color_manual(values = identity_color_pal) + 
-  ggpubr::stat_compare_means(comparisons = list(c('GENCODE', 'Repeat-aware')), 
-                             method = 'wilcox', size = 2.5, 
-                             method.args = list(exact = TRUE, paired = T), label = 'p.signif') -> mapping_rate_compare.plt
+jitter_seed = set.seed(2023-03-06)
+
+internal_rmsk_quant$panc_normal$quant_meta %>%
+  mutate(reference = 'Repeat-aware') %>%
+  rbind(
+    internal_gencode_quant$panc_normal$quant_meta %>%
+      mutate(reference = 'Repeat-naive')
+  ) %>%
+  mutate(reference = factor(reference, levels = c('Repeat-naive', 'Repeat-aware')),
+         sample = factor(sample)) %>%
+  ggplot(aes(reference, salmon_percent_mapped)) +
+  geom_boxplot(fill = NA, outlier.color = NULL) +
+  geom_point(size = rel(1)) +
+  geom_line(
+    aes(group = sample),
+    alpha = 0.2,
+    show.legend = F
+  ) +
+  ylab('% of reads mapped') + xlab('') + 
+  ggforce::facet_row( ~ diagnosis, strip.position = 'bottom') +
+  ggpubr::stat_compare_means(comparisons = list(c('Repeat-naive', 'Repeat-aware')), 
+                           method = 'wilcox', size = 2.5, 
+                           method.args = list(exact = TRUE, paired = T), label = 'p.signif')
+
 
 fig.1D.plt <- mapping_rate_compare.plt
 ```

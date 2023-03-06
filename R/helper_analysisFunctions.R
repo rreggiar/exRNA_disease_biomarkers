@@ -513,15 +513,15 @@ run.de.seq.individual <- function(type = 'gxi', base_level = 'ctrl',
   
   input_set_dds_norm_counts.df <- as.data.frame(counts(input_set_dds, normalized=T))
   
-  # condition_aware_age_cor_filter <- 
-  #   input_set_dds_norm_counts.df %>% 
-  #   rownames_to_column('ensg') %>% 
-  #   gather(sample, count, -ensg) %>% 
-  #   merge(input_se$quant_meta %>% select(sample, diagnosis), by = 'sample') %>% 
-  #   group_by(diagnosis, ensg) %>% 
-  #   summarize(age_cor = cor(count, sample_sku_patient_age_at_collection, method = 'pearson')) %>% 
-  #   drop_na() %>% 
-  #   filter(abs(age_cor) >= 0.70) %>% 
+  # condition_aware_age_cor_filter <-
+  #   input_set_dds_norm_counts.df %>%
+  #   rownames_to_column('ensg') %>%
+  #   gather(sample, count, -ensg) %>%
+  #   merge(input_se$quant_meta %>% select(sample, diagnosis), by = 'sample') %>%
+  #   group_by(diagnosis, ensg) %>%
+  #   summarize(age_cor = cor(count, sample_sku_patient_age_at_collection, method = 'pearson')) %>%
+  #   drop_na() %>%
+  #   filter(abs(age_cor) >= 0.70) %>%
   #   spread(diagnosis, age_cor)
   
   input_set_dds_vst_counts <- as.data.frame(assay(vst(input_set_dds, blind = F)))
@@ -548,9 +548,8 @@ run.de.seq.individual <- function(type = 'gxi', base_level = 'ctrl',
       # indiv comparisons return flipped values ?
       # mutate(log2FoldChange = -log2FoldChange) %>% 
       rownames_to_column('ensg') %>% 
-      filter(!ensg %in% c(condition_aware_age_cor_filter[, c(base_level, top_level)]$ensg,
-                          gencode_sex_filter.df$gene_id)) %>%
-      merge(rowRanges(input_se[[type]]) %>% as.data.frame(), by.x = 'ensg', by.y = 'gene_id') %>%
+      filter(!ensg %in% gencode_sex_filter.df$gene_id) %>%
+      # merge(rowRanges(input_se[[type]]) %>% as.data.frame(), by.x = 'ensg', by.y = 'gene_id') %>%
       merge(reference_meta_in %>% select(ensg, gene) %>% distinct(), by = 'ensg')
     
   } else if (ref_type == 'process.aware') {

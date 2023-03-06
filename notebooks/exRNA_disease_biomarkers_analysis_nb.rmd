@@ -599,6 +599,21 @@ internal_rmsk_quant$panc_normal <-
     )
   )
 
+internal_gencode_quant$panc_normal <-
+  subset.tximeta.se(
+    internal_gencode_quant$txonly,
+    filter_list = c(
+      qc_fails,
+      orig_covid_samples,
+      unknown_samples,
+      esoph_samples,
+      stage_IandII_select_list,
+      stage_III_select_list,
+      stage_IV_select_list,
+      pitts_samples
+    )
+  )
+
 internal_rmsk_quant$covid_ctrl <-
   subset.tximeta.se(
     internal_rmsk_quant$rmsk,
@@ -693,6 +708,13 @@ merge(
 internal_rmsk_quant$panc_normal$quant_meta <-
   merge(
     internal_rmsk_quant$panc_normal$quant_meta,
+    original_discovery_meta_data,
+    by = 'sample'
+  )
+
+internal_gencode_quant$panc_normal$quant_meta <-
+  merge(
+    internal_gencode_quant$panc_normal$quant_meta,
     original_discovery_meta_data,
     by = 'sample'
   )
@@ -861,6 +883,16 @@ internal_rmsk_quant$panc_normal$deseq <-
                         ref_type = 'ucsc.rmsk',
                         dds_formula = 
                           as.formula('~age+gender+input_vol+diagnosis'))
+
+internal_gencode_quant$panc_normal$deseq <- 
+  run.de.seq.individual(input_se = internal_gencode_quant$panc_normal,
+                        type = 'gxi',
+                        base_level = 'normal',
+                        top_level = 'panc',
+                        ref_type = 'salmon',
+                        dds_formula = 
+                          as.formula('~age+gender+input_vol+diagnosis'))
+
 
 
 # internal_quant$panc_normal$deseq <- 
@@ -1060,8 +1092,8 @@ import::from(.directory = r_code.dir,
              .from = 'helper_analysisFunctions.R', 
               run.pca, extract.meta.pca.correlates)
 
-internal_rmsk_quant$panc_normal$pca <- 
-  run.pca(input_de = internal_rmsk_quant$panc_normal$deseq)
+internal_gencode_quant$panc_normal$pca <- 
+  run.pca(input_de = internal_gencode_quant$panc_normal$deseq)
 
 
 disc_identity_color_pal <- setNames(RColorBrewer::brewer.pal(2, 'Dark2'),
@@ -1069,7 +1101,7 @@ disc_identity_color_pal <- setNames(RColorBrewer::brewer.pal(2, 'Dark2'),
 
 pcs.props <- internal_rmsk_quant$panc_normal$pca$pc_props
 
-internal_rmsk_quant$panc_normal$pca$pca_out.df %>% 
+internal_gencode_quant$panc_normal$pca$pca_out.df %>% 
     ggplot(aes(PC1, PC2,
              color = condition, shape = gender)) +
   geom_point(size = txt.mm_to_pts(0.8), aes(fill = after_scale(alpha(color, 0.4)))) +

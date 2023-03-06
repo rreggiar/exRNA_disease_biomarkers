@@ -170,9 +170,13 @@ eight_color_pal <- RColorBrewer::brewer.pal(n = 8, 'Dark2')
 viridis_three_color_pal <- viridisLite::plasma(20)[c(1,9,16)]
 
 
-identity_color_pal <- c('ctrl' = viridis_three_color_pal[[1]],
-                        'panc' = viridis_three_color_pal[[2]],
-                        'covid' = viridis_three_color_pal[[3]])
+
+orig_identity_color_pal <- c('ctrl' = viridis_three_color_pal[[1]],
+                             'panc' = viridis_three_color_pal[[2]],
+                             'covid' = viridis_three_color_pal[[3]])
+
+disc_identity_color_pal <- c('normal' = viridis_three_color_pal[[1]],
+                             'panc' = viridis_three_color_pal[[2]])
 
 te_aware_annotation_levels <- c('GENCODE_coding',
                                  'GENCODE_lncRNA',
@@ -1390,11 +1394,21 @@ flowchart_wrap_fig1A.plt <- wrap_elements(full = magick::image_ggplot(flow_chart
 ## Fig_1B/C
 ```{r 1B/C}
 
-fig.1B.plt <- 
-  ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_1v2.plt + xlim(-280,280)
-  
-fig.1C.plt <- 
-  ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_2v3.plt
+
+disc_identity_shape_pal <- c('Male' = 23, 'Female' = 24)
+
+internal_rmsk_quant$panc_normal$pca$pca_out.df %>% View()
+    ggplot(aes(PC1, PC2,
+             color = condition, shape = gender)) +
+  geom_point(size = txt.mm_to_pts(0.8), aes(fill = after_scale(alpha(color, 0.4)))) +
+  geom_rug(aes(salmon_percent_mapped)) +
+  xlab(paste('PC1', round(cumsum(pcs.props)[1], digits = 3)*100,'%',sep = ' ')) +
+  ylab(paste('PC2', round(cumsum(pcs.props)[2] - cumsum(pcs.props)[1], digits = 3)*100,'%',sep = ' ')) +
+  geom_vline(xintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) +
+  geom_hline(yintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) + 
+  scale_fill_grey(na.value = 'lightgreen', end = 0.25, start = 1) +
+  scale_color_manual(values = disc_identity_color_pal[1:2]) +
+  scale_shape_manual(values = disc_identity_shape_pal)
 
 ```
 ## Fig_1D
@@ -1410,8 +1424,8 @@ internal_rmsk_quant$panc_normal$quant_meta %>%
   ) %>%
   mutate(reference = factor(reference, levels = c('Repeat-naive', 'Repeat-aware')),
          sample = factor(sample)) %>%
-  ggplot(aes(reference, salmon_percent_mapped)) +
-  geom_boxplot(fill = NA, outlier.color = NULL) +
+  ggplot(aes(reference, salmon_percent_mapped, shape = gender)) +
+  geom_boxplot(fill = NA, outlier.color = NULL, aes(group = reference)) +
   geom_point(size = rel(1)) +
   geom_line(
     aes(group = sample),
@@ -1419,6 +1433,7 @@ internal_rmsk_quant$panc_normal$quant_meta %>%
     show.legend = F
   ) +
   ylab('% of reads mapped') + xlab('') + 
+  scale_shape_manual(values = disc_identity_shape_pal) +
   ggforce::facet_row( ~ diagnosis, strip.position = 'bottom') +
   ggpubr::stat_compare_means(comparisons = list(c('Repeat-naive', 'Repeat-aware')), 
                            method = 'wilcox', size = 2.5, 

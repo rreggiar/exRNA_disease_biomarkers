@@ -420,8 +420,7 @@ original_discovery_meta_data <-
                  'discovery_meta_data')
 
 original_normal_meta_data <- 
-  matching_rbind('original_covid_meta_data',
-                 'original_panc_meta_data',
+  matching_rbind('original_panc_meta_data',
                  'discovery_meta_data')
 
 origCovid_normal_meta_data <-

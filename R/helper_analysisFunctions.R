@@ -635,18 +635,38 @@ run.pca <- function(input_de) {
 
 extract.meta.pca.correlates <- function(pca.out) {
   
-  Filter(function(x) sd(x) !=0, pca.out %>% select(where(is.numeric))) %>% 
-    cor(method = 'pearson') %>% 
-    as.data.frame() %>% 
-    select(-starts_with('PC')) %>% 
-    rownames_to_column('pc') %>% 
-    filter(grepl('^PC', pc)) %>% 
-    gather(var, cor, -pc) %>% 
-    mutate(pc = as.factor(as.numeric(str_remove(pc, 'PC')))) %>% 
-    filter(pc %in% c(1,2,3)) -> pca_pearson_cor.df
+  pca.out %>%
+    select_if(~ !any(is.na(.))) -> clin_data_pca_corr
   
-  pca_pearson_cor.df
+  clin_data_pca_corr %>%
+    select_if(~ is.numeric(.)) %>%
+    cor(method = 'pearson') %>%
+    as.data.frame() %>%
+    select(-starts_with('PC')) %>%
+    rownames_to_column('pc') %>%
+    filter(grepl('^PC', pc)) %>%
+    gather(var, cor, -pc) %>%
+    mutate(pc = as.factor(as.numeric(str_remove(pc, 'PC')))) %>%
+    filter(pc %in% c(1, 2, 3)) -> corr_out
   
+  lapply(c(1:3), function(pc) {
+    pc <- paste0('PC', pc)
+    
+    vars <- unique(corr_out$var)
+    
+    names(vars) <- vars
+    
+    imap(vars, function(name, var) {
+      cor.test(clin_data_pca_corr[, pc], clin_data_pca_corr[, var])$p.value
+      
+    })
+    
+  }) %>% bind_rows(.id = 'pc') %>%
+    pivot_longer(names_to = 'var',
+                 values_to = 'pval',
+                 cols = -pc) -> cor_test_out
+  
+  cor_test_out
   
 }
 

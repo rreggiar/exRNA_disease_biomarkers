@@ -1034,13 +1034,14 @@ calc_entropy(
   original_discovery_meta_data,
   grouping_level = 'type'
 ) %>%
-  ggplot(aes(diagnosis, entropy)) +
-  geom_boxplot(fill = NA) +
-  geom_jitter(shape = 21) +
-  # ggplot(aes(entropy, fill = diagnosis)) +
-  # geom_density(alpha = 0.3) +
+  ggplot(aes(diagnosis, entropy, shape = gender)) +
+  geom_boxplot(fill = NA, outlier.shape = NA, aes(group = diagnosis), show.legend = F) +
+  geom_jitter(width = 0.125) +
   facet_wrap(~ type) + 
-  theme(axis.text.x = element_text(angle = 40, hjust = 1))
+  ylim(0,12) + ylab('biotype entropy') + xlab('') +
+  ggpubr::stat_compare_means(comparisons = list(c('normal', 'panc')), 
+                         method = 'wilcox', size = 2.5, 
+                         method.args = list(exact = TRUE, paired = F), label = 'p.signif')
 
 calc_entropy(
   external_quant$npj$deseq$norm_counts.df,
@@ -1387,34 +1388,79 @@ tmp_merge_df %>%
 ## Fig_flowchart_1A
 ```{r 1A}
 # install.packages('pdftools')
+# install.packages('magick')
 flow_chart.plt <- magick::image_read_pdf(path = file.path(figure.dir, 'fig.1', 'plasma_schematic_v6.pdf'))
-flowchart_wrap_fig1A.plt <- wrap_elements(full = magick::image_ggplot(flow_chart.plt))
+flowchart_wrap_fig1A.plt <- patchwork::wrap_elements(full = magick::image_ggplot(flow_chart.plt))
 
 ```
 ## Fig_1B/C
 ```{r 1B/C}
+disc_identity_shape_pal <- c('Male' = 23, 'Female' = 25)
 
-
-disc_identity_shape_pal <- c('Male' = 23, 'Female' = 24)
-
-internal_rmsk_quant$panc_normal$pca$pca_out.df %>% View()
-    ggplot(aes(PC1, PC2,
-             color = condition, shape = gender)) +
+internal_gencode_quant$panc_normal$pca$pca_out.df %>%
+  ggplot(aes(PC1, PC2,
+             color = diagnosis, shape = gender)) +
   geom_point(size = txt.mm_to_pts(0.8), aes(fill = after_scale(alpha(color, 0.4)))) +
-  geom_rug(aes(salmon_percent_mapped)) +
-  xlab(paste('PC1', round(cumsum(pcs.props)[1], digits = 3)*100,'%',sep = ' ')) +
-  ylab(paste('PC2', round(cumsum(pcs.props)[2] - cumsum(pcs.props)[1], digits = 3)*100,'%',sep = ' ')) +
-  geom_vline(xintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) +
-  geom_hline(yintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) + 
-  scale_fill_grey(na.value = 'lightgreen', end = 0.25, start = 1) +
-  scale_color_manual(values = disc_identity_color_pal[1:2]) +
-  scale_shape_manual(values = disc_identity_shape_pal)
+  geom_rug() +
+  xlab(paste('PC1', round(
+    cumsum(internal_gencode_quant$panc_normal$pca$pc_props)[1],
+    digits = 3
+  ) * 100, '%', sep = ' ')) +
+  ylab(paste('PC2', round(
+    cumsum(internal_gencode_quant$panc_normal$pca$pc_props)[2] - cumsum(internal_gencode_quant$panc_normal$pca$pc_props)[1],
+    digits = 3
+  ) * 100, '%', sep = ' ')) +
+  geom_vline(
+    xintercept = 0,
+    linetype = 'dotted',
+    alpha = 0.3,
+    size = 0.25
+  ) +
+  geom_hline(
+    yintercept = 0,
+    linetype = 'dotted',
+    alpha = 0.3,
+    size = 0.25
+  ) +
+  scale_color_manual(values = disc_identity_color_pal) +
+  scale_shape_manual(values = disc_identity_shape_pal) -> fig.1B.plt
+
+internal_rmsk_quant$panc_normal$pca$pca_out.df %>%
+  ggplot(aes(PC1, PC2,
+             color = diagnosis, shape = gender)) +
+  geom_point(size = txt.mm_to_pts(0.8), aes(fill = after_scale(alpha(color, 0.4)))) +
+  geom_rug() +
+  xlab(paste('PC1', round(
+    cumsum(internal_rmsk_quant$panc_normal$pca$pc_props)[1],
+    digits = 3
+  ) * 100, '%', sep = ' ')) +
+  ylab(paste('PC2', round(
+    cumsum(internal_rmsk_quant$panc_normal$pca$pc_props)[2] - cumsum(internal_rmsk_quant$panc_normal$pca$pc_props)[1],
+    digits = 3
+  ) * 100, '%', sep = ' ')) +
+  geom_vline(
+    xintercept = 0,
+    linetype = 'dotted',
+    alpha = 0.3,
+    size = 0.25
+  ) +
+  geom_hline(
+    yintercept = 0,
+    linetype = 'dotted',
+    alpha = 0.3,
+    size = 0.25
+  ) +
+  scale_color_manual(values = disc_identity_color_pal) +
+  scale_shape_manual(values = disc_identity_shape_pal) -> fig.1C.plt
+    
+    
+   %>% 
+  filter(pval < 0.05) %>% 
+  merge(corr_out, by = c('pc', 'var'))
 
 ```
 ## Fig_1D
 ```{r 1D}
-
-jitter_seed = set.seed(2023-03-06)
 
 internal_rmsk_quant$panc_normal$quant_meta %>%
   mutate(reference = 'Repeat-aware') %>%
@@ -1425,7 +1471,7 @@ internal_rmsk_quant$panc_normal$quant_meta %>%
   mutate(reference = factor(reference, levels = c('Repeat-naive', 'Repeat-aware')),
          sample = factor(sample)) %>%
   ggplot(aes(reference, salmon_percent_mapped, shape = gender)) +
-  geom_boxplot(fill = NA, outlier.color = NULL, aes(group = reference)) +
+  geom_boxplot(fill = NA, outlier.color = NULL, aes(group = reference), show.legend = F) +
   geom_point(size = rel(1)) +
   geom_line(
     aes(group = sample),

@@ -1428,15 +1428,13 @@ wrap_plots(flowchart_wrap_fig1A.plt,
         legend.title = element_text(vjust = 1.25),
         legend.justification = c(0.5, 0.5)) -> fig.1.patchwork
 
-fig.1.patchwork
 
-
-# save.manuscript.panel(figure = 1,
-#                       figure.dir = figure.dir,
-#                       name = 'patchwork_full_fig_1',
-#                       width = figure_double_column_width,
-#                       height = figure_depth,
-#                       plot.in = fig.1.patchwork)
+save.manuscript.panel(figure = 1,
+                      figure.dir = figure.dir,
+                      name = 'patchwork_full_fig_1',
+                      width = figure_double_column_width,
+                      height = figure_depth,
+                      plot.in = fig.1.patchwork)
 
 
 ```

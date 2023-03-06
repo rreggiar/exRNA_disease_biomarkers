@@ -202,6 +202,7 @@ names(te_alone_color_pal) <- te_alone_annotation_levels
 
 import::from(.from = 'SummarizedExperiment',
              rowRanges)
+disc_identity_shape_pal <- c('Male' = 23, 'Female' = 25)
 
 
 ```
@@ -1102,20 +1103,35 @@ internal_gencode_quant$panc_normal$pca <-
 
 internal_gencode_quant$panc_normal$pca$pca_out.df %>% 
   extract.meta.pca.correlates() %>% 
-  filter(pval < 0.05, abs(cor) > 0.6)
+  filter(pval < 0.05, abs(cor) > 0.5) -> internal_gencode_quant$panc_normal$pca$pc_sig_corr
 
 internal_rmsk_quant$panc_normal$pca <- 
   run.pca(input_de = internal_rmsk_quant$panc_normal$deseq)
 
 internal_rmsk_quant$panc_normal$pca$pca_out.df %>% 
   extract.meta.pca.correlates() %>% 
-  filter(pval < 0.05, abs(cor) > 0.6)
+  filter(pval < 0.05, abs(cor) > 0.6) -> internal_rmsk_quant$panc_normal$pca$pc_sig_corr
 
 
 
 internal_rmsk_quant$panc_normal$quant_meta %>%
-  ggplot(aes(input_vol, salmon_percent_mapped)) +
-  geom_point()
+  mutate(reference = 'Repeat-aware') %>% 
+  rbind(internal_gencode_quant$panc_normal$quant_meta %>% 
+          mutate(reference = 'Repeat-naive')) %>% 
+  ggplot(aes(input_vol, salmon_percent_mapped, shape = gender, color = reference)) +
+  scale_color_grey(end = 0.6) +
+  scale_shape_manual(values = disc_identity_shape_pal) +
+  geom_point(aes(fill = after_scale(alpha(color, 0.4)))) 
+
+internal_rmsk_quant$panc_normal$pca$pc_sig_corr %>% 
+  mutate(reference = 'Repeat-aware') %>% 
+  rbind(internal_gencode_quant$panc_normal$pca$pc_sig_corr %>% 
+          mutate(reference = 'Repeat-naive')) %>% 
+  mutate(var = str_remove_all(var, 'salmon_')) %>% 
+  ggplot(aes(reorder(var, -cor), abs(cor), color = reference)) +
+  geom_col(aes(fill = after_scale(alpha(color, 0.4))), position = position_dodge()) +
+  scale_color_grey(end = 0.6) +
+  ggforce::facet_row(~pc, scales = 'free_x')
   
 
 ```
@@ -1295,19 +1311,18 @@ flowchart_wrap_fig1A.plt <- patchwork::wrap_elements(full = magick::image_ggplot
 ```
 ## Fig_1B/C
 ```{r 1B/C}
-disc_identity_shape_pal <- c('Male' = 23, 'Female' = 25)
-
 internal_gencode_quant$panc_normal$pca$pca_out.df %>%
   ggplot(aes(PC1, PC2,
              color = diagnosis, shape = gender)) +
-  geom_point(size = txt.mm_to_pts(0.8), aes(fill = after_scale(alpha(color, 0.4)))) +
-  geom_rug() +
+  geom_point(size = txt.mm_to_pts(0.8), aes(fill = after_scale(alpha(color, 0.4))), show.legend = F) +
+  geom_rug(show.legend = F) +
   xlab(paste('PC1', round(
     cumsum(internal_gencode_quant$panc_normal$pca$pc_props)[1],
     digits = 3
   ) * 100, '%', sep = ' ')) +
   ylab(paste('PC2', round(
-    cumsum(internal_gencode_quant$panc_normal$pca$pc_props)[2] - cumsum(internal_gencode_quant$panc_normal$pca$pc_props)[1],
+    cumsum(internal_gencode_quant$panc_normal$pca$pc_props)[2] -
+      cumsum(internal_gencode_quant$panc_normal$pca$pc_props)[1],
     digits = 3
   ) * 100, '%', sep = ' ')) +
   geom_vline(
@@ -1328,14 +1343,15 @@ internal_gencode_quant$panc_normal$pca$pca_out.df %>%
 internal_rmsk_quant$panc_normal$pca$pca_out.df %>%
   ggplot(aes(PC1, PC2,
              color = diagnosis, shape = gender)) +
-  geom_point(size = txt.mm_to_pts(0.8), aes(fill = after_scale(alpha(color, 0.4)))) +
-  geom_rug() +
+  geom_point(size = txt.mm_to_pts(0.8), aes(fill = after_scale(alpha(color, 0.4))), show.legend = F) +
+  geom_rug(show.legend = F) +
   xlab(paste('PC1', round(
     cumsum(internal_rmsk_quant$panc_normal$pca$pc_props)[1],
     digits = 3
   ) * 100, '%', sep = ' ')) +
   ylab(paste('PC2', round(
-    cumsum(internal_rmsk_quant$panc_normal$pca$pc_props)[2] - cumsum(internal_rmsk_quant$panc_normal$pca$pc_props)[1],
+    cumsum(internal_rmsk_quant$panc_normal$pca$pc_props)[2] - 
+      cumsum(internal_rmsk_quant$panc_normal$pca$pc_props)[1],
     digits = 3
   ) * 100, '%', sep = ' ')) +
   geom_vline(
@@ -1368,9 +1384,9 @@ internal_rmsk_quant$panc_normal$quant_meta %>%
   ) %>%
   mutate(reference = factor(reference, levels = c('Repeat-naive', 'Repeat-aware')),
          sample = factor(sample)) %>%
-  ggplot(aes(reference, salmon_percent_mapped, shape = gender)) +
+  ggplot(aes(reference, salmon_percent_mapped, shape = gender, color = diagnosis)) +
   geom_boxplot(fill = NA, outlier.color = NULL, aes(group = reference), show.legend = F) +
-  geom_point(size = rel(1)) +
+  geom_point(size = txt.mm_to_pts(0.8), aes(fill = after_scale(alpha(color, 0.4)))) +
   geom_line(
     aes(group = sample),
     alpha = 0.2,
@@ -1378,13 +1394,14 @@ internal_rmsk_quant$panc_normal$quant_meta %>%
   ) +
   ylab('% of reads mapped') + xlab('') + 
   scale_shape_manual(values = disc_identity_shape_pal) +
+  scale_color_manual(values = disc_identity_color_pal) +
   ggforce::facet_row( ~ diagnosis, strip.position = 'bottom') +
   ggpubr::stat_compare_means(comparisons = list(c('Repeat-naive', 'Repeat-aware')), 
                            method = 'wilcox', size = 2.5, 
-                           method.args = list(exact = TRUE, paired = T), label = 'p.signif')
+                           method.args = list(exact = TRUE, paired = T), label = 'p.signif') -> fig.1D.plt
 
 
-fig.1D.plt <- mapping_rate_compare.plt
+
 ```
 ### Fig_1_patchwork
 ```{r Fig1}
@@ -1411,13 +1428,15 @@ wrap_plots(flowchart_wrap_fig1A.plt,
         legend.title = element_text(vjust = 1.25),
         legend.justification = c(0.5, 0.5)) -> fig.1.patchwork
 
+fig.1.patchwork
 
-save.manuscript.panel(figure = 1,
-                      figure.dir = figure.dir,
-                      name = 'patchwork_full_fig_1',
-                      width = figure_double_column_width,
-                      height = figure_depth,
-                      plot.in = fig.1.patchwork)
+
+# save.manuscript.panel(figure = 1,
+#                       figure.dir = figure.dir,
+#                       name = 'patchwork_full_fig_1',
+#                       width = figure_double_column_width,
+#                       height = figure_depth,
+#                       plot.in = fig.1.patchwork)
 
 
 ```

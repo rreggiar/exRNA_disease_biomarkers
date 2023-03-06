@@ -295,10 +295,15 @@ original_roster_names <- read_csv(
   ) %>%
   mutate(sample = str_split_fixed(sample, '_S', 2)[, 1])
 
-original_panc_meta_data <- 
+original_panc_staged_data <-
+  read_csv(file.path(meta_data.dir, 'bioIVT_panc_staged_metadata_2023-03-06.csv'))
+
+
+original_panc_meta_data <-
   sample_meta_data$`2022.01.14_bioIVTAndPitts_meta_data.csv` %>% 
   filter(condition == 'panc') %>% 
   dplyr::rename(sample = patient, diagnosis = condition) %>% 
+  merge(original_panc_staged_data %>% select(sample, stage), by ='sample') %>% 
   mutate(tmp = sample, dataset = 'pilot') %>% 
   mutate(input_vol = as.numeric(
       str_split_fixed(

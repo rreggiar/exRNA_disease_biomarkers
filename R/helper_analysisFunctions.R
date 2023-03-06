@@ -640,7 +640,7 @@ extract.meta.pca.correlates <- function(pca.out) {
   
   clin_data_pca_corr %>%
     select_if(~ is.numeric(.)) %>%
-    cor(method = 'pearson') %>%
+    cor(method = 'spearman') %>%
     as.data.frame() %>%
     select(-starts_with('PC')) %>%
     rownames_to_column('pc') %>%
@@ -666,7 +666,7 @@ extract.meta.pca.correlates <- function(pca.out) {
                  values_to = 'pval',
                  cols = -pc) -> cor_test_out
   
-  cor_test_out
+  cor_test_out %>% merge(corr_out, by = c('pc', 'var'))
   
 }
 

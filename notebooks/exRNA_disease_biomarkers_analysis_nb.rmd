@@ -1100,123 +1100,23 @@ import::from(.directory = r_code.dir,
 internal_gencode_quant$panc_normal$pca <- 
   run.pca(input_de = internal_gencode_quant$panc_normal$deseq)
 
-
-disc_identity_color_pal <- setNames(RColorBrewer::brewer.pal(2, 'Dark2'),
-                                   unique(internal_rmsk_quant$panc_normal$quant_meta %>% pull(diagnosis)))
-
-pcs.props <- internal_rmsk_quant$panc_normal$pca$pc_props
-
 internal_gencode_quant$panc_normal$pca$pca_out.df %>% 
-    ggplot(aes(PC1, PC2,
-             color = condition, shape = gender)) +
-  geom_point(size = txt.mm_to_pts(0.8), aes(fill = after_scale(alpha(color, 0.4)))) +
-  scale_shape_manual(values = c(21,25)) +
-  xlab(paste('PC1', round(cumsum(pcs.props)[1], digits = 3)*100,'%',sep = ' ')) +
-  ylab(paste('PC2', round(cumsum(pcs.props)[2] - cumsum(pcs.props)[1], digits = 3)*100,'%',sep = ' ')) +
-  geom_vline(xintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) +
-  geom_hline(yintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) + 
-  scale_fill_grey(na.value = 'lightgreen', end = 0.25, start = 1) +
-  scale_color_manual(values = disc_identity_color_pal)
+  extract.meta.pca.correlates() %>% 
+  filter(pval < 0.05, abs(cor) > 0.6)
 
-# salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca <-
-#   run.pca(input_de = salmon_quant$analysis_set$ctrl_panc_covid$deseq,
-#           identity_color_pal = identity_color_pal)
-# 
-# salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_corr_out.df <- 
-#   extract.meta.pca.correlates(pca.out =
-#                             salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_out.df)
+internal_rmsk_quant$panc_normal$pca <- 
+  run.pca(input_de = internal_rmsk_quant$panc_normal$deseq)
 
-# disc_identity_color_pal <- setNames(RColorBrewer::brewer.pal(3, 'Dark2')[c(1,2)], 
-#                                     c('normal', 'panc'))
-input_de <- internal_quant$origPanc_normal$deseq
+internal_rmsk_quant$panc_normal$pca$pca_out.df %>% 
+  extract.meta.pca.correlates() %>% 
+  filter(pval < 0.05, abs(cor) > 0.6)
 
-disc_identity_color_pal <- setNames(RColorBrewer::brewer.pal(2, 'Dark2'),
-                                   unique(input_de$quant_meta %>% pull(diagnosis)))
 
-diagnosis_identity_color_pal <- setNames(RColorBrewer::brewer.pal(2, 'Dark2'),
-                                   unique(input_de$quant_meta %>% pull(diagnosis)))
 
-input_de$vst_counts.df[!rownames(input_de$vst_counts.df) %in%
-                           c(input_de$sex_filter.df$group_name), ] %>%
-    t() -> pca_tmp_in
-
-# input_de$vst_counts.df[rownames(input_de$vst_counts.df) %in% 
-#                            c(filt_PAAD_1vAll$ensg), ] %>% 
-#     t() -> pca_tmp_in 
+internal_rmsk_quant$panc_normal$quant_meta %>%
+  ggplot(aes(input_vol, salmon_percent_mapped)) +
+  geom_point()
   
-pca_tmp_in_sd <- apply(pca_tmp_in, 2, sd)
-pca_tmp_in_zero_sd <- pca_tmp_in[,pca_tmp_in_sd!=0]
-non_zero_pca <- prcomp(pca_tmp_in_zero_sd, center = T, scale. = T, rank. = 50)
-
-summary(non_zero_pca)
-pcs.of.interest <- apply(non_zero_pca$x, 2, var)
-pcs.props <-  pcs.of.interest/sum(pcs.of.interest)
-cumsum(pcs.props)[c(1,2)]
-print(as.data.frame(pcs.props) %>% 
-        rownames_to_column('pc') %>% 
-        mutate(pc = as.numeric(sub('PC', '', pc))) %>% 
-        ggplot(aes(pc, pcs.props)) + 
-        geom_col())
-
-pca.out <- as.data.frame(non_zero_pca$x) %>% 
-  rownames_to_column('sample') %>% 
-  # mutate(name = str_split_fixed(sample, '_G', 2)[, 1]) %>% 
-  # merge(original_roster_names, by = 'sample', all.x = T) %>% 
-  # mutate(sample = ifelse(is.na(name), sample, name)) %>% 
-  # select(-name) %>% 
-  merge(united_analysis_set$quant_meta, by = 'sample')
-
-
-pca.out.summary <- 
-  as.data.frame(summary(non_zero_pca)$importance) %>% 
-  rownames_to_column('metric') %>% 
-  gather(pc, value, -metric) %>% 
-  spread(metric, value)
-
-pca.out %>% 
-  # mutate(stage = factor(stage, 
-  #                       levels = c(NA, 'I-B', 'II', 'II-B', 'III', 'IV', 'IV-B'),
-  #                       exclude = NULL)) %>% 
-  ggplot(aes(PC1, PC2,
-             color = condition, shape = dataset)) +
-  geom_point(size = txt.mm_to_pts(0.8), aes(fill = after_scale(alpha(color, 0.2)))) +
-  scale_shape_manual(values = c(21,25)) +
-  xlab(paste('PC1', round(cumsum(pcs.props)[1], digits = 3)*100,'%',sep = ' ')) +
-  ylab(paste('PC2', round(cumsum(pcs.props)[2] - cumsum(pcs.props)[1], digits = 3)*100,'%',sep = ' ')) +
-  geom_vline(xintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) +
-  geom_hline(yintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) + 
-  scale_fill_grey(na.value = 'lightgreen', end = 0.25, start = 1) +
-  scale_color_manual(values = disc_identity_color_pal)
-
-
-pca_corr_out.df <-
-  extract.meta.pca.correlates(pca.out = pca.out)
-
-
-uwot::umap(pca_tmp_in_zero_sd, n_neighbors = 20, pca = 100) -> umap_out
-
-umap_out %>% 
-  as.data.frame() %>% 
-  rownames_to_column('sample') %>% 
-  merge(united_analysis_set$quant_meta, by = 'sample') %>% 
-  ggplot(aes(V1, V2,
-             fill = diagnosis)) +
-  scale_fill_manual(values = diagnosis_identity_color_pal) + 
-  geom_point(size = txt.mm_to_pts(0.8), shape = 21, alpha = 0.75, aes(color = after_scale(alpha(color, 1))))
-
- 
-# 
-# 
-# te_only_deseq <- ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$deseq
-# 
-# 
-# te_only_deseq$vst_counts.df <- 
-#   te_only_deseq$vst_counts.df[!rownames(te_only_deseq$vst_counts.df) %in% 
-#                                 reference_meta_data$gencode_tx_to_gene.df$gene, ]
-# 
-# te_only_deseq$pca <-
-#   run.pca(input_de = te_only_deseq,
-#           identity_color_pal = identity_color_pal)
 
 ```
 ## 1vsall
@@ -1454,9 +1354,7 @@ internal_rmsk_quant$panc_normal$pca$pca_out.df %>%
   scale_shape_manual(values = disc_identity_shape_pal) -> fig.1C.plt
     
     
-   %>% 
-  filter(pval < 0.05) %>% 
-  merge(corr_out, by = c('pc', 'var'))
+
 
 ```
 ## Fig_1D

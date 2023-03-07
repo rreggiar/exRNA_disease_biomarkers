@@ -1380,7 +1380,7 @@ internal_rmsk_quant$panc_normal$quant_meta %>%
   scale_color_manual(values = disc_identity_color_pal) +
   ggforce::facet_row( ~ diagnosis, strip.position = 'bottom') +
   ggpubr::stat_compare_means(comparisons = list(c('Repeat-naive', 'Repeat-aware')), 
-                           method = 'wilcox', size = 2.5, 
+                           method = 'wilcox', size = txt.mm_to_pts(1.2), 
                            method.args = list(exact = TRUE, paired = T), label = 'p.signif') -> fig.1D.plt
 
 
@@ -1420,8 +1420,6 @@ internal_rmsk_quant$panc_normal$deseq$norm_counts.df %>%
                values_to = 'frequency',
                cols = where(is.numeric)) %>%
   group_by(sample, type) %>%
-  # mutate(obs = ifelse(frequency > 0, 1 ,0)) %>%
-  # mutate(exp = n(), obs = sum(obs)) %>%
   filter(frequency > 0) %>%
   summarize(total_non_zero = n()) %>%
   merge(original_normal_meta_data, by = 'sample') %>%
@@ -1432,21 +1430,20 @@ internal_rmsk_quant$panc_normal$deseq$norm_counts.df %>%
     color = diagnosis,
     fill = after_scale(alpha(color, 0.4))
   )) +
-  # geom_hline(
-  #   yintercept = c(500, 1000, 5000, 10000),
-  #   linetype = 'dashed',
-  #   alpha = 0.4
-  # ) +
   geom_boxplot(fill = NA,
                outlier.shape = NA,
                aes(group = diagnosis),
                show.legend = F) +
-  geom_jitter(width = 0.125, show.legend = F) +
+  geom_jitter(size = txt.mm_to_pts(0.8), width = 0.125, show.legend = T) +
   # scale_y_continuous(breaks = c(1000, 5000, 10000)) +
   scale_shape_manual(values = disc_identity_shape_pal) +
   scale_color_manual(values = disc_identity_color_pal) +
   ylab('detected genes') + xlab('') +
-  ggforce::facet_row(~ type, strip.position = 'bottom', scales = 'free_y') -> fig.1E.plt
+  theme(legend.position = 'none') +
+  ggforce::facet_row(~ type, strip.position = 'bottom', scales = 'free_y') +
+  ggpubr::stat_compare_means(comparisons = list(c('panc', 'normal')), 
+                         method = 'wilcox', size = txt.mm_to_pts(1.2), 
+                         method.args = list(exact = TRUE, paired = F), label = 'p.signif') -> fig.1E.plt
 ```
 ### Fig_1_patchwork
 ```{r Fig1}
@@ -1464,7 +1461,8 @@ wrap_plots(flowchart_wrap_fig1A.plt,
            fig.1D.plt+ coord_cartesian(clip = 'off'),
            fig.1E.plt+ coord_cartesian(clip = 'off'),
            # fig.1B.plt + coord_cartesian(clip = 'off'),
-           fig.1C.plt + coord_cartesian(clip = 'off'),
+           # fig.1C.plt + coord_cartesian(clip = 'off'),
+           plot_spacer(),
            guide_area(),
            design = fig_1_layout, 
            guides = 'collect',
@@ -1472,7 +1470,7 @@ wrap_plots(flowchart_wrap_fig1A.plt,
   theme(plot.tag.position = c(0.01, 0.99), 
         legend.position = 'bottom',
         legend.title = element_text(vjust = 1.25),
-        legend.justification = c(0.5, 0.5)) -> fig.1.patchwork
+        legend.justification = c(0.9, 0.5)) -> fig.1.patchwork
 
 
 save.manuscript.panel(figure = 1,

@@ -1432,21 +1432,21 @@ internal_rmsk_quant$panc_normal$deseq$norm_counts.df %>%
     color = diagnosis,
     fill = after_scale(alpha(color, 0.4))
   )) +
-  geom_hline(
-    yintercept = c(500, 1000, 5000, 10000),
-    linetype = 'dashed',
-    alpha = 0.4
-  ) +
+  # geom_hline(
+  #   yintercept = c(500, 1000, 5000, 10000),
+  #   linetype = 'dashed',
+  #   alpha = 0.4
+  # ) +
   geom_boxplot(fill = NA,
                outlier.shape = NA,
                aes(group = diagnosis),
                show.legend = F) +
   geom_jitter(width = 0.125, show.legend = F) +
-  scale_y_continuous(breaks = c(1000, 5000, 10000)) +
+  # scale_y_continuous(breaks = c(1000, 5000, 10000)) +
   scale_shape_manual(values = disc_identity_shape_pal) +
   scale_color_manual(values = disc_identity_color_pal) +
   ylab('detected genes') + xlab('') +
-  ggforce::facet_row(~ type, strip.position = 'bottom') -> fig.1E.plt
+  ggforce::facet_row(~ type, strip.position = 'bottom', scales = 'free_y') -> fig.1E.plt
 ```
 ### Fig_1_patchwork
 ```{r Fig1}

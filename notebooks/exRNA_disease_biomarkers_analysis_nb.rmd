@@ -1135,7 +1135,7 @@ msig.df <-
   dplyr::select(gene_symbol, gs_name) %>% 
   split(x = .$gene_symbol, f = .$gs_name)
 
-ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$deseq$fgsea <- 
+internal_rmsk_quant$panc_normal$deseq$fgsea <- 
   make.fgsea.ranks(de.seq = 
                      ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$deseq$de_out %>% 
                      filter(gene %in% reference_meta_data$gencode_tx_to_gene.df$gene))
@@ -1692,6 +1692,16 @@ gencode_layer.plt +
     segment.colour = 'grey'
   ) +
   xlim(-5, 5) -> fig.2C.plt
+
+panc_annotated_rmsk_de %>% 
+  filter(clade == 'SINE') %>% 
+  mutate(sig = factor(ifelse(padj < 0.01, T, F), levels = c(T, F))) %>% 
+  ggplot(aes(baseMean, log2FoldChange, color = sig, label = gene)) +
+  geom_point() +
+  scale_color_grey() +
+  ggrepel::geom_text_repel(aes(label = ifelse(sig == T, gene, ''))) +
+  ylim(-5, 5) +
+  ggforce::facet_col(~clade)
 
 ```
 

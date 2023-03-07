@@ -504,7 +504,7 @@ run.de.seq.individual <- function(type = 'gxi', base_level = 'ctrl',
   # print(rownames(scaled_quant_meta_for_de.df))
   
   print(rownames(scaled_quant_meta_for_de.df) == colnames(count_matrix.df))
-
+  
   input_set_dds <- DESeqDataSetFromMatrix(countData = count_matrix.df, 
                                           colData = scaled_quant_meta_for_de.df, 
                                           design = dds_formula)
@@ -640,7 +640,7 @@ extract.meta.pca.correlates <- function(pca.out) {
   
   clin_data_pca_corr %>%
     select_if(~ is.numeric(.)) %>%
-    cor(method = 'spearman') %>%
+    cor(method = 'pearson') %>%
     as.data.frame() %>%
     select(-starts_with('PC')) %>%
     rownames_to_column('pc') %>%

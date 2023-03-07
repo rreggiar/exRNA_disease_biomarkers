@@ -1344,7 +1344,7 @@ internal_rmsk_quant$panc_normal$pca$pca_out.df %>%
     size = 0.25
   ) +
   ggforce::geom_mark_ellipse(
-    aes(group = stage, label = stage), 
+    aes(group = stage, filter = stage != 'none', label = stage), 
     label.fontsize = txt.mm_to_pts(3),
     expand = 0.01,
     show.legend = F
@@ -1456,19 +1456,19 @@ import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_
 fig_1_layout <- "
 AB
 AC
-FF
-DE
+EE
+DD
 "
 
 wrap_plots(flowchart_wrap_fig1A.plt,
-           fig.1B.plt+ coord_cartesian(clip = 'off'),
-           fig.1C.plt+ coord_cartesian(clip = 'off'),
-           fig.1D.plt + coord_cartesian(clip = 'off'),
-           fig.1E.plt + coord_cartesian(clip = 'off'),
+           fig.1D.plt+ coord_cartesian(clip = 'off'),
+           fig.1E.plt+ coord_cartesian(clip = 'off'),
+           # fig.1B.plt + coord_cartesian(clip = 'off'),
+           fig.1C.plt + coord_cartesian(clip = 'off'),
            guide_area(),
            design = fig_1_layout, 
            guides = 'collect',
-           heights = c(1,1,0.2,0.6)) + plot_annotation(tag_levels = 'A') & 
+           heights = c(0.8,0.8,0.2,0.8)) + plot_annotation(tag_levels = 'A') & 
   theme(plot.tag.position = c(0.01, 0.99), 
         legend.position = 'bottom',
         legend.title = element_text(vjust = 1.25),
@@ -1618,7 +1618,7 @@ tidy_total_annotated_rmsk_counts %>%
   ggplot(aes(sample, clade_frac, fill = clade, color = diagnosis)) +
   geom_col(color = 'white', show.legend = T) +
   scale_fill_manual(values = te_color_pal, name = 'biotype/clade') +
-  ggforce::facet_row( ~ diagnosis + stage, scales = 'free_x', space = 'free') +
+  ggforce::facet_row(~ diagnosis + stage, scales = 'free_x', space = 'free') +
   scale_y_continuous(expand = c(0, 0)) +
   xlab('N = {normal: 22, panc: 10}') + ylab('normalized count fraction') +
   theme(axis.text.x = element_blank(),
@@ -1659,7 +1659,7 @@ calc_entropy(
   ) +
   geom_jitter(width = 0.125, show.legend = F, shape = 21) +
   ggforce::facet_row( ~ clade, space = 'free', strip.position = 'top') +
-  ylim(0, 12) + ylab('biotype entropy') + xlab('') +
+  ylim(0, 12) + ylab('Shannon Entropy') + xlab('') +
   # scale_shape_manual(values = disc_identity_shape_pal) +
   scale_color_manual(values = disc_identity_color_pal) +
   ggpubr::stat_compare_means(
@@ -1707,16 +1707,20 @@ internal_rmsk_quant$panc_normal$deseq$de_out %>%
 
 
 panc_label_list <- panc_annotated_rmsk_de %>%
-  filter(grepl('LTR|^L1|Alu|^SSU', gene)) %>%
-  top_n(8, wt = log2FoldChange)
+  filter(grepl('LTR|^L1|Alu|^SSU', gene), padj < 0.01) %>%
+  top_n(7, wt = log2FoldChange)
 
 
-panc_label_lnc_list_dn <- panc_annotated_rmsk_de %>%
-  filter(clade == 'GENCODE_coding') %>%
+panc_label_gencode_list_dn <- panc_annotated_rmsk_de %>%
+  filter(clade == 'GENCODE_coding', padj < 0.01) %>%
   top_n(5, wt = -log2FoldChange)
 
+panc_label_gencode_list_up <- panc_annotated_rmsk_de %>%
+  filter(clade == 'GENCODE_coding', padj < 0.01) %>%
+  top_n(8, wt = log2FoldChange)
+
 panc_label_list <-
-  rbind(panc_label_list, panc_label_lnc_list_dn)
+  rbind(panc_label_list, panc_label_gencode_list_dn, panc_label_gencode_list_up)
 
 panc_annotated_rmsk_de %>%
   filter(clade == 'GENCODE_coding') %>%
@@ -1756,70 +1760,121 @@ gencode_layer.plt +
   ) +
   xlim(-5, 5) -> fig.2C.plt
 
-panc_annotated_rmsk_de %>% 
-  # filter(clade == 'SINE') %>% 
-  mutate(sig = factor(ifelse(padj < 0.01, T, F), levels = c(T, F))) %>% 
-  ggplot(aes(baseMean, log2FoldChange, color = sig, label = gene)) +
-  geom_point() +
-  scale_color_grey() +
-  ggrepel::geom_text_repel(aes(label = ifelse(sig == T, gene, ''))) +
-  ylim(-5, 5)
+panc_annotated_rmsk_de %>%
+  mutate(sig = factor(ifelse(padj < 0.01, T, F), levels = c(T, F))) %>%
+  filter(sig == F) %>%
+  ggplot(aes(log(baseMean), log2FoldChange)) +
+  geom_point(color = 'grey', alpha = 0.2) -> unsig_plt
+
+unsig_plt +
+  geom_point(
+    data = panc_annotated_rmsk_de %>%
+      mutate(sig = factor(ifelse(padj < 0.01, T, F), levels = c(T, F))) %>%
+      filter(sig == T),
+    aes(color = clade, fill = after_scale(alpha(color, 0.4))),
+    show.legend = F
+  ) +
+  ggrepel::geom_text_repel(
+    data = panc_annotated_rmsk_de %>%
+      mutate(sig = factor(ifelse(padj < 0.01, T, F), levels = c(T, F))) %>%
+      filter(sig == T),
+    aes(label = ifelse(sig == T, gene, '')) ,
+    size = txt.mm_to_pts(1),
+    box.padding = 0.3,
+    show.legend = F,
+    max.overlaps = 25
+  ) +
+  geom_hline(yintercept = 0, linetype = 'dashed') +
+  ylim(-5, 5) +
+  scale_color_manual(values = te_color_pal, name = 'biotype/clade') +
+  theme(legend.position = c(0.99, 0.25)) -> fig.2E.plt
 
 ```
 
 ## Fig_2D
 ```{r}
-unique(c(filter(ucsc.rmsk.salmon_quant$analysis_set$covid_ctrl$deseq$de_out,
-                abs(log2FoldChange) > 3.5)$ensg,
-  filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out,
-         abs(log2FoldChange) > 1.5)$ensg)) -> de_ensg_names
+# unique(c(filter(ucsc.rmsk.salmon_quant$analysis_set$covid_ctrl$deseq$de_out,
+#                 abs(log2FoldChange) > 3.5)$ensg,
+#   filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out,
+#          abs(log2FoldChange) > 1.5)$ensg)) -> de_ensg_names
 
 
-ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$deseq$norm_counts.df %>% 
+internal_rmsk_quant$panc_normal$deseq$norm_counts.df %>%
+  # sample_n(100) %>% 
+  rownames_to_column('ensg') %>%
+  filter(ensg %in% filter(reference_meta_data$ucsc_rmsk_insert_info.df,
+                          clade %in% c('SINE', 'Simple_repeat'))$gene) %>%
+  filter(across(where(is.numeric), ~ any(.x != 0))) %>%
+  rowwise() %>%
+  mutate(sum = sum(c_across(where(is.numeric)))) %>%
+  filter(sum > 34*5) %>% select(-sum) %>%
+  ungroup() %>%
+  column_to_rownames('ensg') %>% 
+  t() %>% 
+  as.data.frame() %>% 
   rownames_to_column('ensg') %>% 
-  filter(ensg %in% de_ensg_names,
-         ensg %in% reference_meta_data$ucsc_rmsk_insert_info.df$gene) %>% 
-  mutate_if(is.numeric, ~scale(log2(. + 1), center = T)) %>% 
+  mutate_if(is.numeric, ~ scale(log2(. + 1), center = T)) %>% 
   column_to_rownames('ensg') %>% as.matrix() %>% t() -> hm_count_data
 
-hm_meta_data <- ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$deseq$scaled_quant_meta_for_de.df
+hm_meta_data <-
+  internal_rmsk_quant$panc_normal$deseq$scaled_quant_meta_for_de.df
 
-left_hma <- ComplexHeatmap::rowAnnotation(df = hm_meta_data %>% select(condition), 
-                                          col = list(condition = identity_color_pal), 
-                                          show_annotation_name = F, simple_anno_size = unit(.3, "cm"),
-                                          annotation_legend_param = 
-                                            list(title_gp = grid::gpar(fontsize = 6, fontface = 'bold')))
+top_hma <-
+  ComplexHeatmap::columnAnnotation(
+    df = hm_meta_data %>% select(condition),
+    col = list(condition = disc_identity_color_pal),
+    show_annotation_name = F,
+    show_legend = F,
+    simple_anno_size = unit(.3, "cm"),
+    annotation_legend_param =
+      list(title_gp = grid::gpar(
+        fontsize = 6, fontface = 'bold'
+      ))
+  )
 
+  
 
 reference_meta_data$ucsc_rmsk_insert_info.df %>% 
-  filter(gene %in% colnames(hm_count_data)) %>% 
+  filter(gene %in% rownames(hm_count_data)) %>% 
   select(gene, clade) %>% 
-  mutate(clade = ifelse(clade %in% names(te_color_pal), clade, 'other')) %>% 
+  # filter(clade != 'Unknown', !grepl('\\?', clade)) %>% 
+  mutate(clade = ifelse(clade %in% names(te_color_pal), clade, 'other')) %>%
+  distinct() %>% 
+  # group_by(gene) %>% 
+  # filter(!gene %in% c('(GAATG)n', '(CATTC)n')) %>%
   column_to_rownames('gene') -> hm_te_data
 
-hm_te_data <- hm_te_data[match(colnames(hm_count_data), rownames(hm_te_data)), , drop = F]
+hm_te_data <- hm_te_data[match(rownames(hm_count_data), rownames(hm_te_data)), , drop = F]
 
-top_hma <- ComplexHeatmap::columnAnnotation(df = hm_te_data, 
-                                            col = list(clade = te_color_pal), 
-                                            show_annotation_name = T,
-                                            annotation_name_side = 'left',
-                                            annotation_name_gp = grid::gpar(fontsize = 7, fontface = 'italic'),
-                                            show_legend = F, 
-                                            simple_anno_size = unit(.275, "cm"))
+left_hma <- ComplexHeatmap::rowAnnotation(
+  df = hm_te_data,
+  col = list(clade = te_color_pal),
+  show_annotation_name = T,
+  annotation_name_side = 'top',
+  annotation_name_gp = grid::gpar(fontsize = 8, fontface = 'italic'),
+  show_legend = F,
+  simple_anno_size = unit(.275, "cm")
+)
 
-set.seed(129)
+set.seed(2023-03-07)
 ComplexHeatmap::Heatmap(hm_count_data, 
                         show_row_names = F, 
-                        show_column_names = T, 
-                        heatmap_width = figure_double_column_width * 0.85,
+                        show_column_names = F, 
                         left_annotation = left_hma, 
+                        row_dend_width = unit(.45, "cm"),
                         column_dend_height = unit(.45, "cm"),
                         heatmap_legend_param = 
-                          list(legend_gp = grid::gpar(fontsize = 5),
+                          list(legend_gp = grid::gpar(fontsize = 1),
+                               legend_direction = "horizontal", 
+                               legend_height = unit(.35, "cm"),
+                               title_position = "lefttop",
                                title_gp = grid::gpar(fontsize = 6, fontface = 'bold')),
                         top_annotation = top_hma,
                         column_names_gp = grid::gpar(fontsize = 6),
                         name = 'Z-score') -> fig.2D.chm
+
+patchwork::wrap_elements(full = grid::grid.grabExpr(ComplexHeatmap::draw(fig.2D.chm, heatmap_legend_side = "bottom"),
+                                                    merge_legend = T)) -> fig.2D.chm
   
 ```
 ### Fig_2_patchwork
@@ -1829,18 +1884,19 @@ import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_
 
 fig_2_layout <- "
 AA
-DD
-BC
 EE
-EE
+BD
+CD
 "
 
 wrap_plots(fig.2A.plt,
            fig.2B.plt,
            fig.2C.plt,
+           fig.2D.chm,
            # fig.2C.plt + labs(title = 'covid'),
            guide_area(),
-           plot_spacer(),
+           # plot_spacer(),
+           # plot_spacer(),
            # patchwork::wrap_elements(full = grid::grid.grabExpr(ComplexHeatmap::draw(fig.2D.chm), 
            #                                                      width = figure_double_column_width)),
            design = fig_2_layout, 

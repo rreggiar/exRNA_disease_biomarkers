@@ -1579,47 +1579,11 @@ tidy_total_annotated_rmsk_counts %>%
   ggplot(aes(sample, clade_frac, fill = clade, color = diagnosis)) +
   geom_col(color = 'white', show.legend = T) + 
   scale_fill_manual(values = te_color_pal, name = 'biotype/clade') + 
-  ggforce::facet_col(~diagnosis+stage, scales = 'free_x', space = 'free') +
+  ggforce::facet_row(~diagnosis+stage, scales = 'free_x', space = 'free') +
   scale_y_continuous(expand = c(0,0)) +
-  xlab('') + ylab('normalized count fraction')
-
-
-tidy_total_annotated_rmsk_counts %>% 
-  group_by(sample, condition, family) %>% 
-  filter(!grepl('\\?', family)) %>% 
-  summarize(clade_sum = sum(count)) %>% 
-  mutate(clade_frac = clade_sum/sum(clade_sum)) %>% 
-  merge(external_quant$elife$quant_meta, by = 'sample') %>% 
-  ggplot(aes(sample, clade_frac, fill = family)) +
-  geom_col() + 
-  theme(axis.text.x = element_blank())
-
-ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$preRad_preRes$quant_meta %>% 
-  ggplot(aes(diagnosis, salmon_percent_mapped)) + 
-  geom_boxplot(fill = NA) + 
-  geom_jitter() +
-  ggforce::facet_row(~dataset, shrink = T, space = 'free', scales = 'free_x')
-
-ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$preRad_preRes$quant_meta %>% 
-  ggplot(aes(salmon_frag_length_mean, color = diagnosis)) + 
-  geom_density() +
-  facet_wrap(~dataset) +
-  scale_color_manual(values = disc_identity_color_pal)
-
-
-tidy_total_annotated_rmsk_counts %>% 
-  group_by(sample, condition, clade, dataset) %>% 
-  summarize(median_sine_abundance = median(count)) %>% 
-  merge(ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$preRad_preRes$quant_meta %>% select(-dataset), by = 'sample') %>% 
-  filter(clade == 'LINE') %>% 
-  ggplot(aes(salmon_num_mapped, median_sine_abundance, color = condition, shape = dataset)) + 
-  geom_point() +
-  scale_color_manual(values = disc_identity_color_pal)
-
-  # geom_boxplot(fill = NA) + 
-  # geom_jitter() +
-  # ggforce::facet_row(~dataset+condition) + 
-  # theme(axis.text.x = element_text(angle = 40, hjust = 1))
+  xlab('N = {normal: 22, panc: 10}') + ylab('normalized count fraction') + 
+  theme(axis.text.x = element_blank(),
+        axis.ticks.x = element_blank()) -> fig.2A.plt
 ```
 ## Fig_2B
 ```{r}

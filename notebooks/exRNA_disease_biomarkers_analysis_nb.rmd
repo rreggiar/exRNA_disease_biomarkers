@@ -875,14 +875,14 @@ import::from(.directory = r_code.dir,
               run.de.seq,
               run.de.seq.individual)
 
-elife_rmsk_quant$rmsk$deseq <- 
-  run.de.seq.individual(input_se = elife_rmsk_quant$rmsk,
-                        type = 'gxi',
-                        base_level = 'Healthy donor',
-                        top_level = 'Lung Cancer',
-                        ref_type = 'ucsc.rmsk',
-                        dds_formula = 
-                          as.formula('~age+gender+diagnosis'))
+# elife_rmsk_quant$rmsk$deseq <- 
+#   run.de.seq.individual(input_se = elife_rmsk_quant$rmsk,
+#                         type = 'gxi',
+#                         base_level = 'Healthy donor',
+#                         top_level = 'Lung Cancer',
+#                         ref_type = 'ucsc.rmsk',
+#                         dds_formula = 
+#                           as.formula('~age+gender+diagnosis'))
 
 internal_rmsk_quant$panc_normal$deseq <- 
   run.de.seq.individual(input_se = internal_rmsk_quant$panc_normal,

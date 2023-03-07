@@ -1318,7 +1318,9 @@ flowchart_wrap_fig1A.plt <- patchwork::wrap_elements(full = magick::image_ggplot
 internal_gencode_quant$panc_normal$pca$pca_out.df %>%
   ggplot(aes(PC1, PC2,
              color = diagnosis, shape = gender)) +
-  geom_point(size = txt.mm_to_pts(0.8), aes(fill = after_scale(alpha(color, 0.4))), show.legend = F) +
+  geom_point(size = txt.mm_to_pts(0.8),
+             aes(fill = after_scale(alpha(color, 0.4))),
+             show.legend = F) +
   geom_rug(show.legend = F) +
   xlab(paste('PC1', round(
     cumsum(internal_gencode_quant$panc_normal$pca$pc_props)[1],
@@ -1341,21 +1343,28 @@ internal_gencode_quant$panc_normal$pca$pca_out.df %>%
     alpha = 0.3,
     size = 0.25
   ) +
-  ggforce::geom_mark_ellipse(aes(group = stage, label = stage), expand = 0.01, show.legend = F) +
+  ggforce::geom_mark_ellipse(
+    aes(group = stage, label = stage),
+    label.fontsize = txt.mm_to_pts(3),
+    expand = 0.01,
+    show.legend = F
+  ) +
   scale_color_manual(values = disc_identity_color_pal) +
   scale_shape_manual(values = disc_identity_shape_pal) -> fig.1B.plt
 
 internal_rmsk_quant$panc_normal$pca$pca_out.df %>%
   ggplot(aes(PC1, PC2,
              color = diagnosis, shape = gender)) +
-  geom_point(size = txt.mm_to_pts(0.8), aes(fill = after_scale(alpha(color, 0.4))), show.legend = F) +
+  geom_point(size = txt.mm_to_pts(0.8),
+             aes(fill = after_scale(alpha(color, 0.4))),
+             show.legend = F) +
   geom_rug(show.legend = F) +
   xlab(paste('PC1', round(
     cumsum(internal_rmsk_quant$panc_normal$pca$pc_props)[1],
     digits = 3
   ) * 100, '%', sep = ' ')) +
   ylab(paste('PC2', round(
-    cumsum(internal_rmsk_quant$panc_normal$pca$pc_props)[2] - 
+    cumsum(internal_rmsk_quant$panc_normal$pca$pc_props)[2] -
       cumsum(internal_rmsk_quant$panc_normal$pca$pc_props)[1],
     digits = 3
   ) * 100, '%', sep = ' ')) +
@@ -1371,7 +1380,12 @@ internal_rmsk_quant$panc_normal$pca$pca_out.df %>%
     alpha = 0.3,
     size = 0.25
   ) +
-  ggforce::geom_mark_ellipse(aes(group = stage, label = stage), expand = 0.01, show.legend = F) +
+  ggforce::geom_mark_ellipse(
+    aes(group = stage, label = stage), 
+    label.fontsize = txt.mm_to_pts(3),
+    expand = 0.01,
+    show.legend = F
+  ) +
   scale_color_manual(values = disc_identity_color_pal) +
   scale_shape_manual(values = disc_identity_shape_pal) -> fig.1C.plt
     
@@ -1422,8 +1436,8 @@ DD
 "
 
 wrap_plots(flowchart_wrap_fig1A.plt,
-           fig.1B.plt,
-           fig.1C.plt,
+           fig.1B.plt+ coord_cartesian(clip = 'off'),
+           fig.1C.plt+ coord_cartesian(clip = 'off'),
            fig.1D.plt + coord_cartesian(clip = 'off'),
            guide_area(),
            design = fig_1_layout, 

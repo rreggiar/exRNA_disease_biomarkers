@@ -1007,46 +1007,9 @@ internal_gencode_quant$panc_normal$deseq <-
 ```{r}
 
 
-calc_entropy <- function(norm_counts.df, meta_data, grouping_level) {
-  
-  norm_counts.df %>% 
-  rownames_to_column('gene') %>% 
-  merge(reference_meta_data$ucsc_rmsk_insert_info.df, by = 'gene', all.x = T) %>% 
-  mutate(family = ifelse(gene %in% reference_meta_data$gencode_lncRNA_gene_names.df$ensg,
-                         'GENCODE_lncRNA', family),
-         family = ifelse(is.na(family), 'GENCODE_coding', family),
-         clade = ifelse(grepl('GENCODE', family), family, clade),
-         type = ifelse(grepl('GENCODE',family), family, 'TE')) %>% 
-  group_by(!! sym(grouping_level)) %>% 
-  summarize(across(where(is.numeric), ~.x/sum(.x))) %>% 
-  pivot_longer(names_to = 'sample', values_to = 'frequency', cols = where(is.numeric)) %>% 
-  filter(frequency > 0) %>%
-  group_by(sample, !! sym(grouping_level)) %>% 
-  summarize(entropy = -sum((frequency)*log2(frequency))) %>%
-  merge(meta_data, by = 'sample')
-  # ggplot(aes(diagnosis, entropy)) +
-  # geom_boxplot(fill = NA) +
-  # geom_jitter(shape = 21) +
-  # # ggplot(aes(entropy, fill = diagnosis)) +
-  # # geom_density(alpha = 0.3) +
-  # facet_wrap(~clade)
-  
-  
-}
 
-calc_entropy(
-  internal_rmsk_quant$panc_normal$deseq$norm_counts.df,
-  original_discovery_meta_data,
-  grouping_level = 'type'
-) %>%
-  ggplot(aes(diagnosis, entropy, shape = gender)) +
-  geom_boxplot(fill = NA, outlier.shape = NA, aes(group = diagnosis), show.legend = F) +
-  geom_jitter(width = 0.125) +
-  facet_wrap(~ type) + 
-  ylim(0,12) + ylab('biotype entropy') + xlab('') +
-  ggpubr::stat_compare_means(comparisons = list(c('normal', 'panc')), 
-                         method = 'wilcox', size = 2.5, 
-                         method.args = list(exact = TRUE, paired = F), label = 'p.signif')
+
+
 
 calc_entropy(
   external_quant$npj$deseq$norm_counts.df,
@@ -1141,7 +1104,7 @@ internal_rmsk_quant$panc_normal$pca$pc_sig_corr %>%
 ```
 ## 1vsall
 ```{r}
-# PAAD_1vAll <- read_csv(file.path(output_data.dir, 'PAAD_vs_all.results'), skip = 7) %>% filter(log2FoldChange != 0)
+PAAD_1vAll <- read_csv(file.path(output_data.dir, 'PAAD_vs_all.results'), skip = 7) %>% filter(log2FoldChange != 0)
 PAAD_v_Pancreas <- read_csv(file.path(output_data.dir, 'Pancreas_vs_all.results.lfcShrink'), skip = 6)
 
 
@@ -1545,160 +1508,193 @@ save.manuscript.panel(figure = 1,
 # Fig_2
 ## Fig_2A
 ```{r}
-internal_rmsk_quant$panc_normal$deseq$norm_counts.df %>% 
-  rownames_to_column('gene') %>% 
-  merge(reference_meta_data$ucsc_rmsk_insert_info.df, by = 'gene', all.x = T) %>% 
-  mutate(family = ifelse(gene %in% reference_meta_data$gencode_lncRNA_gene_names.df$ensg,
-                         'GENCODE_lncRNA', family),
-         family = ifelse(is.na(family), 'GENCODE_coding', family),
-         clade = ifelse(grepl('GENCODE', family), family, clade),
-         clade = ifelse(clade %in% c('GENCODE_coding',
-                                     'GENCODE_lncRNA',
-                                     'LINE',
-                                     'SINE',
-                                     'LTR',
-                                     'DNA',
-                                     'Simple_repeat'), clade, 'other'),
-         type = ifelse(grepl('GENCODE',family), 'GENCODE', 'TE'),
-         clade = factor(clade, levels = te_aware_annotation_levels)) %>% 
+internal_rmsk_quant$panc_normal$deseq$norm_counts.df %>%
+  rownames_to_column('gene') %>%
+  merge(reference_meta_data$ucsc_rmsk_insert_info.df,
+        by = 'gene',
+        all.x = T) %>%
+  mutate(
+    family = ifelse(
+      gene %in% reference_meta_data$gencode_lncRNA_gene_names.df$ensg,
+      'GENCODE_lncRNA',
+      family
+    ),
+    family = ifelse(is.na(family), 'GENCODE_coding', family),
+    clade = ifelse(grepl('GENCODE', family), family, clade),
+    clade = ifelse(
+      clade %in% c(
+        'GENCODE_coding',
+        'GENCODE_lncRNA',
+        'LINE',
+        'SINE',
+        'LTR',
+        'DNA',
+        'Simple_repeat'
+      ),
+      clade,
+      'other'
+    ),
+    type = ifelse(grepl('GENCODE', family), 'GENCODE', 'TE'),
+    clade = factor(clade, levels = te_aware_annotation_levels)
+  ) %>%
   filter(!gene %in% chrM.filter.list) -> total_annotated_rmsk_counts
 
-total_annotated_rmsk_counts %>% 
-  gather(sample, count, -gene, -clade, -family, -type) %>% 
-  filter(count > 0) %>% 
-  merge(internal_rmsk_quant$panc_normal$quant_meta, 
+total_annotated_rmsk_counts %>%
+  gather(sample, count, -gene, -clade, -family, -type) %>%
+  filter(count > 0) %>%
+  merge(internal_rmsk_quant$panc_normal$quant_meta,
         by = 'sample') -> tidy_total_annotated_rmsk_counts
 
-tidy_total_annotated_rmsk_counts %>% 
-  group_by(sample, diagnosis, clade) %>% 
-  summarize(clade_sum = sum(count)) %>% 
-  mutate(clade_frac = clade_sum/sum(clade_sum)) %>% 
-  merge(internal_rmsk_quant$panc_normal$quant_meta %>% select(-diagnosis), 
-        by = 'sample') %>% 
-  distinct() %>% 
+tidy_total_annotated_rmsk_counts %>%
+  group_by(sample, diagnosis, clade) %>%
+  summarize(clade_sum = sum(count)) %>%
+  mutate(clade_frac = clade_sum / sum(clade_sum)) %>%
+  merge(internal_rmsk_quant$panc_normal$quant_meta %>% select(-diagnosis),
+        by = 'sample') %>%
+  distinct() %>%
   ggplot(aes(sample, clade_frac, fill = clade, color = diagnosis)) +
-  geom_col(color = 'white', show.legend = T) + 
-  scale_fill_manual(values = te_color_pal, name = 'biotype/clade') + 
-  ggforce::facet_row(~diagnosis+stage, scales = 'free_x', space = 'free') +
-  scale_y_continuous(expand = c(0,0)) +
-  xlab('N = {normal: 22, panc: 10}') + ylab('normalized count fraction') + 
+  geom_col(color = 'white', show.legend = T) +
+  scale_fill_manual(values = te_color_pal, name = 'biotype/clade') +
+  ggforce::facet_row( ~ diagnosis + stage, scales = 'free_x', space = 'free') +
+  scale_y_continuous(expand = c(0, 0)) +
+  xlab('N = {normal: 22, panc: 10}') + ylab('normalized count fraction') +
   theme(axis.text.x = element_blank(),
         axis.ticks.x = element_blank()) -> fig.2A.plt
 ```
 ## Fig_2B
 ```{r}
-internal_quant$origCovid_normal$deseq$de_out %>% 
-  merge(reference_meta_data$ucsc_rmsk_insert_info.df, by = 'gene', all.x = T) %>% 
-  mutate(family = ifelse(ensg %in% reference_meta_data$gencode_lncRNA_gene_names.df$ensg,
-                         'GENCODE_lncRNA', family),
-         family = ifelse(is.na(family), 'GENCODE_coding', family),
-         clade = ifelse(grepl('GENCODE', family), family, clade),
-         clade = ifelse(clade %in% c('GENCODE_coding',
-                                     'GENCODE_lncRNA',
-                                     'LINE',
-                                     'SINE',
-                                     'LTR',
-                                     'DNA',
-                                     'Simple_repeat'), clade, 'other'),
-         type = ifelse(grepl('GENCODE',family), 'GENCODE', 'TE'),
-         clade = factor(clade, levels = te_aware_annotation_levels)) %>% 
+import::from(.directory = r_code.dir, 
+             .from = 'helper_analysisFunctions.R', 
+              calc_entropy)
+
+calc_entropy(
+  internal_rmsk_quant$panc_normal$deseq$norm_counts.df,
+  original_discovery_meta_data,
+  grouping_level = 'clade'
+) %>%
+  filter(
+    clade %in% c(
+      'GENCODE_coding',
+      'GENCODE_lncRNA',
+      'SINE',
+      'LTR',
+      'Simple_repeat'
+    )
+  ) %>%
+  ggplot(aes(
+    diagnosis,
+    entropy,
+    # shape = gender,
+    color = diagnosis,
+    fill = after_scale(alpha(color, 0.4))
+  )) +
+  geom_boxplot(
+    fill = NA,
+    outlier.shape = NA,
+    aes(group = diagnosis),
+    show.legend = F
+  ) +
+  geom_jitter(width = 0.125, show.legend = F, shape = 21) +
+  ggforce::facet_row( ~ clade, space = 'free', strip.position = 'top') +
+  ylim(0, 12) + ylab('biotype entropy') + xlab('') +
+  # scale_shape_manual(values = disc_identity_shape_pal) +
+  scale_color_manual(values = disc_identity_color_pal) +
+  ggpubr::stat_compare_means(
+    comparisons = list(c('normal', 'panc')),
+    method = 'wilcox',
+    size = 2.5,
+    method.args = list(exact = TRUE, paired = F),
+    label = 'p.signif'
+  ) +
+  theme(axis.text.x = element_text(angle = 40, hjust = 1),
+        strip.text = element_text(size = txt.mm_to_pts(1.5))) -> fig.2B.plt
+```
+## Fig_2C
+```{r}
+internal_rmsk_quant$panc_normal$deseq$de_out %>%
+  merge(reference_meta_data$ucsc_rmsk_insert_info.df,
+        by = 'gene',
+        all.x = T) %>%
+  mutate(
+    family = ifelse(
+      ensg %in% reference_meta_data$gencode_lncRNA_gene_names.df$ensg,
+      'GENCODE_lncRNA',
+      family
+    ),
+    family = ifelse(is.na(family), 'GENCODE_coding', family),
+    clade = ifelse(grepl('GENCODE', family), family, clade),
+    clade = ifelse(
+      clade %in% c(
+        'GENCODE_coding',
+        'GENCODE_lncRNA',
+        'LINE',
+        'SINE',
+        'LTR',
+        'DNA',
+        'Simple_repeat'
+      ),
+      clade,
+      'other'
+    ),
+    type = ifelse(grepl('GENCODE', family), 'GENCODE', 'TE'),
+    clade = factor(clade, levels = te_aware_annotation_levels)
+  ) %>%
   filter(!ensg %in% chrM.filter.list,
          !grepl('^MT', gene)) -> panc_annotated_rmsk_de
 
 
-panc_annotated_rmsk_de %>% 
-  filter(ensg %in% filt_PAAD_1vAll$ensg,
-         log2FoldChange != 0 & padj < 0.05) %>% 
-  merge(filt_PAAD_1vAll %>% filter(padj < 0.05), by = 'ensg') %>% 
-  ggplot(aes(log2FoldChange.x, log2FoldChange.y)) + 
-  geom_point() +
-  ggrepel::geom_text_repel(aes(label = gene)) + 
-  geom_hline(yintercept = 0, linetype = 'dashed', alpha = 0.4) +
-  geom_vline(xintercept = 0, linetype = 'dashed', alpha = 0.4) +
-  xlab('Disc Panc V Normal') +
-  ylab('TCGA PAAD V All')
+panc_label_list <- panc_annotated_rmsk_de %>%
+  filter(grepl('LTR|^L1|Alu|^SSU', gene)) %>%
+  top_n(8, wt = log2FoldChange)
 
 
-# panc_label_list <- panc_annotated_rmsk_de %>% 
-#   filter(grepl('LTR|^L1|Alu', gene)) %>% 
-#   top_n(6, wt = log2FoldChange)
-# 
-# panc_label_list_dn <- panc_annotated_rmsk_de %>% 
-#   filter(grepl('LTR|^L1|Alu', gene)) %>% 
-#   top_n(3, wt = -log2FoldChange)
-# 
-# panc_label_lnc_list_dn <- panc_annotated_rmsk_de %>% 
-#   filter(clade == 'GENCODE_lncRNA',
-#          !grepl('^ENSG', gene)) %>% 
-#   top_n(3, wt = -log2FoldChange)
+panc_label_lnc_list_dn <- panc_annotated_rmsk_de %>%
+  filter(clade == 'GENCODE_coding') %>%
+  top_n(5, wt = -log2FoldChange)
 
-# panc_label_list <- rbind(panc_label_list, panc_label_list_dn, panc_label_lnc_list_dn)
+panc_label_list <-
+  rbind(panc_label_list, panc_label_lnc_list_dn)
 
 panc_annotated_rmsk_de %>%
-  filter(clade == 'GENCODE_coding') %>% 
-  ggplot(aes(log2FoldChange, -log10(padj), color = clade)) + 
-  geom_point(size = 2, alpha = 0.6, show.legend = FALSE) -> gencode_layer.plt
+  filter(clade == 'GENCODE_coding') %>%
+  ggplot(aes(log2FoldChange, -log10(padj), color = clade)) +
+  geom_point(size = 2,
+             alpha = 0.6,
+             show.legend = FALSE) -> gencode_layer.plt
 
-gencode_layer.plt + 
-  geom_point(data = filter(panc_annotated_rmsk_de, clade != 'GENCODE_coding') %>% 
-               mutate(clade = factor(clade, levels = te_aware_annotation_levels)),
-             aes(log2FoldChange, -log10(padj), color = clade), size = 2, alpha = 0.8) +
-  geom_hline(yintercept = -log10(0.05), linetype = 'dashed', alpha = 0.4) +
-  scale_color_manual(values = te_color_pal, name = 'biotype/clade') + 
-  # ggrepel::geom_text_repel(data = panc_annotated_rmsk_de %>% 
-  #              mutate(clade = factor(clade, levels = te_aware_annotation_levels)),
-  #                     aes(label = ifelse(padj < 0.01, gene, '')), 
-  #                          show.legend = F, color = 'black', size = txt.mm_to_pts(1),
-  #              max.overlaps = 20, box.padding = 0.3, segment.colour = 'grey') +
-  theme(legend.position = c(0.99, 0.25))
+gencode_layer.plt +
+  geom_point(
+    data = filter(panc_annotated_rmsk_de, clade != 'GENCODE_coding') %>%
+      mutate(clade = factor(clade, levels = te_aware_annotation_levels)),
+    aes(log2FoldChange, -log10(padj), color = clade),
+    size = 2,
+    alpha = 0.8,
+    show.legend = F
+  ) +
+  geom_hline(
+    yintercept = -log10(0.01),
+    linetype = 'dashed',
+    alpha = 0.4
+  ) +
+  geom_vline(xintercept = 0,
+             linetype = 'dashed',
+             alpha = 0.4) +
+  scale_color_manual(values = te_color_pal, name = 'biotype/clade') +
+  ggrepel::geom_text_repel(
+    data = panc_annotated_rmsk_de %>%
+      mutate(clade = factor(clade, levels = te_aware_annotation_levels)),
+    aes(label = ifelse(gene %in% panc_label_list$gene, gene, '')),
+    show.legend = F,
+    color = 'black',
+    size = txt.mm_to_pts(1),
+    max.overlaps = 10000,
+    box.padding = 0.3,
+    segment.colour = 'grey'
+  ) +
+  xlim(-5, 5) -> fig.2C.plt
 
 ```
-## Fig_2C
-```{r}
-ucsc.rmsk.salmon_quant$analysis_set$covid_ctrl$deseq$de_out %>% 
-  merge(reference_meta_data$ucsc_rmsk_insert_info.df, by = 'gene', all.x = T) %>% 
-  mutate(family = ifelse(ensg %in% reference_meta_data$gencode_lncRNA_gene_names.df$ensg,
-                         'GENCODE_lncRNA', family),
-         family = ifelse(is.na(family), 'GENCODE_coding', family),
-         clade = ifelse(grepl('GENCODE', family), family, clade),
-         clade = ifelse(clade %in% c('GENCODE_coding',
-                                     'GENCODE_lncRNA',
-                                     'LINE',
-                                     'SINE',
-                                     'LTR',
-                                     'DNA',
-                                     'Simple_repeat'), clade, 'other'),
-         type = ifelse(grepl('GENCODE',family), 'GENCODE', 'TE'),
-         clade = factor(clade, levels = te_aware_annotation_levels)) %>% 
-  filter(!ensg %in% chrM.filter.list,
-         !grepl('^MT', gene)) -> covid_annotated_rmsk_de
 
-covid_label_list <- covid_annotated_rmsk_de %>% 
-  top_n(3, wt = log2FoldChange)
-
-covid_label_lnc_list_dn <- covid_annotated_rmsk_de %>% 
-  filter(clade == 'GENCODE_lncRNA',
-         !grepl('^ENSG', gene)) %>% 
-  top_n(3, wt = -log2FoldChange)
-
-covid_label_list <- rbind(covid_label_list, covid_label_lnc_list_dn)
-
-covid_annotated_rmsk_de %>%
-  filter(clade == 'GENCODE_coding') %>% 
-  ggplot(aes(log2FoldChange, -log10(padj), color = clade)) + 
-  geom_point(size = 2, alpha = 0.6, show.legend = FALSE) -> gencode_layer.plt
-
-gencode_layer.plt + 
-  geom_point(data = filter(covid_annotated_rmsk_de, clade != 'GENCODE_coding') %>% 
-               mutate(clade = factor(clade, levels = te_aware_annotation_levels)),
-             aes(log2FoldChange, -log10(padj), color = clade), size = 2, alpha = 0.8) +
-  scale_color_manual(values = te_color_pal, name = 'biotype/clade') + 
-  ggrepel::geom_text_repel(data = covid_annotated_rmsk_de %>% 
-             mutate(clade = factor(clade, levels = te_aware_annotation_levels)),
-                    aes(label = ifelse(gene %in% covid_label_list$gene, gene, '')), 
-                         show.legend = F, color = 'black',segment.colour = 'grey', size = txt.mm_to_pts(1), max.overlaps = 1000) + 
-  xlim(-7.5,7.5) -> fig.2C.plt
-```
 ## Fig_2D
 ```{r}
 unique(c(filter(ucsc.rmsk.salmon_quant$analysis_set$covid_ctrl$deseq$de_out,
@@ -1764,20 +1760,23 @@ AA
 DD
 BC
 EE
+EE
 "
 
 wrap_plots(fig.2A.plt,
-           fig.2B.plt + labs(title = 'panc'),
-           fig.2C.plt + labs(title = 'covid'),
+           fig.2B.plt,
+           fig.2C.plt,
+           # fig.2C.plt + labs(title = 'covid'),
            guide_area(),
-           patchwork::wrap_elements(full = grid::grid.grabExpr(ComplexHeatmap::draw(fig.2D.chm), 
-                                                                width = figure_double_column_width)),
+           plot_spacer(),
+           # patchwork::wrap_elements(full = grid::grid.grabExpr(ComplexHeatmap::draw(fig.2D.chm), 
+           #                                                      width = figure_double_column_width)),
            design = fig_2_layout, 
            guides = 'collect',
-           heights = c(0.75,0.175,0.85,1.225)) + plot_annotation(tag_levels = 'A') & 
+           heights = c(1.25,0.225,1,1, .75)) + plot_annotation(tag_levels = 'A') & 
   theme(plot.tag.position = c(0.01, 0.99), 
         legend.position = 'bottom',
-        legend.title = element_text(vjust = 0.5),
+        legend.title = element_text(vjust = 1),
         legend.justification = c(0.5, 0.5)) -> fig.2.patchwork
 
 save.manuscript.panel(figure = 2,

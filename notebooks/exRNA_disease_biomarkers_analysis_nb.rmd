@@ -1137,7 +1137,7 @@ msig.df <-
 
 internal_rmsk_quant$panc_normal$deseq$fgsea <- 
   make.fgsea.ranks(de.seq = 
-                     ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$deseq$de_out %>% 
+                     internal_rmsk_quant$panc_normal$deseq$de_out %>% 
                      filter(gene %in% reference_meta_data$gencode_tx_to_gene.df$gene))
 
 salmon_quant$analysis_set$ctrl_panc_covid$deseq$fgsea$covid_v_ctrl <- 
@@ -1385,6 +1385,68 @@ internal_rmsk_quant$panc_normal$quant_meta %>%
 
 
 
+
+internal_rmsk_quant$panc_normal$deseq$norm_counts.df %>%
+  rownames_to_column('gene') %>%
+  merge(reference_meta_data$ucsc_rmsk_insert_info.df,
+        by = 'gene',
+        all.x = T) %>%
+  mutate(
+    family = ifelse(
+      gene %in% reference_meta_data$gencode_lncRNA_gene_names.df$ensg,
+      'GENCODE_lncRNA',
+      family
+    ),
+    family = ifelse(is.na(family), 'GENCODE_coding', family),
+    clade = ifelse(grepl('GENCODE', family), family, clade),
+    clade = ifelse(
+      clade %in% c(
+        'GENCODE_coding',
+        'GENCODE_lncRNA',
+        'LINE',
+        'SINE',
+        'LTR',
+        'DNA',
+        'Simple_repeat'
+      ),
+      clade,
+      'other'
+    ),
+    type = ifelse(grepl('GENCODE', family), family, 'TE')
+  ) %>%
+  group_by(type) %>%
+  summarize(across(where(is.numeric), ~ .x / sum(.x))) %>%
+  pivot_longer(names_to = 'sample',
+               values_to = 'frequency',
+               cols = where(is.numeric)) %>%
+  group_by(sample, type) %>%
+  # mutate(obs = ifelse(frequency > 0, 1 ,0)) %>%
+  # mutate(exp = n(), obs = sum(obs)) %>%
+  filter(frequency > 0) %>%
+  summarize(total_non_zero = n()) %>%
+  merge(original_normal_meta_data, by = 'sample') %>%
+  ggplot(aes(
+    diagnosis,
+    total_non_zero,
+    shape = gender,
+    color = diagnosis,
+    fill = after_scale(alpha(color, 0.4))
+  )) +
+  geom_hline(
+    yintercept = c(500, 1000, 5000, 10000),
+    linetype = 'dashed',
+    alpha = 0.4
+  ) +
+  geom_boxplot(fill = NA,
+               outlier.shape = NA,
+               aes(group = diagnosis),
+               show.legend = F) +
+  geom_jitter(width = 0.125, show.legend = F) +
+  scale_y_continuous(breaks = c(1000, 5000, 10000)) +
+  scale_shape_manual(values = disc_identity_shape_pal) +
+  scale_color_manual(values = disc_identity_color_pal) +
+  ylab('detected genes') + xlab('') +
+  ggforce::facet_row(~ type, strip.position = 'bottom') -> fig.1E.plt
 ```
 ### Fig_1_patchwork
 ```{r Fig1}
@@ -1394,14 +1456,15 @@ import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_
 fig_1_layout <- "
 AB
 AC
-EE
-DD
+FF
+DE
 "
 
 wrap_plots(flowchart_wrap_fig1A.plt,
            fig.1B.plt+ coord_cartesian(clip = 'off'),
            fig.1C.plt+ coord_cartesian(clip = 'off'),
            fig.1D.plt + coord_cartesian(clip = 'off'),
+           fig.1E.plt + coord_cartesian(clip = 'off'),
            guide_area(),
            design = fig_1_layout, 
            guides = 'collect',
@@ -1694,14 +1757,13 @@ gencode_layer.plt +
   xlim(-5, 5) -> fig.2C.plt
 
 panc_annotated_rmsk_de %>% 
-  filter(clade == 'SINE') %>% 
+  # filter(clade == 'SINE') %>% 
   mutate(sig = factor(ifelse(padj < 0.01, T, F), levels = c(T, F))) %>% 
   ggplot(aes(baseMean, log2FoldChange, color = sig, label = gene)) +
   geom_point() +
   scale_color_grey() +
   ggrepel::geom_text_repel(aes(label = ifelse(sig == T, gene, ''))) +
-  ylim(-5, 5) +
-  ggforce::facet_col(~clade)
+  ylim(-5, 5)
 
 ```
 

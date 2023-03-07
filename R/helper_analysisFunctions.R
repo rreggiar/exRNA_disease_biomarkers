@@ -824,3 +824,23 @@ matching_rbind <- function(x, y, ...) {
   }) %>% bind_rows() %>% distinct()
   
 }
+
+calc_entropy <- function(norm_counts.df, meta_data, grouping_level) {
+  
+  norm_counts.df %>% 
+    rownames_to_column('gene') %>% 
+    merge(reference_meta_data$ucsc_rmsk_insert_info.df, by = 'gene', all.x = T) %>% 
+    mutate(family = ifelse(gene %in% reference_meta_data$gencode_lncRNA_gene_names.df$ensg,
+                           'GENCODE_lncRNA', family),
+           family = ifelse(is.na(family), 'GENCODE_coding', family),
+           clade = ifelse(grepl('GENCODE', family), family, clade),
+           type = ifelse(grepl('GENCODE',family), family, 'TE')) %>% 
+    group_by(!! sym(grouping_level)) %>% 
+    summarize(across(where(is.numeric), ~.x/sum(.x))) %>% 
+    pivot_longer(names_to = 'sample', values_to = 'frequency', cols = where(is.numeric)) %>% 
+    filter(frequency > 0) %>%
+    group_by(sample, !! sym(grouping_level)) %>% 
+    summarize(entropy = -sum((frequency)*log2(frequency))) %>%
+    merge(meta_data, by = 'sample')
+  
+}

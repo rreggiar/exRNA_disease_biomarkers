@@ -458,11 +458,11 @@ internal_gencode_quant <- load.tximeta.object.list('internal_rmsk_quant',
 internal_gencode_quant <-
   parse.tximeta.quant.metadata(internal_gencode_quant, extra_merge = original_roster_names)
 
-npj_rmsk_quant <-
-  load.tximeta.object.list('npj_rmsk_quant',
-                           'rmsk')
-npj_rmsk_quant <-
-  parse.tximeta.quant.metadata(npj_rmsk_quant)
+# npj_rmsk_quant <-
+#   load.tximeta.object.list('npj_rmsk_quant',
+#                            'rmsk')
+# npj_rmsk_quant <-
+#   parse.tximeta.quant.metadata(npj_rmsk_quant)
 
 elife_rmsk_quant <-
   load.tximeta.object.list('elife_rmsk_quant',
@@ -470,11 +470,17 @@ elife_rmsk_quant <-
 elife_rmsk_quant <-
   parse.tximeta.quant.metadata(elife_rmsk_quant)
 
-gut_rmsk_quant <-
-  load.tximeta.object.list('gut_rmsk_quant',
-                           'rmsk')
-gut_rmsk_quant <-
-  parse.tximeta.quant.metadata(gut_rmsk_quant)
+elife_gencode_quant <-
+  load.tximeta.object.list('elife_rmsk_quant',
+                           'txonly')
+elife_gencode_quant <-
+  parse.tximeta.quant.metadata(elife_gencode_quant)
+
+# gut_rmsk_quant <-
+#   load.tximeta.object.list('gut_rmsk_quant',
+#                            'rmsk')
+# gut_rmsk_quant <-
+#   parse.tximeta.quant.metadata(gut_rmsk_quant)
 
 ```
 

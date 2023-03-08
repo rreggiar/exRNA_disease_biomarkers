@@ -476,11 +476,11 @@ elife_gencode_quant <-
 elife_gencode_quant <-
   parse.tximeta.quant.metadata(elife_gencode_quant)
 
-# gut_rmsk_quant <-
-#   load.tximeta.object.list('gut_rmsk_quant',
-#                            'rmsk')
-# gut_rmsk_quant <-
-#   parse.tximeta.quant.metadata(gut_rmsk_quant)
+gut_rmsk_quant <-
+  load.tximeta.object.list('gut_rmsk_quant',
+                           'rmsk')
+gut_rmsk_quant <-
+  parse.tximeta.quant.metadata(gut_rmsk_quant)
 
 ```
 
@@ -761,7 +761,7 @@ external_quant$npj_liverCirrhosis <-
 ## external gut
 ```{r}
 merge(
-  gut_quant$ucsc_rmsk_quant$quant_meta,
+  gut_rmsk_quant$rmsk$quant_meta,
     gut_meta_data,
     by = 'sample'
   ) -> gut_merge_meta_for_filt
@@ -864,9 +864,9 @@ external_quant$npj$quant_meta <-
 ```
 ## external gut
 ```{r}
-gut_quant$ucsc_rmsk_quant$quant_meta <- 
+gut_rmsk_quant$rmsk$quant_meta <- 
   merge(
-    gut_quant$ucsc_rmsk_quant$quant_meta,
+    gut_rmsk_quant$rmsk$quant_meta,
     gut_meta_data,
     by = 'sample'
   )
@@ -1001,6 +1001,15 @@ internal_gencode_quant$panc_normal$deseq <-
                         ref_type = 'salmon',
                         dds_formula = 
                           as.formula('~age+gender+input_vol+diagnosis'))
+
+# gut$panc_normal$deseq <- 
+#   run.de.seq.individual(input_se = internal_gencode_quant$panc_normal,
+#                         type = 'gxi',
+#                         base_level = 'normal',
+#                         top_level = 'panc',
+#                         ref_type = 'salmon',
+#                         dds_formula = 
+#                           as.formula('~age+gender+input_vol+diagnosis'))
 ```
 ## elife de
 ```{r}
@@ -1970,6 +1979,74 @@ save.manuscript.panel(figure = 2,
 ## Fig_3A
 ```{r}
 
+imap(elife_rmsk_quant[names(elife_rmsk_quant) != 'rmsk'], function(analysis_set, name) {
+  analysis_set$deseq$de_out %>%
+    filter(
+      padj < 0.01,
+      log2FoldChange <= -0.75,
+      gene %in% reference_meta_data$ucsc_rmsk_insert_info.df$gene
+    ) %>%
+    mutate(set = name)
+  
+}) %>% bind_rows() %>%
+  merge(
+    reference_meta_data$ucsc_rmsk_insert_info.df %>% select(gene, clade) %>% distinct(),
+    by = 'gene'
+  ) %>%
+  mutate(clade = ifelse(clade %in% names(te_color_pal), clade, 'other'),
+       set = str_remove_all(set, '_healthy')) %>% 
+  group_by(gene, clade) %>%
+  summarize(set = list(set)) %>%
+  ggplot(aes(set, fill = clade)) +
+  geom_bar(show.legend = F, color = 'white', position = 'dodge') +
+  geom_text(
+    stat = 'count',
+    aes(label = after_stat(count), color = clade),
+    vjust = -.5,
+    size = txt.mm_to_pts(1),
+    position = position_dodge(width = 0.9),
+    show.legend = F
+  ) +
+  scale_fill_manual(values = te_color_pal) +
+  scale_color_manual(values = te_color_pal) +
+  xlab('') + ylab('') +
+  ggupset::scale_x_upset() -> fig.3E.plt
+
+
+imap(elife_rmsk_quant[names(elife_rmsk_quant) != 'rmsk'], function(analysis_set, name) {
+  analysis_set$deseq$de_out %>%
+    filter(
+      padj < 0.01,
+      log2FoldChange >= 0.75,
+      gene %in% reference_meta_data$ucsc_rmsk_insert_info.df$gene
+    ) %>%
+    mutate(set = name)
+  
+}) %>% bind_rows() %>%
+  merge(
+    reference_meta_data$ucsc_rmsk_insert_info.df %>% select(gene, clade) %>% distinct(),
+    by = 'gene'
+  ) %>%
+  mutate(clade = ifelse(clade %in% names(te_color_pal), clade, 'other'),
+         set = str_remove_all(set, '_healthy')) %>% 
+  group_by(gene, clade) %>%
+  summarize(set = list(set)) %>% 
+  ggplot(aes(set, fill = clade)) +
+  geom_bar(show.legend = F, color = 'white', position = 'dodge') +
+  geom_text(
+    stat = 'count',
+    aes(label = after_stat(count), color = clade),
+    vjust = -.5,
+    size = txt.mm_to_pts(1),
+    position = position_dodge(width = 0.9),
+    show.legend = F
+  ) +
+  scale_fill_manual(values = te_color_pal) +
+  scale_color_manual(values = te_color_pal) +
+  xlab('') + ylab('') +
+  ggupset::scale_x_upset() -> fig.3F.plt
+
+
 calc_entropy(elife_rmsk_quant$rmsk$deseq$norm_counts.df,
              elife_meta_data,
              grouping_level = 'clade') %>%
@@ -1986,66 +2063,6 @@ calc_entropy(elife_rmsk_quant$rmsk$deseq$norm_counts.df,
     show.legend = F
   ) + 
   ggforce::facet_row( ~ clade, space = 'free', strip.position = 'top')
-
-imap(elife_rmsk_quant[names(elife_rmsk_quant) != 'rmsk'], function(analysis_set, name) {
-  analysis_set$deseq$de_out %>%
-    filter(
-      padj < 0.01,
-      log2FoldChange < -0.75,
-      gene %in% reference_meta_data$ucsc_rmsk_insert_info.df$gene
-    ) %>%
-    mutate(set = name)
-  
-}) %>% bind_rows() %>%
-  merge(
-    reference_meta_data$ucsc_rmsk_insert_info.df %>% select(gene, clade) %>% distinct(),
-    by = 'gene'
-  ) %>%
-  group_by(gene, clade) %>%
-  summarize(set = list(set)) %>%
-  ggplot(aes(set, fill = clade), color = 'white') +
-  geom_bar(show.legend = F) +
-  geom_text(
-    stat = 'count',
-    aes(label = after_stat(count)),
-    vjust = -.5,
-    size = txt.mm_to_pts(1),
-    position = position_stack(vjust = .5)
-  ) +
-  scale_fill_manual(values = te_alone_color_pal) +
-  xlab('') +
-  ggupset::scale_x_upset() -> fig.3E.plt
-
-
-imap(elife_rmsk_quant[names(elife_rmsk_quant) != 'rmsk'], function(analysis_set, name) {
-  analysis_set$deseq$de_out %>%
-    filter(
-      padj < 0.01,
-      log2FoldChange > -0.75,
-      gene %in% reference_meta_data$ucsc_rmsk_insert_info.df$gene
-    ) %>%
-    mutate(set = name)
-  
-}) %>% bind_rows() %>%
-  merge(
-    reference_meta_data$ucsc_rmsk_insert_info.df %>% select(gene, clade) %>% distinct(),
-    by = 'gene'
-  ) %>%
-  group_by(gene, clade) %>%
-  summarize(set = list(set)) %>%
-  ggplot(aes(set, fill = clade), color = 'white') +
-  geom_bar(show.legend = F) +
-  geom_text(
-    stat = 'count',
-    aes(label = after_stat(count)),
-    vjust = -.5,
-    size = txt.mm_to_pts(1), 
-    position = position_stack(vjust = .5)
-  ) +
-  scale_fill_manual(values = te_alone_color_pal) +
-  xlab('') +
-  ggupset::scale_x_upset() -> fig.3F.plt
-
 
 filt_elife_de_list <- bind_rows(elife_de_list[names(elife_de_list) != 'rmsk'])
 
@@ -2314,8 +2331,8 @@ wrap_plots(plt_list[[1]] + ggtitle('liver cancer'),
            plt_list[[4]] + ggtitle('colorectal cancer'),
            plt_list[[5]] + ggtitle('stomach cancer'),
            guide_area(),
-           wrap_elements(full = fig.3F.plt + ylim(0,200) + ggtitle('upregulated TEs')),
-           wrap_elements(full = fig.3E.plt + ylim(0,200) + ggtitle('downregulated TEs')),
+           wrap_elements(full = fig.3F.plt + ylim(0,95) + ggtitle('upregulated TEs')),
+           wrap_elements(full = fig.3E.plt + ylim(0,95) + ggtitle('downregulated TEs')),
            heights = c(0.75,0.75,0.75,1.75),
            # widths = c(0.75, 1.25),
            guides = 'collect',

@@ -1987,36 +1987,62 @@ calc_entropy(elife_rmsk_quant$rmsk$deseq$norm_counts.df,
   ) + 
   ggforce::facet_row( ~ clade, space = 'free', strip.position = 'top')
 
-imap(elife_rmsk_quant[names(elife_rmsk_quant) != 'rmsk'], function(analysis_set, name){
-  
+imap(elife_rmsk_quant[names(elife_rmsk_quant) != 'rmsk'], function(analysis_set, name) {
   analysis_set$deseq$de_out %>%
-    filter(padj < 0.01, log2FoldChange < -0.75,
-           gene %in% reference_meta_data$ucsc_rmsk_insert_info.df$gene) %>%
+    filter(
+      padj < 0.01,
+      log2FoldChange < -0.75,
+      gene %in% reference_meta_data$ucsc_rmsk_insert_info.df$gene
+    ) %>%
     mutate(set = name)
-    
-}) %>% bind_rows() %>% 
-  group_by(gene) %>% 
-  summarize(set = list(set)) %>% 
-  ggplot(aes(set)) + 
-  geom_bar() + 
-  geom_text(stat='count', aes(label=after_stat(count)), vjust=-.5, size = txt.mm_to_pts(1)) +
+  
+}) %>% bind_rows() %>%
+  merge(
+    reference_meta_data$ucsc_rmsk_insert_info.df %>% select(gene, clade) %>% distinct(),
+    by = 'gene'
+  ) %>%
+  group_by(gene, clade) %>%
+  summarize(set = list(set)) %>%
+  ggplot(aes(set, fill = clade), color = 'white') +
+  geom_bar(show.legend = F) +
+  geom_text(
+    stat = 'count',
+    aes(label = after_stat(count)),
+    vjust = -.5,
+    size = txt.mm_to_pts(1),
+    position = position_stack(vjust = .5)
+  ) +
+  scale_fill_manual(values = te_alone_color_pal) +
   xlab('') +
   ggupset::scale_x_upset() -> fig.3E.plt
 
 
-imap(elife_rmsk_quant[names(elife_rmsk_quant) != 'rmsk'], function(analysis_set, name){
-  
+imap(elife_rmsk_quant[names(elife_rmsk_quant) != 'rmsk'], function(analysis_set, name) {
   analysis_set$deseq$de_out %>%
-    filter(padj < 0.01, log2FoldChange > -0.75,
-           gene %in% reference_meta_data$ucsc_rmsk_insert_info.df$gene) %>%
+    filter(
+      padj < 0.01,
+      log2FoldChange > -0.75,
+      gene %in% reference_meta_data$ucsc_rmsk_insert_info.df$gene
+    ) %>%
     mutate(set = name)
-    
-}) %>% bind_rows() %>% 
-  group_by(gene) %>% 
-  summarize(set = list(set)) %>% 
-  ggplot(aes(set)) + 
-  geom_bar() + 
-  geom_text(stat='count', aes(label=after_stat(count)), vjust=-.5, size = txt.mm_to_pts(1)) +
+  
+}) %>% bind_rows() %>%
+  merge(
+    reference_meta_data$ucsc_rmsk_insert_info.df %>% select(gene, clade) %>% distinct(),
+    by = 'gene'
+  ) %>%
+  group_by(gene, clade) %>%
+  summarize(set = list(set)) %>%
+  ggplot(aes(set, fill = clade), color = 'white') +
+  geom_bar(show.legend = F) +
+  geom_text(
+    stat = 'count',
+    aes(label = after_stat(count)),
+    vjust = -.5,
+    size = txt.mm_to_pts(1), 
+    position = position_stack(vjust = .5)
+  ) +
+  scale_fill_manual(values = te_alone_color_pal) +
   xlab('') +
   ggupset::scale_x_upset() -> fig.3F.plt
 

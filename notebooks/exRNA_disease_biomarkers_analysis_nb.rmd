@@ -2082,7 +2082,7 @@ tcga_colData %>%
 
 tcga_primary_tumors %>% 
   group_by(patient) %>% 
-  filter(n() > 1) -> tcga_matched_samples
+  filter(n() > 1) -> tcga_matched_samples 
   
 ```
 ### TCGA PCA
@@ -2188,6 +2188,220 @@ sample_pred_pca.out %>%
 
 ```
 
+### adjCurves
+```{r}
+library(survival)
+library(adjustedCurves)
+devtools::install_github("tagteam/riskRegression")
+
+gene_set <- filter(internal_rmsk_quant$panc_normal$deseq$de_out,
+                   padj < 0.01,
+                   log2FoldChange > 0.75)$gene
+
+t(tcga_paad_dds_norm_counts.df[rownames(tcga_paad_dds_norm_counts.df) %in% gene_set,]) %>%
+  as.data.frame() %>%
+  rownames_to_column('sample') %>% 
+  filter(sample %in% tcga_primary_tumors$sample)-> surv_counts_df
+
+paad_survival <- read_tsv(file.path(output_data.dir, 'tcga_gtex', 'PAAD_survival.txt'))
+
+paad_tcga_pheno_merge <- 
+  tcga_primary_tumors %>% merge(paad_survival %>% rename('patient' = '_PATIENT'), by = 'patient')
+
+paad_tcga_pheno_merge %>% 
+  filter(sample.x %in% colnames(tcga_paad_dds_norm_counts.df)) %>% 
+  select(sample = sample.x, everything(), -patient, -sample.y) -> filt_paad_surv
+
+
+filt_paad_surv %>%
+  merge(surv_counts_df, by = 'sample') %>%
+  merge(tcga_colData %>% mutate('sample' = submitter_id.samples), by = 'sample') %>% 
+  mutate('gender' = gender.demographic,
+         'stage' = tumor_stage.diagnoses,
+         'age' = age_at_initial_pathologic_diagnosis) -> merge_luad_surv
+
+pivot_exclude <-
+  c(colnames(filt_paad_surv), colnames(tcga_colData))
+
+merge_luad_surv %>%
+  pivot_longer(
+    names_to = 'gene',
+    values_to = 'count',
+    cols = colnames(surv_counts_df)[-1]
+  ) %>% 
+  group_by(sample, age, gender, stage, PFI, PFI.time, OS, OS.time) %>%
+  summarize(avg_count = mean(count)) %>%
+  ungroup() %>%
+  mutate(signature = ifelse(avg_count > median(avg_count), 'high', 'low')) -> merge_luad_surv_final
+
+adj_surv_final <- merge_luad_surv_final %>%
+  mutate(stage = case_when(
+    stage %in% c('stage i', 'stage ia', 'stage ib') ~ 1,
+    stage %in% c('stage iia', 'stage iib', 'stage iii') ~ 2,
+  )) %>% 
+  filter(!is.na(stage)) %>% 
+  mutate(stage = ifelse(stage == 1, 'stage 1', 'stage 2/3')) %>%
+  mutate(
+    signature = factor(signature, levels = c('low', 'high')),
+    age = scale(age)[, 1]
+  )
+
+adj_surv_final -> tmp_surv
+
+cox_fit <-
+  coxph(Surv(time = OS.time, event = OS) ~ signature,
+        data = tmp_surv,
+        x = T)
+
+adjsurv <- adjustedsurv(
+  data = tmp_surv,
+  variable = "signature",
+  ev_time = "OS.time",
+  event = "OS",
+  method = "direct",
+  outcome_model = cox_fit,
+  conf_int = TRUE,
+  bootstrap = TRUE,
+  n_boot = 500
+)
+
+tmp_pval <-
+  adjusted_curve_test(adjsurv,
+                      from = 0,
+                      to = max(adjsurv$adjsurv$time),)$p_value
+adjsurv$adjsurv %>%
+  group_by(group) %>%
+  ggplot(aes(
+    time,
+    y = surv,
+    group = group,
+    fill = group,
+    color = group
+  )) +
+  geom_step() +
+  pammtools::geom_stepribbon(aes(ymin = ci_lower, ymax = ci_upper),
+                             alpha = 0.085,
+                             linetype = 0) +
+  scale_color_manual('panc UP signature',
+                     values = c(viridis::viridis(3)[1], viridis::viridis(3)[2])) +
+  scale_fill_manual(values = c(viridis::viridis(3)[1], viridis::viridis(3)[2]),
+                    guide = 'none') +
+  annotate(
+    'text',
+    x = 600,
+    y = 0.07,
+    label = paste0(
+      'pval = ',
+      round(
+        tmp_pval,
+        4
+      )
+    ),
+    size = txt.mm_to_pts(0.8)
+  ) +
+  ylab('Overall Survival Probability') +
+  xlab('Days') +
+  scale_x_continuous(breaks = c(0, 500, 1000, 2000)) +
+  theme(
+    legend.position = c(0.99, 0.99),
+    legend.title = element_text(size = rel(0.8)),
+    legend.text = element_text(size = rel(0.6))
+  )
+
+
+stage_list <- list('stage 1', 'stage 2/3')
+names(stage_list) <- c('stage 1', 'stage 2/3')
+
+imap(stage_list, function(input_stage, name) {
+  set.seed(1323)
+  adj_surv_final %>%
+    filter(stage == input_stage) -> tmp_surv
+  
+  cox_fit <-
+    coxph(
+      Surv(time = OS.time, event = OS) ~ age + gender + signature,
+      data = tmp_surv,
+      x = T
+    )
+  
+  print(cox_fit)
+  
+  print(cox.zph(cox_fit))
+  
+  adjsurv <- adjustedsurv(
+    data = tmp_surv,
+    variable = "signature",
+    ev_time = "OS.time",
+    event = "OS",
+    method = "direct",
+    outcome_model = cox_fit,
+    conf_int = TRUE,
+    bootstrap = TRUE,
+    n_boot = 500
+  )
+  
+  adjsurv$adjsurv$stage <- input_stage
+  
+  tmp_pval <-
+    adjusted_curve_test(adjsurv,
+                        from = 0,
+                        to = max(adjsurv$adjsurv$time),
+    )$p_value
+  
+  
+  list('surv_df' = adjsurv,
+       'pval' = tmp_pval)
+  
+}) -> surv_list
+
+
+
+
+lapply(final_surv_list, function(set) {
+  set$`stage 2/3`$pval
+})
+
+
+final_surv_list$`HALLMARK UNFOLDED PROTEIN RESPONSE`$`stage 2/3`$surv_df$adjsurv %>%
+  group_by(group) %>%
+  ggplot(aes(
+    time,
+    y = surv,
+    group = group,
+    fill = group,
+    color = group
+  )) +
+  geom_step() +
+  pammtools::geom_stepribbon(aes(ymin = ci_lower, ymax = ci_upper),
+                             alpha = 0.085,
+                             linetype = 0) +
+  scale_color_manual('UNFOLDED PROTEIN',
+                     values = c(viridis::viridis(3)[1], viridis::viridis(3)[2])) +
+  scale_fill_manual(values = c(viridis::viridis(3)[1], viridis::viridis(3)[2]),
+                    guide = 'none') +
+  annotate(
+    'text',
+    x = 600,
+    y = 0.07,
+    label = paste0(
+      'pval = ',
+      round(
+        final_surv_list$`HALLMARK UNFOLDED PROTEIN RESPONSE`$`stage 2/3`$pval,
+        4
+      )
+    ),
+    size = txt.mm_to_pts(0.8)
+  ) +
+  ylab('Overall Survival Probability') +
+  xlab('Days') +
+  scale_x_continuous(breaks = c(0, 500, 1000, 2000)) +
+  theme(
+    legend.position = c(0.99, 0.99),
+    legend.title = element_text(size = rel(0.8)),
+    legend.text = element_text(size = rel(0.6))
+  ) -> plt.2.f
+ 
+```
 
 ### UP Surv
 ```{r 3A}
@@ -2199,8 +2413,8 @@ tcga_padd_stratified_counts %>%
   rownames_to_column('sample') %>% 
   filter(sample %in% tcga_primary_tumors$sample) %>% 
   gather(gene, count, -sample) %>% 
-  filter(gene %in% filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
-                          padj < 0.05, log2FoldChange > 0.75)$gene) %>% 
+  filter(gene %in% filter(internal_rmsk_quant$panc_normal$deseq$de_out, 
+                          padj < 0.01, log2FoldChange > 0.75)$gene) %>% 
   filter(!gene %in% reference_meta_data$ucsc_rmsk_insert_info.df$gene) %>%
   select(sample, count) %>% 
   group_by(sample) %>%

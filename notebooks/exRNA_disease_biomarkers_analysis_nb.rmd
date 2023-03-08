@@ -1970,12 +1970,55 @@ save.manuscript.panel(figure = 2,
 ## Fig_3A
 ```{r}
 
-lapply(elife_rmsk_quant, function(analysis_set){
+calc_entropy(elife_rmsk_quant$rmsk$deseq$norm_counts.df,
+             elife_meta_data,
+             grouping_level = 'clade') %>%
+  filter(clade %in% te_aware_annotation_levels) %>%
+  ggplot(aes(diagnosis,
+             entropy,
+             # shape = gender,
+             color = diagnosis,
+             fill = after_scale(alpha(color, 0.4)))) +
+  geom_boxplot(
+    fill = NA,
+    outlier.shape = NA,
+    aes(group = diagnosis),
+    show.legend = F
+  ) + 
+  ggforce::facet_row( ~ clade, space = 'free', strip.position = 'top')
+
+imap(elife_rmsk_quant[names(elife_rmsk_quant) != 'rmsk'], function(analysis_set, name){
   
-  analysis_set$deseq$de_out %>% 
-    filter(padj < 0.01, abs(log2FoldChange) > 1)
+  analysis_set$deseq$de_out %>%
+    filter(padj < 0.01, log2FoldChange < -0.75,
+           gene %in% reference_meta_data$ucsc_rmsk_insert_info.df$gene) %>%
+    mutate(set = name)
+    
+}) %>% bind_rows() %>% 
+  group_by(gene) %>% 
+  summarize(set = list(set)) %>% 
+  ggplot(aes(set)) + 
+  geom_bar() + 
+  geom_text(stat='count', aes(label=after_stat(count)), vjust=-.5, size = txt.mm_to_pts(1)) +
+  xlab('') +
+  ggupset::scale_x_upset() -> fig.3E.plt
+
+
+imap(elife_rmsk_quant[names(elife_rmsk_quant) != 'rmsk'], function(analysis_set, name){
   
-}) -> elife_de_list
+  analysis_set$deseq$de_out %>%
+    filter(padj < 0.01, log2FoldChange > -0.75,
+           gene %in% reference_meta_data$ucsc_rmsk_insert_info.df$gene) %>%
+    mutate(set = name)
+    
+}) %>% bind_rows() %>% 
+  group_by(gene) %>% 
+  summarize(set = list(set)) %>% 
+  ggplot(aes(set)) + 
+  geom_bar() + 
+  geom_text(stat='count', aes(label=after_stat(count)), vjust=-.5, size = txt.mm_to_pts(1)) +
+  xlab('') +
+  ggupset::scale_x_upset() -> fig.3F.plt
 
 
 filt_elife_de_list <- bind_rows(elife_de_list[names(elife_de_list) != 'rmsk'])
@@ -1983,15 +2026,12 @@ filt_elife_de_list <- bind_rows(elife_de_list[names(elife_de_list) != 'rmsk'])
 elife_rmsk_quant$rmsk$deseq$norm_counts.df %>%
   # sample_n(100) %>%
   rownames_to_column('ensg') %>%
-  filter(
-    ensg %in% c(reference_meta_data$ucsc_rmsk_insert_info.df$gene),
-    ensg %in%        filt_elife_de_list$ensg
-  ) %>%
-  filter(across(where(is.numeric), ~ any(.x != 0))) %>%
-  rowwise() %>%
-  mutate(sum = sum(c_across(where(is.numeric)))) %>%
-  filter(sum > 224 * 10) %>% select(-sum) %>%
-  ungroup() %>%
+  filter(ensg %in% filt_elife_de_list$ensg) %>%
+  # filter(across(where(is.numeric), ~ any(.x != 0))) %>%
+  # rowwise() %>%
+  # mutate(sum = sum(c_across(where(is.numeric)))) %>%
+  # filter(sum > 224 * 10) %>% select(-sum) %>%
+  # ungroup() %>%
   column_to_rownames('ensg') %>%
   t() %>%
   as.data.frame() %>%
@@ -1999,9 +2039,15 @@ elife_rmsk_quant$rmsk$deseq$norm_counts.df %>%
   mutate_if(is.numeric, ~ scale(log2(. + 1), center = T)) %>%
   column_to_rownames('ensg') %>% as.matrix() %>% t() -> hm_count_data
 
+
+cor(hm_count_data) -> hm_cor_data
+
+
+
+
 elife_identity_color_pal <-
   setNames(
-    RColorBrewer::brewer.pal(n = 6, 'Dark2'),
+    RColorBrewer::brewer.pal(n = 6, 'Set2'),
     elife_rmsk_quant$rmsk$deseq$scaled_quant_meta_for_de.df %>%
       pull(condition) %>% unique()
   )
@@ -2021,6 +2067,40 @@ top_hma <-
         fontsize = 6, fontface = 'bold'
       ))
   )
+
+left_hma <-
+  ComplexHeatmap::rowAnnotation(
+    df = hm_meta_data %>% select(condition),
+    col = list(condition = elife_identity_color_pal),
+    show_annotation_name = F,
+    show_legend = F,
+    simple_anno_size = unit(.3, "cm"),
+    annotation_legend_param =
+      list(title_gp = grid::gpar(
+        fontsize = 6, fontface = 'bold'
+      ))
+  )
+
+set.seed(2023 - 03 - 07)
+ComplexHeatmap::Heatmap(
+  hm_cor_data,
+  show_row_names = F,
+  show_column_names = F,
+  left_annotation = left_hma,
+  row_dend_width = unit(.25, "cm"),
+  column_dend_height = unit(.25, "cm"),
+  heatmap_legend_param =
+    list(
+      legend_gp = grid::gpar(fontsize = 1),
+      legend_direction = "horizontal",
+      legend_height = unit(.35, "cm"),
+      title_position = "lefttop",
+      title_gp = grid::gpar(fontsize = 6, fontface = 'bold')
+    ),
+  top_annotation = top_hma,
+  column_names_gp = grid::gpar(fontsize = 6),
+  name = 'Z-score'
+) 
 
 
 
@@ -2062,8 +2142,8 @@ ComplexHeatmap::Heatmap(
   show_row_names = F,
   show_column_names = F,
   left_annotation = left_hma,
-  row_dend_width = unit(.45, "cm"),
-  column_dend_height = unit(.45, "cm"),
+  row_dend_width = unit(.25, "cm"),
+  column_dend_height = unit(.25, "cm"),
   heatmap_legend_param =
     list(
       legend_gp = grid::gpar(fontsize = 1),
@@ -2085,10 +2165,10 @@ patchwork::wrap_elements(full = grid::grid.grabExpr(
 ## Fig_3B
 ```{r}
 elife_rmsk_quant$rmsk$pca <- 
-  run.pca(input_de = elife_rmsk_quant$rmsk$deseq, te_only = TRUE)
+  run.pca(input_de = elife_rmsk_quant$rmsk$deseq, te_only = FALSE)
 
 elife_rmsk_quant$rmsk$pca$pca_out.df %>%
-  ggplot(aes(PC1, PC2,
+  ggplot(aes(PC3, PC4,
              color = diagnosis)) +
   geom_point(size = txt.mm_to_pts(0.8),
              aes(fill = after_scale(alpha(color, 0.4))),
@@ -2199,8 +2279,7 @@ fig_3_layout <- "
 AB
 CD
 EF
-GG
-GG
+GH
 "
 
 wrap_plots(plt_list[[1]] + ggtitle('colorectal cancer'),
@@ -2209,8 +2288,9 @@ wrap_plots(plt_list[[1]] + ggtitle('colorectal cancer'),
            plt_list[[4]] + ggtitle('esophagus cancer'),
            plt_list[[5]] + ggtitle('stomach cancer'),
            guide_area(),
-           plot_spacer(),
-           heights = c(0.75,0.75,0.75,1,1),
+           wrap_elements(full = fig.3E.plt + ylim(0,200) + ggtitle('downregulated TEs')),
+           wrap_elements(full = fig.3F.plt + ylim(0,200) + ggtitle('upregulated TEs')),
+           heights = c(0.75,0.75,0.75,1.75),
            # widths = c(0.75, 1.25),
            guides = 'collect',
            design = fig_3_layout) +

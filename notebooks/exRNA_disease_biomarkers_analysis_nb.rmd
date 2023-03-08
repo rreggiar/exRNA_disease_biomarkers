@@ -2200,10 +2200,10 @@ elife_rmsk_quant$rmsk$pca$pca_out.df %>%
 ## Fig_3C
 ```{r}
 
-de_out_list <- list(elife_rmsk_quant$colorectal_healthy$deseq$de_out,
-                 elife_rmsk_quant$liver_healthy$deseq$de_out,
+de_out_list <- list(elife_rmsk_quant$liver_healthy$deseq$de_out,
                  elife_rmsk_quant$lung_healthy$deseq$de_out,
                  elife_rmsk_quant$esoph_healthy$deseq$de_out,
+                 elife_rmsk_quant$colorectal_healthy$deseq$de_out,
                  elife_rmsk_quant$stomach_healthy$deseq$de_out)
 
 lapply(c(de_out_list), function(de_out) {
@@ -2282,14 +2282,14 @@ EF
 GH
 "
 
-wrap_plots(plt_list[[1]] + ggtitle('colorectal cancer'),
-           plt_list[[2]] + ggtitle('liver cancer'),
-           plt_list[[3]] + ggtitle('lung cancer'),
-           plt_list[[4]] + ggtitle('esophagus cancer'),
+wrap_plots(plt_list[[1]] + ggtitle('liver cancer'),
+           plt_list[[2]] + ggtitle('lung cancer'),
+           plt_list[[3]] + ggtitle('esophagus cancer'),
+           plt_list[[4]] + ggtitle('colorectal cancer'),
            plt_list[[5]] + ggtitle('stomach cancer'),
            guide_area(),
-           wrap_elements(full = fig.3E.plt + ylim(0,200) + ggtitle('downregulated TEs')),
            wrap_elements(full = fig.3F.plt + ylim(0,200) + ggtitle('upregulated TEs')),
+           wrap_elements(full = fig.3E.plt + ylim(0,200) + ggtitle('downregulated TEs')),
            heights = c(0.75,0.75,0.75,1.75),
            # widths = c(0.75, 1.25),
            guides = 'collect',

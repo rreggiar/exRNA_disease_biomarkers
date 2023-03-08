@@ -661,16 +661,67 @@ merge(
     by = 'sample'
   ) -> elife_merge_meta_for_filt
 
-# elife_select_list <-
-#   filter(
-#     elife_rmsk_quant$rmsk$quant_meta,
-#     !sample %in% elife_merge_meta_for_filt$sample
-#   ) %>% 
-#   pull(sample)
-# 
-# external_quant$elife <-
-#   subset.tximeta.se(elife_rmsk_quant$rmsk,
-#                     filter_list = c(elife_select_list))
+
+elife_merge_meta_for_filt %>%
+  filter(!diagnosis %in% c('Healthy donor', 'Colorectal Cancer')) %>%
+  pull(sample) -> elife_colo_select
+
+elife_merge_meta_for_filt %>%
+  filter(!diagnosis %in% c('Healthy donor', 'Esophagus Cancer')) %>%
+  pull(sample) -> elife_esoph_select
+
+elife_merge_meta_for_filt %>%
+  filter(!diagnosis %in% c('Healthy donor', 'Liver Cancer')) %>%
+  pull(sample) -> elife_liver_select
+
+elife_merge_meta_for_filt %>%
+  filter(!diagnosis %in% c('Healthy donor', 'Lung Cancer')) %>%
+  pull(sample) -> elife_lung_select
+
+elife_merge_meta_for_filt %>%
+  filter(!diagnosis %in% c('Healthy donor', 'Stomach Cancer')) %>% 
+  pull(sample) -> elife_stomach_select
+
+elife_rmsk_quant$colorectal_healthy <-
+  subset.tximeta.se(elife_rmsk_quant$rmsk,
+                    filter_list = c(elife_colo_select))
+
+elife_rmsk_quant$esoph_healthy <-
+  subset.tximeta.se(elife_rmsk_quant$rmsk,
+                    filter_list = c(elife_esoph_select))
+
+elife_rmsk_quant$liver_healthy <-
+  subset.tximeta.se(elife_rmsk_quant$rmsk,
+                    filter_list = c(elife_liver_select))
+
+elife_rmsk_quant$lung_healthy <-
+  subset.tximeta.se(elife_rmsk_quant$rmsk,
+                    filter_list = c(elife_lung_select))
+
+elife_rmsk_quant$stomach_healthy <-
+  subset.tximeta.se(elife_rmsk_quant$rmsk,
+                    filter_list = c(elife_stomach_select))
+############
+
+elife_gencode_quant$colorectal_healthy <-
+  subset.tximeta.se(elife_gencode_quant$txonly,
+                    filter_list = c(elife_colo_select))
+
+elife_gencode_quant$esoph_healthy <-
+  subset.tximeta.se(elife_gencode_quant$txonly,
+                    filter_list = c(elife_esoph_select))
+
+elife_gencode_quant$liver_healthy <-
+  subset.tximeta.se(elife_gencode_quant$txonly,
+                    filter_list = c(elife_liver_select))
+
+elife_gencode_quant$lung_healthy <-
+  subset.tximeta.se(elife_gencode_quant$txonly,
+                    filter_list = c(elife_lung_select))
+
+elife_gencode_quant$stomach_healthy <-
+  subset.tximeta.se(elife_gencode_quant$txonly,
+                    filter_list = c(elife_stomach_select))
 ```
 ## external npj
 ```{r}
@@ -744,12 +795,59 @@ internal_rmsk_quant$covid_ctrl$quant_meta <-
 ```
 ## external elife
 ```{r}
-elife_rmsk_quant$rmsk$quant_meta <- 
-  merge(
-    elife_rmsk_quant$rmsk$quant_meta,
-    elife_meta_data,
-    by = 'sample'
-  )
+
+elife_rmsk_quant$colorectal_healthy$quant_meta <-
+  merge(elife_rmsk_quant$colorectal_healthy$quant_meta,
+        elife_meta_data,
+        by = 'sample')
+
+elife_rmsk_quant$esoph_healthy$quant_meta <-
+  merge(elife_rmsk_quant$esoph_healthy$quant_meta,
+        elife_meta_data,
+        by = 'sample')
+
+elife_rmsk_quant$liver_healthy$quant_meta <-
+  merge(elife_rmsk_quant$liver_healthy$quant_meta,
+        elife_meta_data,
+        by = 'sample')
+
+elife_rmsk_quant$lung_healthy$quant_meta <-
+  merge(elife_rmsk_quant$lung_healthy$quant_meta,
+        elife_meta_data,
+        by = 'sample')
+
+elife_rmsk_quant$stomach_healthy$quant_meta <-
+  merge(elife_rmsk_quant$stomach_healthy$quant_meta,
+        elife_meta_data,
+        by = 'sample')
+
+############
+
+elife_gencode_quant$colorectal_healthy$quant_meta <-
+  merge(elife_gencode_quant$colorectal_healthy$quant_meta,
+        elife_meta_data,
+        by = 'sample')
+
+elife_gencode_quant$esoph_healthy$quant_meta <-
+  merge(elife_gencode_quant$esoph_healthy$quant_meta,
+        elife_meta_data,
+        by = 'sample')
+
+elife_gencode_quant$liver_healthy$quant_meta <-
+  merge(elife_gencode_quant$liver_healthy$quant_meta,
+        elife_meta_data,
+        by = 'sample')
+
+elife_gencode_quant$lung_healthy$quant_meta <-
+  merge(elife_gencode_quant$lung_healthy$quant_meta,
+        elife_meta_data,
+        by = 'sample')
+
+elife_gencode_quant$stomach_healthy$quant_meta <-
+  merge(elife_gencode_quant$stomach_healthy$quant_meta,
+        elife_meta_data,
+        by = 'sample')
+
 ```
 ## external npj
 ```{r}
@@ -881,14 +979,6 @@ import::from(.directory = r_code.dir,
               run.de.seq,
               run.de.seq.individual)
 
-# elife_rmsk_quant$rmsk$deseq <- 
-#   run.de.seq.individual(input_se = elife_rmsk_quant$rmsk,
-#                         type = 'gxi',
-#                         base_level = 'Healthy donor',
-#                         top_level = 'Lung Cancer',
-#                         ref_type = 'ucsc.rmsk',
-#                         dds_formula = 
-#                           as.formula('~age+gender+diagnosis'))
 
 internal_rmsk_quant$panc_normal$deseq <- 
   run.de.seq.individual(input_se = internal_rmsk_quant$panc_normal,
@@ -907,106 +997,102 @@ internal_gencode_quant$panc_normal$deseq <-
                         ref_type = 'salmon',
                         dds_formula = 
                           as.formula('~age+gender+input_vol+diagnosis'))
+```
+## elife de
+```{r}
+elife_rmsk_quant$colorectal_healthy$deseq <- 
+  run.de.seq.individual(input_se = elife_rmsk_quant$colorectal_healthy,
+                        type = 'gxi',
+                        base_level = 'Healthy donor',
+                        top_level = 'Colorectal Cancer',
+                        ref_type = 'ucsc.rmsk',
+                        dds_formula = 
+                          as.formula('~age+gender+diagnosis'))
+
+elife_rmsk_quant$esoph_healthy$deseq <- 
+  run.de.seq.individual(input_se = elife_rmsk_quant$esoph_healthy,
+                        type = 'gxi',
+                        base_level = 'Healthy donor',
+                        top_level = 'Esophagus Cancer',
+                        ref_type = 'ucsc.rmsk',
+                        dds_formula = 
+                          as.formula('~age+gender+diagnosis'))
+
+elife_rmsk_quant$liver_healthy$deseq <- 
+  run.de.seq.individual(input_se = elife_rmsk_quant$liver_healthy,
+                        type = 'gxi',
+                        base_level = 'Healthy donor',
+                        top_level = 'Liver Cancer',
+                        ref_type = 'ucsc.rmsk',
+                        dds_formula = 
+                          as.formula('~age+gender+diagnosis'))
+
+elife_rmsk_quant$lung_healthy$deseq <- 
+  run.de.seq.individual(input_se = elife_rmsk_quant$lung_healthy,
+                        type = 'gxi',
+                        base_level = 'Healthy donor',
+                        top_level = 'Lung Cancer',
+                        ref_type = 'ucsc.rmsk',
+                        dds_formula = 
+                          as.formula('~age+gender+diagnosis'))
+
+elife_rmsk_quant$stomach_healthy$deseq <- 
+  run.de.seq.individual(input_se = elife_rmsk_quant$stomach_healthy,
+                        type = 'gxi',
+                        base_level = 'Healthy donor',
+                        top_level = 'Stomach Cancer',
+                        ref_type = 'ucsc.rmsk',
+                        dds_formula = 
+                          as.formula('~age+gender+diagnosis'))
+
+######
+
+elife_gencode_quant$colorectal_healthy$deseq <- 
+  run.de.seq.individual(input_se = elife_gencode_quant$colorectal_healthy,
+                        type = 'gxi',
+                        base_level = 'Healthy donor',
+                        top_level = 'Colorectal Cancer',
+                        ref_type = 'salmon',
+                        dds_formula = 
+                          as.formula('~age+gender+diagnosis'))
+
+elife_gencode_quant$esoph_healthy$deseq <- 
+  run.de.seq.individual(input_se = elife_gencode_quant$esoph_healthy,
+                        type = 'gxi',
+                        base_level = 'Healthy donor',
+                        top_level = 'Esophagus Cancer',
+                        ref_type = 'salmon',
+                        dds_formula = 
+                          as.formula('~age+gender+diagnosis'))
+
+elife_gencode_quant$liver_healthy$deseq <- 
+  run.de.seq.individual(input_se = elife_gencode_quant$liver_healthy,
+                        type = 'gxi',
+                        base_level = 'Healthy donor',
+                        top_level = 'Liver Cancer',
+                        ref_type = 'salmon',
+                        dds_formula = 
+                          as.formula('~age+gender+diagnosis'))
+
+elife_gencode_quant$lung_healthy$deseq <- 
+  run.de.seq.individual(input_se = elife_gencode_quant$lung_healthy,
+                        type = 'gxi',
+                        base_level = 'Healthy donor',
+                        top_level = 'Lung Cancer',
+                        ref_type = 'salmon',
+                        dds_formula = 
+                          as.formula('~age+gender+diagnosis'))
+
+elife_gencode_quant$stomach_healthy$deseq <- 
+  run.de.seq.individual(input_se = elife_gencode_quant$stomach_healthy,
+                        type = 'gxi',
+                        base_level = 'Healthy donor',
+                        top_level = 'Stomach Cancer',
+                        ref_type = 'salmon',
+                        dds_formula = 
+                          as.formula('~age+gender+diagnosis'))
 
 
-
-# internal_quant$panc_normal$deseq <- 
-#   run.de.seq.individual(input_se = internal_quant$panc_normal,
-#                         type = 'gxi',
-#                         base_level = 'normal',
-#                         top_level = 'panc',
-#                         ref_type = 'ucsc.rmsk',
-#                         dds_formula = 
-#                           as.formula('~age+gender+input_vol+diagnosis'))
-# 
-# 
-# internal_quant$esoph_normal$deseq <- 
-#   run.de.seq.individual(input_se = internal_quant$esoph_normal,
-#                         type = 'gxi',
-#                         base_level = 'normal',
-#                         top_level = 'esoph',
-#                         ref_type = 'ucsc.rmsk',
-#                         dds_formula = 
-#                           as.formula('~age+gender+input_vol+diagnosis'))
-
-
-# gut_quant$ucsc_rmsk_quant$deseq <- 
-#   run.de.seq.individual(input_se = gut_quant$ucsc_rmsk_quant,
-#                         type = 'gxi',
-#                         base_level = 'healthy',
-#                         top_level = 'PDAC',
-#                         ref_type = 'ucsc.rmsk',
-#                         dds_formula = 
-#                           as.formula('~diagnosis'))
-# 
-# external_quant$npj$deseq <- 
-#   run.de.seq.individual(input_se = external_quant$npj,
-#                         type = 'gxi',
-#                         base_level = 'non-cancer',
-#                         top_level = 'MGUS',
-#                         ref_type = 'ucsc.rmsk',
-#                         dds_formula = 
-#                           as.formula('~age+gender+diagnosis'))
-# 
-# external_quant$elife$deseq <- 
-#   run.de.seq.individual(input_se = external_quant$elife,
-#                         type = 'gxi',
-#                         base_level = 'Lung Cancer',
-#                         top_level = 'Liver Cancer',
-#                         ref_type = 'ucsc.rmsk',
-#                         dds_formula = 
-#                           as.formula('~age+gender+diagnosis'))
-# 
-# united_analysis_set$deseq <- 
-#   run.de.seq.individual(input_se = united_analysis_set,
-#                         type = 'gxi',
-#                         base_level = 'healthy',
-#                         top_level = 'PDAC',
-#                         ref_type = 'ucsc.rmsk',
-#                         dds_formula = 
-#                           as.formula('~diagnosis'))
-
-
-# 
-# 
-# SummarizedExperiment::assay(process.aware.salmon_quant$analysis_set$panc_ctrl$gxi.split, 'unspliced')
-# 
-# SummarizedExperiment::rowRanges(process.aware.salmon_quant$analysis_set$panc_ctrl$gxi)
-# 
-# reference_meta_data$process_aware_tx_to_gene <-   
-#   SummarizedExperiment::rowRanges(process.aware.salmon_quant$analysis_set$panc_ctrl$gxi) %>% 
-#     as.data.frame() %>% 
-#     select(gene_id) %>% 
-#     separate(gene_id, sep = '-', into = c('gene_id', 'intron')) %>% 
-#     mutate(intron = ifelse(is.na(intron), 'E', intron)) %>% 
-#     merge(reference_meta_data$gencode_tx_to_gene.df, by.x = 'gene_id', by.y = 'ensg') %>% 
-#     mutate(gene_id = ifelse(intron == 'I', paste0(gene_id, '-I'), gene_id)) %>% 
-#     select(-intron) %>% 
-#     dplyr::rename('ensg' = 'gene_id') %>% 
-#     distinct()
-# 
-# 
-# process.aware.salmon_quant$analysis_set$panc_ctrl$deseq <- 
-#   run.de.seq.individual(input_se = process.aware.salmon_quant$analysis_set$panc_ctrl, 
-#                         type = 'gxi.split',
-#                         base_level = 'panc',
-#                         top_level = 'ctrl',
-#                         ref_type = 'process.aware',
-#                         dds_formula = as.formula('~age+diabetes+condition'))
-# 
-# process.aware.salmon_quant$analysis_set$covid_ctrl$deseq <- 
-#   run.de.seq.individual(input_se = process.aware.salmon_quant$analysis_set$covid_ctrl,
-#                         type = 'gxi.split',
-#                         base_level = 'ctrl',
-#                         top_level = 'covid',
-#                         ref_type = 'process.aware',
-#                         dds_formula = as.formula('~age+condition'))
-# 
-# 
-# 
-# 
-# process.aware.salmon_quant$analysis_set$panc_ctrl$deseq$de_out %>% 
-#   filter(grepl('-I', ensg))
 ```
 
 
@@ -1623,7 +1709,7 @@ calc_entropy(
 ```
 ## Fig_2C
 ```{r}
-internal_rmsk_quant$panc_normal$deseq$de_out %>%
+elife_rmsk_quant$stomach_healthy$deseq$de_out %>%
   merge(reference_meta_data$ucsc_rmsk_insert_info.df,
         by = 'gene',
         all.x = T) %>%
@@ -1707,36 +1793,36 @@ gencode_layer.plt +
     box.padding = 0.3,
     segment.colour = 'grey'
   ) +
-  xlim(-5, 5) -> fig.2C.plt
+  xlim(-5, 5) #-> fig.2C.plt
 
-panc_annotated_rmsk_de %>%
-  mutate(sig = factor(ifelse(padj < 0.01, T, F), levels = c(T, F))) %>%
-  filter(sig == F) %>%
-  ggplot(aes(log(baseMean), log2FoldChange)) +
-  geom_point(color = 'grey', alpha = 0.2) -> unsig_plt
-
-unsig_plt +
-  geom_point(
-    data = panc_annotated_rmsk_de %>%
-      mutate(sig = factor(ifelse(padj < 0.01, T, F), levels = c(T, F))) %>%
-      filter(sig == T),
-    aes(color = clade, fill = after_scale(alpha(color, 0.4))),
-    show.legend = F
-  ) +
-  ggrepel::geom_text_repel(
-    data = panc_annotated_rmsk_de %>%
-      mutate(sig = factor(ifelse(padj < 0.01, T, F), levels = c(T, F))) %>%
-      filter(sig == T),
-    aes(label = ifelse(sig == T, gene, '')) ,
-    size = txt.mm_to_pts(1),
-    box.padding = 0.3,
-    show.legend = F,
-    max.overlaps = 25
-  ) +
-  geom_hline(yintercept = 0, linetype = 'dashed') +
-  ylim(-5, 5) +
-  scale_color_manual(values = te_color_pal, name = 'biotype/clade') +
-  theme(legend.position = c(0.99, 0.25)) -> fig.2E.plt
+# panc_annotated_rmsk_de %>%
+#   mutate(sig = factor(ifelse(padj < 0.01, T, F), levels = c(T, F))) %>%
+#   filter(sig == F) %>%
+#   ggplot(aes(log(baseMean), log2FoldChange)) +
+#   geom_point(color = 'grey', alpha = 0.2) -> unsig_plt
+# 
+# unsig_plt +
+#   geom_point(
+#     data = panc_annotated_rmsk_de %>%
+#       mutate(sig = factor(ifelse(padj < 0.01, T, F), levels = c(T, F))) %>%
+#       filter(sig == T),
+#     aes(color = clade, fill = after_scale(alpha(color, 0.4))),
+#     show.legend = F
+#   ) +
+#   ggrepel::geom_text_repel(
+#     data = panc_annotated_rmsk_de %>%
+#       mutate(sig = factor(ifelse(padj < 0.01, T, F), levels = c(T, F))) %>%
+#       filter(sig == T),
+#     aes(label = ifelse(sig == T, gene, '')) ,
+#     size = txt.mm_to_pts(1),
+#     box.padding = 0.3,
+#     show.legend = F,
+#     max.overlaps = 25
+#   ) +
+#   geom_hline(yintercept = 0, linetype = 'dashed') +
+#   ylim(-5, 5) +
+#   scale_color_manual(values = te_color_pal, name = 'biotype/clade') +
+#   theme(legend.position = c(0.99, 0.25)) -> fig.2E.plt
 
 ```
 

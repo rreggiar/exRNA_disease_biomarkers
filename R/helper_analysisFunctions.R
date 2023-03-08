@@ -591,16 +591,25 @@ run.de.seq.individual <- function(type = 'gxi', base_level = 'ctrl',
   
 }
 
-run.pca <- function(input_de) {
+run.pca <- function(input_de, te_only = FALSE) {
   
   import::here(.from = 'tibble', lst)
   import::here(.from = 'stats', prcomp)
   import::here(.from = 'patchwork', .all = T)
   import::here(.from = 'ggplot2', labs)
   
-  input_de$vst_counts.df[! rownames(input_de$vst_counts.df) %in% 
-                           c(input_de$age_filter.df$ensg,input_de$sex_filter.df$gene_id), ] %>% 
-    t() -> pca_tmp_in 
+  if (te_only == TRUE){
+    
+    input_de$vst_counts.df[ rownames(input_de$vst_counts.df) %in% 
+                             c(reference_meta_data$ucsc_rmsk_insert_info.df$gene), ] %>% 
+      t() -> pca_tmp_in 
+    
+  } else {
+    input_de$vst_counts.df[! rownames(input_de$vst_counts.df) %in% 
+                             c(input_de$age_filter.df$ensg,input_de$sex_filter.df$gene_id), ] %>% 
+      t() -> pca_tmp_in 
+  }
+ 
   
   pca_tmp_in_sd <- apply(pca_tmp_in, 2, sd)
   pca_tmp_in_zero_sd <- pca_tmp_in[,pca_tmp_in_sd!=0]

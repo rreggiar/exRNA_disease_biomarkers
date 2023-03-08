@@ -795,6 +795,10 @@ internal_rmsk_quant$covid_ctrl$quant_meta <-
 ```
 ## external elife
 ```{r}
+elife_rmsk_quant$rmsk$quant_meta <-
+  merge(elife_rmsk_quant$rmsk$quant_meta,
+        elife_meta_data,
+        by = 'sample')
 
 elife_rmsk_quant$colorectal_healthy$quant_meta <-
   merge(elife_rmsk_quant$colorectal_healthy$quant_meta,
@@ -1000,6 +1004,16 @@ internal_gencode_quant$panc_normal$deseq <-
 ```
 ## elife de
 ```{r}
+
+elife_rmsk_quant$rmsk$deseq <- 
+  run.de.seq.individual(input_se = elife_rmsk_quant$rmsk,
+                        type = 'gxi',
+                        base_level = 'Healthy donor',
+                        top_level = 'Colorectal Cancer',
+                        ref_type = 'ucsc.rmsk',
+                        dds_formula = 
+                          as.formula('~age+gender+diagnosis'))
+
 elife_rmsk_quant$colorectal_healthy$deseq <- 
   run.de.seq.individual(input_se = elife_rmsk_quant$colorectal_healthy,
                         type = 'gxi',
@@ -1709,7 +1723,7 @@ calc_entropy(
 ```
 ## Fig_2C
 ```{r}
-elife_rmsk_quant$stomach_healthy$deseq$de_out %>%
+internal_rmsk_quant$panc_normal$deseq$de_out %>%
   merge(reference_meta_data$ucsc_rmsk_insert_info.df,
         by = 'gene',
         all.x = T) %>%
@@ -1951,6 +1965,269 @@ save.manuscript.panel(figure = 2,
 
 
 ```
+
+# New Fig_3
+## Fig_3A
+```{r}
+
+lapply(elife_rmsk_quant, function(analysis_set){
+  
+  analysis_set$deseq$de_out %>% 
+    filter(padj < 0.01, abs(log2FoldChange) > 1)
+  
+}) -> elife_de_list
+
+
+filt_elife_de_list <- bind_rows(elife_de_list[names(elife_de_list) != 'rmsk'])
+
+elife_rmsk_quant$rmsk$deseq$norm_counts.df %>%
+  # sample_n(100) %>%
+  rownames_to_column('ensg') %>%
+  filter(
+    ensg %in% c(reference_meta_data$ucsc_rmsk_insert_info.df$gene),
+    ensg %in%        filt_elife_de_list$ensg
+  ) %>%
+  filter(across(where(is.numeric), ~ any(.x != 0))) %>%
+  rowwise() %>%
+  mutate(sum = sum(c_across(where(is.numeric)))) %>%
+  filter(sum > 224 * 10) %>% select(-sum) %>%
+  ungroup() %>%
+  column_to_rownames('ensg') %>%
+  t() %>%
+  as.data.frame() %>%
+  rownames_to_column('ensg') %>%
+  mutate_if(is.numeric, ~ scale(log2(. + 1), center = T)) %>%
+  column_to_rownames('ensg') %>% as.matrix() %>% t() -> hm_count_data
+
+elife_identity_color_pal <-
+  setNames(
+    RColorBrewer::brewer.pal(n = 6, 'Dark2'),
+    elife_rmsk_quant$rmsk$deseq$scaled_quant_meta_for_de.df %>%
+      pull(condition) %>% unique()
+  )
+
+hm_meta_data <-
+  elife_rmsk_quant$rmsk$deseq$scaled_quant_meta_for_de.df
+
+top_hma <-
+  ComplexHeatmap::columnAnnotation(
+    df = hm_meta_data %>% select(condition),
+    col = list(condition = elife_identity_color_pal),
+    show_annotation_name = F,
+    show_legend = T,
+    simple_anno_size = unit(.3, "cm"),
+    annotation_legend_param =
+      list(title_gp = grid::gpar(
+        fontsize = 6, fontface = 'bold'
+      ))
+  )
+
+
+
+reference_meta_data$ucsc_rmsk_insert_info.df %>%
+  filter(gene %in% rownames(hm_count_data)) %>%
+  select(gene, clade) %>%
+  mutate(clade = ifelse(clade %in% names(te_color_pal), clade, 'other')) %>%
+  distinct() %>% 
+  group_by(gene) %>% 
+  mutate(count = n()) %>% 
+  filter(n() > 1) %>% 
+  filter(if (count==2) clade != 'other' else .) -> dupe_filt
+  
+reference_meta_data$ucsc_rmsk_insert_info.df %>%
+  filter(gene %in% rownames(hm_count_data)) %>%
+  select(gene, clade) %>%
+  mutate(clade = ifelse(clade %in% names(te_color_pal), clade, 'other')) %>%
+  distinct() %>% 
+  filter(!gene %in% dupe_filt$gene) %>% 
+  rbind(dupe_filt %>% select(gene, clade)) %>% 
+  column_to_rownames('gene') -> hm_te_data
+
+hm_te_data <-
+  hm_te_data[match(rownames(hm_count_data), rownames(hm_te_data)), , drop = F]
+
+left_hma <- ComplexHeatmap::rowAnnotation(
+  df = hm_te_data,
+  col = list(clade = te_color_pal),
+  show_annotation_name = T,
+  annotation_name_side = 'top',
+  annotation_name_gp = grid::gpar(fontsize = 8, fontface = 'italic'),
+  show_legend = F,
+  simple_anno_size = unit(.275, "cm")
+)
+
+set.seed(2023 - 03 - 07)
+ComplexHeatmap::Heatmap(
+  hm_count_data,
+  show_row_names = F,
+  show_column_names = F,
+  left_annotation = left_hma,
+  row_dend_width = unit(.45, "cm"),
+  column_dend_height = unit(.45, "cm"),
+  heatmap_legend_param =
+    list(
+      legend_gp = grid::gpar(fontsize = 1),
+      legend_direction = "horizontal",
+      legend_height = unit(.35, "cm"),
+      title_position = "lefttop",
+      title_gp = grid::gpar(fontsize = 6, fontface = 'bold')
+    ),
+  top_annotation = top_hma,
+  column_names_gp = grid::gpar(fontsize = 6),
+  name = 'Z-score'
+) #-> fig.2D.chm
+
+patchwork::wrap_elements(full = grid::grid.grabExpr(
+  ComplexHeatmap::draw(fig.2D.chm, heatmap_legend_side = "bottom"),
+  merge_legend = T
+)) #-> fig.2D.chm
+```
+## Fig_3B
+```{r}
+elife_rmsk_quant$rmsk$pca <- 
+  run.pca(input_de = elife_rmsk_quant$rmsk$deseq, te_only = TRUE)
+
+elife_rmsk_quant$rmsk$pca$pca_out.df %>%
+  ggplot(aes(PC1, PC2,
+             color = diagnosis)) +
+  geom_point(size = txt.mm_to_pts(0.8),
+             aes(fill = after_scale(alpha(color, 0.4))),
+             show.legend = F) +
+  geom_rug(show.legend = F) +
+  xlab(paste('PC1', round(
+    cumsum(elife_rmsk_quant$rmsk$pca$pc_props)[1],
+    digits = 3
+  ) * 100, '%', sep = ' ')) +
+  ylab(paste('PC2', round(
+    cumsum(elife_rmsk_quant$rmsk$pca$pc_props)[2] -
+      cumsum(elife_rmsk_quant$rmsk$pca$pc_props)[1],
+    digits = 3
+  ) * 100, '%', sep = ' ')) +
+  geom_vline(
+    xintercept = 0,
+    linetype = 'dotted',
+    alpha = 0.3,
+    size = 0.25
+  ) +
+  geom_hline(
+    yintercept = 0,
+    linetype = 'dotted',
+    alpha = 0.3,
+    size = 0.25
+  ) +
+  scale_color_manual(values = elife_identity_color_pal)
+```
+## Fig_3C
+```{r}
+
+de_out_list <- list(elife_rmsk_quant$colorectal_healthy$deseq$de_out,
+                 elife_rmsk_quant$liver_healthy$deseq$de_out,
+                 elife_rmsk_quant$lung_healthy$deseq$de_out,
+                 elife_rmsk_quant$esoph_healthy$deseq$de_out,
+                 elife_rmsk_quant$stomach_healthy$deseq$de_out)
+
+lapply(c(de_out_list), function(de_out) {
+  
+  de_out %>% 
+    merge(reference_meta_data$ucsc_rmsk_insert_info.df,
+          by = 'gene',
+          all.x = T) %>%
+    mutate(
+      family = ifelse(
+        ensg %in% reference_meta_data$gencode_lncRNA_gene_names.df$ensg,
+        'GENCODE_lncRNA',
+        family
+      ),
+      family = ifelse(is.na(family), 'GENCODE_coding', family),
+      clade = ifelse(grepl('GENCODE', family), family, clade),
+      clade = ifelse(
+        clade %in% c(
+          'GENCODE_coding',
+          'GENCODE_lncRNA',
+          'LINE',
+          'SINE',
+          'LTR',
+          'DNA',
+          'Simple_repeat'
+        ),
+        clade,
+        'other'
+      ),
+      type = ifelse(grepl('GENCODE', family), 'GENCODE', 'TE'),
+      clade = factor(clade, levels = te_aware_annotation_levels)
+    ) %>%
+    filter(!ensg %in% chrM.filter.list,
+           !grepl('^MT', gene)) -> panc_annotated_rmsk_de
+
+  panc_annotated_rmsk_de %>%
+    filter(clade == 'GENCODE_coding') %>%
+    ggplot(aes(log2FoldChange, -log10(padj), color = clade)) +
+    geom_point(size = 2,
+               alpha = 0.6,
+               show.legend = FALSE) -> gencode_layer.plt
+
+  gencode_layer.plt +
+    geom_point(
+      data = filter(panc_annotated_rmsk_de, clade != 'GENCODE_coding') %>%
+        mutate(clade = factor(clade, levels = te_aware_annotation_levels)),
+      aes(log2FoldChange, -log10(padj), color = clade, fill = after_scale(alpha(color,  0.4))),
+      size = 2,
+      alpha = 0.8
+    ) +
+    geom_hline(
+      yintercept = -log10(0.01),
+      linetype = 'dashed',
+      alpha = 0.4
+    ) +
+    geom_vline(xintercept = 0,
+               linetype = 'dashed',
+               alpha = 0.4) +
+    scale_color_manual(values = te_color_pal, name = 'biotype/clade') -> plt
+  
+  return(plt)
+  
+}) -> plt_list
+
+
+
+```
+### Fig_3_patchwork
+```{r}
+import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer, wrap_elements)
+
+fig_3_layout <- "
+AB
+CD
+EF
+GG
+GG
+"
+
+wrap_plots(plt_list[[1]] + ggtitle('colorectal cancer'),
+           plt_list[[2]] + ggtitle('liver cancer'),
+           plt_list[[3]] + ggtitle('lung cancer'),
+           plt_list[[4]] + ggtitle('esophagus cancer'),
+           plt_list[[5]] + ggtitle('stomach cancer'),
+           guide_area(),
+           plot_spacer(),
+           heights = c(0.75,0.75,0.75,1,1),
+           # widths = c(0.75, 1.25),
+           guides = 'collect',
+           design = fig_3_layout) +
+  plot_annotation(tag_levels = 'A') &
+  theme(plot.tag.position = c(0.01, 0.99), 
+        legend.position = 'bottom',
+        legend.title = element_text(vjust = 0.5),
+        legend.justification = c(0.5, 0.5)) -> fig.3.patchwork
+
+save.manuscript.panel(figure = 3,
+                      figure.dir = figure.dir,
+                      name = 'patchwork_full_fig_3',
+                      width = figure_double_column_width,
+                      height = figure_depth,
+                      plot.in = fig.3.patchwork)
+```
+
 
 # Fig_S2
 ## Fig_S2A

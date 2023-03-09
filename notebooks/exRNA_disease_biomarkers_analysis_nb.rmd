@@ -1372,8 +1372,9 @@ internal_gencode_quant$panc_normal$pca$pca_out.df %>%
     expand = 0.01,
     show.legend = F
   ) +
+  ggtitle('Repeat-aware') +
   scale_color_manual(values = disc_identity_color_pal) +
-  scale_shape_manual(values = disc_identity_shape_pal) -> fig.1B.plt
+  scale_shape_manual(values = disc_identity_shape_pal) -> fig.S1A.plt
 
 internal_rmsk_quant$panc_normal$pca$pca_out.df %>%
   ggplot(aes(PC1, PC2,
@@ -1409,8 +1410,9 @@ internal_rmsk_quant$panc_normal$pca$pca_out.df %>%
     expand = 0.01,
     show.legend = F
   ) +
+  ggtitle('Repeat-aware') +
   scale_color_manual(values = disc_identity_color_pal) +
-  scale_shape_manual(values = disc_identity_shape_pal) -> fig.1C.plt
+  scale_shape_manual(values = disc_identity_shape_pal) -> fig.S1B.plt
     
     
 
@@ -1733,36 +1735,36 @@ gencode_layer.plt +
     box.padding = 0.3,
     segment.colour = 'grey'
   ) +
-  xlim(-5, 5) #-> fig.2C.plt
+  xlim(-5, 5) -> fig.2C.plt
 
-# panc_annotated_rmsk_de %>%
-#   mutate(sig = factor(ifelse(padj < 0.01, T, F), levels = c(T, F))) %>%
-#   filter(sig == F) %>%
-#   ggplot(aes(log(baseMean), log2FoldChange)) +
-#   geom_point(color = 'grey', alpha = 0.2) -> unsig_plt
-# 
-# unsig_plt +
-#   geom_point(
-#     data = panc_annotated_rmsk_de %>%
-#       mutate(sig = factor(ifelse(padj < 0.01, T, F), levels = c(T, F))) %>%
-#       filter(sig == T),
-#     aes(color = clade, fill = after_scale(alpha(color, 0.4))),
-#     show.legend = F
-#   ) +
-#   ggrepel::geom_text_repel(
-#     data = panc_annotated_rmsk_de %>%
-#       mutate(sig = factor(ifelse(padj < 0.01, T, F), levels = c(T, F))) %>%
-#       filter(sig == T),
-#     aes(label = ifelse(sig == T, gene, '')) ,
-#     size = txt.mm_to_pts(1),
-#     box.padding = 0.3,
-#     show.legend = F,
-#     max.overlaps = 25
-#   ) +
-#   geom_hline(yintercept = 0, linetype = 'dashed') +
-#   ylim(-5, 5) +
-#   scale_color_manual(values = te_color_pal, name = 'biotype/clade') +
-#   theme(legend.position = c(0.99, 0.25)) -> fig.2E.plt
+panc_annotated_rmsk_de %>%
+  mutate(sig = factor(ifelse(padj < 0.01, T, F), levels = c(T, F))) %>%
+  filter(sig == F) %>%
+  ggplot(aes(log(baseMean), log2FoldChange)) +
+  geom_point(color = 'grey', alpha = 0.2) -> unsig_ma_plt
+
+unsig_ma_plt +
+  geom_point(
+    data = panc_annotated_rmsk_de %>%
+      mutate(sig = factor(ifelse(padj < 0.01, T, F), levels = c(T, F))) %>%
+      filter(sig == T),
+    aes(color = clade, fill = after_scale(alpha(color, 0.4))),
+    show.legend = F
+  ) +
+  ggrepel::geom_text_repel(
+    data = panc_annotated_rmsk_de %>%
+      mutate(sig = factor(ifelse(padj < 0.01, T, F), levels = c(T, F))) %>%
+      filter(sig == T),
+    aes(label = ifelse(sig == T & abs(log2FoldChange) > 2, gene, '')) ,
+    size = txt.mm_to_pts(1),
+    box.padding = 0.3,
+    show.legend = F,
+    max.overlaps = 25
+  ) +
+  geom_hline(yintercept = 0, linetype = 'dashed') +
+  ylim(-5, 5) +
+  scale_color_manual(values = te_color_pal, name = 'biotype/clade') +
+  theme(legend.position = c(0.99, 0.25)) -> fig.S2C.plt
 
 ```
 ## Fig_2D
@@ -2228,6 +2230,75 @@ lapply(c(de_out_list), function(de_out) {
 }) -> plt_list
 
 
+lapply(c(de_out_list), function(de_out) {
+  
+  de_out %>%
+    merge(reference_meta_data$ucsc_rmsk_insert_info.df,
+          by = 'gene',
+          all.x = T) %>%
+    mutate(
+      family = ifelse(
+        ensg %in% reference_meta_data$gencode_lncRNA_gene_names.df$ensg,
+        'GENCODE_lncRNA',
+        family
+      ),
+      family = ifelse(is.na(family), 'GENCODE_coding', family),
+      clade = ifelse(grepl('GENCODE', family), family, clade),
+      clade = ifelse(
+        clade %in% c(
+          'GENCODE_coding',
+          'GENCODE_lncRNA',
+          'LINE',
+          'SINE',
+          'LTR',
+          'DNA',
+          'Simple_repeat'
+        ),
+        clade,
+        'other'
+      ),
+      type = ifelse(grepl('GENCODE', family), 'GENCODE', 'TE'),
+      clade = factor(clade, levels = te_aware_annotation_levels)
+    ) %>%
+    filter(!ensg %in% chrM.filter.list,
+           !grepl('^MT', gene)) -> panc_annotated_rmsk_de
+  
+  panc_annotated_rmsk_de %>%
+    mutate(sig = factor(ifelse(padj < 0.01, T, F), levels = c(T, F))) %>%
+    filter(sig == F) %>%
+    ggplot(aes(log(baseMean), log2FoldChange)) +
+    geom_point(color = 'grey', alpha = 0.2) -> unsig_ma_plt
+  
+  unsig_ma_plt +
+    geom_point(
+      data = panc_annotated_rmsk_de %>%
+        mutate(sig = factor(ifelse(padj < 0.01, T, F), levels = c(T, F))) %>%
+        filter(sig == T),
+      aes(color = clade, fill = after_scale(alpha(color, 0.4))),
+      # show.legend = F
+    ) +
+    ggrepel::geom_text_repel(
+      data = panc_annotated_rmsk_de %>%
+        mutate(sig = factor(ifelse(padj < 0.01, T, F), levels = c(T, F))) %>%
+        filter(sig == T),
+      aes(label = ifelse(sig == T &
+                           abs(log2FoldChange) > 2, gene, '')) ,
+      size = txt.mm_to_pts(1),
+      box.padding = 0.3,
+      show.legend = F,
+      max.overlaps = 25
+    ) +
+    geom_hline(yintercept = 0, linetype = 'dashed') +
+    scale_color_manual(values = te_color_pal, name = 'biotype/clade') -> plt
+  
+  
+  return(plt)
+  
+}) -> ma_plt_list
+
+
+
+
 
 ```
 ### Fig_3_patchwork
@@ -2265,6 +2336,42 @@ save.manuscript.panel(figure = 3,
                       width = figure_double_column_width,
                       height = figure_depth,
                       plot.in = fig.3.patchwork)
+```
+
+### Fig_S3_patchwork
+```{r}
+import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer, wrap_elements)
+
+fig_S3_layout <- "
+AB
+CD
+EF
+"
+
+wrap_plots(ma_plt_list[[1]] + ggtitle('liver cancer'),
+           ma_plt_list[[2]] + ggtitle('lung cancer'),
+           ma_plt_list[[3]] + ggtitle('esophagus cancer'),
+           ma_plt_list[[4]] + ggtitle('colorectal cancer'),
+           ma_plt_list[[5]] + ggtitle('stomach cancer'),
+           guide_area(),
+           # wrap_elements(full = fig.3F.plt + ylim(0,95) + ggtitle('upregulated TEs')),
+           # wrap_elements(full = fig.3E.plt + ylim(0,95) + ggtitle('downregulated TEs')),
+           heights = c(1,1,1),
+           # widths = c(0.75, 1.25),
+           guides = 'collect',
+           design = fig_S3_layout) +
+  plot_annotation(tag_levels = 'A') &
+  theme(plot.tag.position = c(0.01, 0.99), 
+        legend.position = 'bottom',
+        legend.title = element_text(vjust = 0.5),
+        legend.justification = c(0.5, 0.5)) -> fig.S3.patchwork
+
+save.manuscript.panel(figure = 3,
+                      figure.dir = figure.dir,
+                      name = 'patchwork_full_fig_S3',
+                      width = figure_double_column_width,
+                      height = figure_depth,
+                      plot.in = fig.S3.patchwork)
 ```
 
 
@@ -5026,7 +5133,7 @@ binom_prob_thresh.plt
 ```{r}
 doMC::registerDoMC(cores = 12)
 
-de_out_list <-
+count_out_list <-
   setNames(
     list(
       elife_rmsk_quant$liver_healthy$deseq$norm_counts.df,
@@ -5042,137 +5149,154 @@ de_out_list <-
       'stomach')
   )
 
-
-calc_entropy(elife_rmsk_quant$colorectal_healthy$deseq$norm_counts.df,
-             elife_meta_data,
-             grouping_level = 'clade') %>%
-  mutate(clade = ifelse(clade %in% names(te_color_pal), clade, 'other')) %>%
-  filter(!grepl('GENCODE', clade)) %>%
-  group_by(sample, clade) %>%
-  summarize(entropy = mean(entropy)) %>%
-  pivot_wider(names_from = 'clade', values_from = 'entropy') %>%
-  select_if( ~ !any(is.na(.))) %>%
-  column_to_rownames('sample') %>% as.matrix() -> binom_model_input_data_entropy
-
-cbind(binom_model_input_data_entropy,
-      t(elife_rmsk_quant$colorectal_healthy$deseq$norm_counts.df[!rownames(elife_rmsk_quant$colorectal_healthy$deseq$norm_counts.df) %in%
-                                                     reference_meta_data$ucsc_rmsk_insert_info.df$gene, ])) ->
-  binom_model_input_data_entropy_plus
-
-
-binom_model_input_data <-
-  t(elife_rmsk_quant$colorectal_healthy$deseq$norm_counts.df[!rownames(elife_rmsk_quant$colorectal_healthy$deseq$norm_counts.df) %in%
-                                                 reference_meta_data$ucsc_rmsk_insert_info.df$gene, ])
-
-binom_model_input_data_all <-
-  t(elife_rmsk_quant$stomach_healthy$deseq$norm_counts.df)
-
-calc_entropy(elife_rmsk_quant$colorectal_healthy$deseq$norm_counts.df,
-             elife_meta_data,
-             grouping_level = 'clade') %>%
-  mutate(clade = ifelse(clade %in% names(te_color_pal), clade, 'other')) %>%
-  filter(!grepl('GENCODE', clade)) %>%
-  group_by(sample, clade) %>%
-  summarize(entropy = mean(entropy)) %>%
-  pivot_wider(names_from = 'clade', values_from = 'entropy') %>%
-  select_if( ~ !any(is.na(.))) %>%
-  column_to_rownames('sample') %>% as.matrix() -> binom_model_input_data_entropy
-
-binom_model_input_meta_data <-
-  elife_meta_data[match(rownames(binom_model_input_data), elife_meta_data$sample),] %>% 
-  mutate(diagnosis = ifelse(diagnosis == 'Healthy donor', 0, 1))
-
-binom_model_input_data_gencode <-
-  t(elife_rmsk_quant$colorectal_healthy$deseq$norm_counts.df[!rownames(elife_rmsk_quant$colorectal_healthy$deseq$norm_counts.df) %in%
-                                                 reference_meta_data$ucsc_rmsk_insert_info.df$gene, ])
-
-binom_model_input_data_te <-
-  t(elife_rmsk_quant$colorectal_healthy$deseq$norm_counts.df[rownames(elife_rmsk_quant$colorectal_healthy$deseq$norm_counts.df) %in%
-                                                 reference_meta_data$ucsc_rmsk_insert_info.df$gene, ])
-
-cbind(
-  binom_model_input_data,
-  t(elife_rmsk_quant$colorectal_healthy$deseq$norm_counts.df[rownames(elife_rmsk_quant$colorectal_healthy$deseq$norm_counts.df) %in%
-                                                               reference_meta_data$ucsc_rmsk_insert_info.df$gene,])
-) ->
-  binom_model_input_data_te_only
-
-set.seed(2022-03-08)
-trainSplitIndex <-
-  caret::createDataPartition(
-    factor(
-      binom_model_input_meta_data$diagnosis,
-      levels = c(0,1)
+imap(count_out_list, function(norm_counts.df, name) {
+  calc_entropy(norm_counts.df,
+               elife_meta_data,
+               grouping_level = 'clade') %>%
+    mutate(clade = ifelse(clade %in% names(te_color_pal), clade, 'other')) %>%
+    filter(!grepl('GENCODE', clade)) %>%
+    group_by(sample, clade) %>%
+    summarize(entropy = mean(entropy)) %>%
+    pivot_wider(names_from = 'clade', values_from = 'entropy') %>%
+    select_if( ~ !any(is.na(.))) %>%
+    column_to_rownames('sample') %>% as.matrix() -> binom_model_input_data_entropy
+  
+  cbind(binom_model_input_data_entropy,
+        t(norm_counts.df[!rownames(norm_counts.df) %in%
+                           reference_meta_data$ucsc_rmsk_insert_info.df$gene,])) ->
+    binom_model_input_data_entropy_plus
+  
+  
+  binom_model_input_data_gencode <-
+    t(norm_counts.df[!rownames(norm_counts.df) %in%
+                       reference_meta_data$ucsc_rmsk_insert_info.df$gene,])
+  
+  binom_model_input_data_te <-
+    t(norm_counts.df[rownames(norm_counts.df) %in%
+                       reference_meta_data$ucsc_rmsk_insert_info.df$gene,])
+  
+  binom_model_input_data_all <-
+    t(norm_counts.df)
+  
+  feature_set_list <- setNames(
+    list(
+      binom_model_input_data_entropy,
+      binom_model_input_data_entropy_plus,
+      binom_model_input_data_gencode,
+      binom_model_input_data_te,
+      binom_model_input_data_all
     ),
-    p = .8,
-    list = FALSE,
-    times = 1
+    c('entropy',
+    'entropy_plus',
+    'gencode',
+    'te',
+    'all'
+    )
   )
-
-binom_elife_x_in <- binom_model_input_data[, colSums(binom_model_input_data != 0) > 0]
-
-binom_elife_y_in <-
-  binom_model_input_meta_data 
-
-binom_elife_x_in_train <- binom_elife_x_in[trainSplitIndex, , drop = F]
-binom_elife_y_in_train <-
-  binom_elife_y_in[trainSplitIndex, , drop = F] %>% pull(diagnosis)
-
-binom_elife_x_in_test <- binom_elife_x_in[-trainSplitIndex, , drop = F]
-binom_elife_y_in_test <-
-  binom_elife_y_in[-trainSplitIndex, , drop = F] %>% pull(diagnosis)
-
-
-set.seed(2022 - 03 - 08)
-fold_ids <-
-  caret::createFolds(factor(binom_elife_y_in_train), 10, list = F)
-
-lapply(seq(0, 1, 0.1), function(alpha) {
-  binom_elife_model <-
-    glmnet::cv.glmnet(
-      x = binom_elife_x_in_train,
-      y = binom_elife_y_in_train,
-      family = 'binomial',
-      type.measure = 'deviance',
-      nfolds = 10,
-      alpha = alpha,
-      foldid = fold_ids,
-      parallel = TRUE,
-      keep = TRUE
-    )
   
-  y_hat_matrix <-
-    binom_elife_model$fit.preval[, which(binom_elife_model$lambda == binom_elife_model$lambda.min)]
+  imap(feature_set_list, function(feature_set, feature_set_name) {
+    binom_model_input_meta_data <-
+      elife_meta_data[match(rownames(feature_set), elife_meta_data$sample),] %>%
+      mutate(diagnosis = ifelse(diagnosis == 'Healthy donor', 0, 1))
+    
+    set.seed(2022 - 03 - 08)
+    trainSplitIndex <-
+      caret::createDataPartition(
+        factor(binom_model_input_meta_data$diagnosis,
+               levels = c(0, 1)),
+        p = .8,
+        list = FALSE,
+        times = 1
+      )
+    
+    binom_elife_x_in <-
+      binom_model_input_data[, colSums(binom_model_input_data != 0) > 0]
+    
+    binom_elife_y_in <-
+      binom_model_input_meta_data
+    
+    binom_elife_x_in_train <-
+      binom_elife_x_in[trainSplitIndex, , drop = F]
+    
+    binom_elife_y_in_train <-
+      binom_elife_y_in[trainSplitIndex, , drop = F] %>% pull(diagnosis)
+    
+    binom_elife_x_in_test <-
+      binom_elife_x_in[-trainSplitIndex, , drop = F]
+    
+    binom_elife_y_in_test <-
+      binom_elife_y_in[-trainSplitIndex, , drop = F] %>% pull(diagnosis)
+    
+    set.seed(2022 - 03 - 08)
+    fold_ids <-
+      caret::createFolds(factor(binom_elife_y_in_train), 10, list = F)
+    
+    lapply(seq(0, 1, 0.1), function(alpha) {
+      binom_elife_model <-
+        glmnet::cv.glmnet(
+          x = binom_elife_x_in_train,
+          y = binom_elife_y_in_train,
+          family = 'binomial',
+          type.measure = 'deviance',
+          nfolds = 10,
+          alpha = alpha,
+          foldid = fold_ids,
+          parallel = TRUE,
+          keep = TRUE
+        )
+      
+      y_hat_matrix <-
+        binom_elife_model$fit.preval[, which(binom_elife_model$lambda == binom_elife_model$lambda.min)]
+      
+      predictions <-
+        ROCR::prediction(
+          labels = binom_elife_y_in_train,
+          predictions = y_hat_matrix,
+          label.ordering = c(0, 1)
+        )
+      
+      performances <-
+        ROCR::performance(
+          prediction.obj = predictions,
+          measure = "tpr",
+          x.measure = "fpr"
+        )
+      ROCR::performance(prediction.obj = predictions,
+                        measure = "auc")@y.values -> auc
+      
+      cutoffs <-
+        data.frame(
+          cut = performances@alpha.values[[1]],
+          fpr = performances@x.values[[1]],
+          tpr = performances@y.values[[1]]
+        )
+      
+      
+      perf_list <-
+        cutoffs[which.min(abs(cutoffs$fpr - (1 - 0.9))),]
+      perf_list$cut <-  inverse.logit.calc(perf_list$cut)
+      perf_list$auc <-  auc
+      perf_list$alpha <- alpha
+      perf_list$feature_set <- feature_set_name
+      
+      list('perf_list' = perf_list,
+           'test_x' = binom_elife_x_in_test,
+           'test_y' = binom_elife_y_in_test)
+      
+    })
+    
+  })
   
-  predictions <-
-    ROCR::prediction(
-      labels = binom_elife_y_in_train,
-      predictions = y_hat_matrix,
-      label.ordering = c(0, 1)
-    )
-  
-  performances <-
-    ROCR::performance(prediction.obj = predictions,
-                      measure = "tpr",
-                      x.measure = "fpr")
-  ROCR::performance(prediction.obj = predictions,
-                      measure = "auc")@y.values -> auc
-  
-  cutoffs <-
-    data.frame(
-      cut = performances@alpha.values[[1]],
-      fpr = performances@x.values[[1]],
-      tpr = performances@y.values[[1]]
-    )
-  
-  
-  perf_list <- cutoffs[which.min(abs(cutoffs$fpr - (1 - 0.9))),]
-  perf_list$cut <-  inverse.logit.calc(perf_list$cut)
-  perf_list$auc <-  auc
-  perf_list$alpha <- alpha
-  
-  perf_list
-}) %>% bind_rows() -> alpha_list
+}) -> final_alpha
+
+
+
+
+
+
+
+
+
 
 
 

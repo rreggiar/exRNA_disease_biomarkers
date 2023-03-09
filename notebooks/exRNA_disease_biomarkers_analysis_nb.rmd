@@ -1963,6 +1963,46 @@ save.manuscript.panel(figure = 2,
 
 ```
 
+## Fig_S2A
+```{r}
+import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer)
+
+total_annotated_rmsk_counts %>% 
+  # sample_n(size = 100) %>%
+  select(contains('panc')) %>% 
+  filter(if_all(everything(.), ~. != 0)) %>% 
+  ggplot() +
+  ggrastr::rasterise(geom_point(aes(x = .panel_x, y = .panel_y), size = txt.mm_to_pts(0.2), alpha = 0.4)) +
+  theme(axis.text.x = element_blank()) +
+  ggforce::facet_matrix(vars(panc.1.2.3:panc.6.1.1)) -> panc_paired_scatter
+  
+
+fig_S2_layout <- "
+AA
+AA
+AA
+AA
+"
+
+wrap_plots(panc_paired_scatter,
+           design = fig_S2_layout, 
+           guides = 'collect',
+           heights = c(1.25,0.225,1,1, .75)) + plot_annotation(tag_levels = 'A') & 
+  theme(plot.tag.position = c(0.01, 0.99), 
+        legend.position = 'bottom',
+        legend.title = element_text(vjust = 1),
+        legend.justification = c(0.5, 0.5)) -> fig.S2.patchwork
+
+save.manuscript.panel(figure = 2,
+                      figure.dir = figure.dir,
+                      name = 'patchwork_full_fig_S2',
+                      width = figure_double_column_width,
+                      height = figure_depth,
+                      plot.in = fig.S2.patchwork)
+
+
+```
+
 # New Fig_3
 ## Fig_3A
 ```{r}
@@ -2424,7 +2464,7 @@ calc_entropy(
     diagnosis,
     entropy,
     # shape = gender,
-    color = diagnosis,
+    color = clade,
     fill = after_scale(alpha(color, 0.4))
   )) +
   geom_boxplot(
@@ -2437,7 +2477,7 @@ calc_entropy(
   ggforce::facet_row( ~ clade, space = 'free', strip.position = 'top') +
   ylim(0, 24) + ylab('Shannon Entropy') + xlab('') +
   # scale_shape_manual(values = disc_identity_shape_pal) +
-  scale_color_manual(values = elife_identity_color_pal) +
+  scale_color_manual(values = te_color_pal) +
   ggpubr::stat_compare_means(
     comparisons = list(c('Healthy donor', 'Colorectal Cancer'),
                        c('Healthy donor', 'Esophagus Cancer'),
@@ -5255,6 +5295,7 @@ doMC::registerDoMC(cores = 12)
 str(final_alpha$liver$entropy)
 
 
+
 lapply(final_alpha, function(cancer) {
   lapply(cancer, function(feature_set) {
     lapply(feature_set, function(alpha) {
@@ -5299,6 +5340,9 @@ imap(alpha_order, function(index, cancer) {
   
 }) -> model_comparison
 
+model_comparison$colorectal$best_model$model$glmnet.fit[,which.min(model_comparison$colorectal$best_model$model$glmnet.fit$lambda)]
+
+model_comparison$colorectal$best_model$model$glmnet.fit
 
 elife_meta_data %>% 
   mutate(diagnosis = ifelse(diagnosis == 'Healthy donor', 0, 1)) %>% 
@@ -5337,12 +5381,9 @@ lapply(model_comparison, function(model) {
       )
 
     cutoffs <-
-      data.frame(
-        cut = performances@alpha.values[[1]],
-        fpr = performances@x.values[[1]],
-        tpr = performances@y.values[[1]],
-        n = length(performances@y.values[[1]])
-      ) %>% rowwise() %>%
+      comparison$perf_list %>% 
+      mutate(n = length(performances@y.values[[1]])) %>% 
+      rowwise() %>%
       mutate(ci_low = binom_CI(tpr, n, 1),
              ci_high = binom_CI(tpr, n, 2))
 
@@ -5384,6 +5425,18 @@ lapply(model_comparison, function(model) {
 }) -> training_performance
 
 
+length(training_performance$colorectal$best_model$beta)
+
+lapply(training_performance, function(model) {
+  lapply(model, function(cancer) {
+    lapply(model, function(comparison) {
+      length(comparison$beta)
+      
+    }) %>% bind_rows(.id = 'comparison')
+  }) %>% bind_rows(.id = 'cancer')
+}) %>% bind_rows(.id = 'model') %>% distinct()
+
+
 lapply(model_comparison, function(model) {
   lapply(model, function(comparison) {
     
@@ -5414,15 +5467,123 @@ lapply(model_comparison, function(model) {
     sensitivity <- TP/(TP+FN)
     specificity <- TN/(TN+FP)
     
+    data.frame('tpr' = sensitivity, 
+               'fpr' = specificity,
+               'n' = nrow(results)) %>% 
+      rowwise() %>%
+      mutate(ci_low = binom_CI(tpr, n, 1),
+             ci_high = binom_CI(tpr, n, 2)) -> cutoffs
+    
     list('results' = results,
          'sens' = sensitivity,
-         'spec' = specificity)
+         'spec' = specificity,
+         'cutoffs' = cutoffs)
     
   })
   
 }) -> testing_performance
 
 
+lapply(names(count_out_list), function(cancer) {
+  training_performance[[cancer]]$best_model$roc$data %>%
+    as.data.frame() %>%
+    mutate(model = 'aware') %>%
+    rbind(
+      training_performance[[cancer]]$gencode_model$roc$data %>%
+        as.data.frame() %>%
+        mutate(model = 'naive')
+    ) %>%
+    ggplot(aes(X, Y, color = model)) +
+    geom_line() +
+    geom_abline(linetype = "dotted", color = "grey50") +
+    scale_color_colorblind() +
+    ylab('sensitivity') +
+    xlab('1 - specificity') +
+    ggtitle(cancer) +
+    theme(legend.position = c(0.9, 0.55)) -> roc.plt
+  
+  training_performance[[cancer]]$best_model$cutoffs %>%
+    mutate(model = 'aware') %>%
+    rbind(training_performance[[cancer]]$gencode_model$cutoffs %>%
+            mutate(model = 'naive')) %>%
+    group_by(model) %>%
+    filter(fpr == model_comparison[[cancer]]$best_model$perf_list$fpr) %>%
+    slice(which.max(tpr)) %>%
+    mutate(split = 'Training') %>%
+    ggplot(aes(
+      model,
+      ymin = ci_low,
+      y = tpr,
+      ymax = ci_high
+    )) +
+    geom_point() +
+    geom_errorbar() +
+    ylim(0, 1) + xlab('Repeat') +
+    ylab('sensitivity @ 90% specificity') +
+    ggforce::facet_row(~ split) -> train.plt
+  
+  testing_performance[[cancer]]$best_model$cutoffs %>%
+    mutate(model = 'aware') %>%
+    rbind(testing_performance[[cancer]]$gencode_model$cutoffs %>%
+            mutate(model = 'naive')) %>%
+    group_by(model) %>%
+    mutate(split = 'Testing') %>%
+    ggplot(aes(
+      model,
+      ymin = ci_low,
+      y = tpr,
+      ymax = ci_high
+    )) +
+    geom_point() +
+    geom_errorbar() +
+    ylim(0, 1) + xlab('Repeat') +
+    ylab('sensitivity @ training thresh.') +
+    ggforce::facet_row( ~ split) -> test.plt
+  
+  list('roc' = roc.plt,
+       'train' = train.plt,
+       'test' = test.plt)
+  
+}) -> plot_list
+```
+## Fig 4 modeling
+```{r}
+import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer, wrap_elements)
+
+fig_4_layout <- "
+ABCJ
+DEFJ
+GHIJ
+KKKK
+KKKK
+"
+
+wrap_plots(wrap_elements(full = plot_list[[1]]$roc),
+           plot_list[[1]]$train,
+           plot_list[[1]]$test,
+           wrap_elements(full = plot_list[[3]]$roc),
+           plot_list[[3]]$train,
+           plot_list[[3]]$test,
+           wrap_elements(full = plot_list[[4]]$roc),
+           plot_list[[4]]$train,
+           plot_list[[4]]$test,
+           plot_spacer(),
+           plot_spacer(),
+           widths = c(1, 0.45, 0.45, 1),
+           # guides = 'collect',
+           design = fig_4_layout) +
+  plot_annotation(tag_levels = 'A') &
+  theme(plot.tag.position = c(0.01, 0.99), 
+        legend.position = 'bottom',
+        legend.title = element_text(vjust = 0.5),
+        legend.justification = c(0.5, 0.5)) -> fig.4.patchwork
+
+save.manuscript.panel(figure = 4,
+                      figure.dir = figure.dir,
+                      name = 'patchwork_full_fig_4',
+                      width = figure_double_column_width,
+                      height = figure_depth,
+                      plot.in = fig.4.patchwork)
 ```
 
 

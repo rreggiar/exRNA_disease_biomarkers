@@ -1548,21 +1548,57 @@ save.manuscript.panel(figure = 1,
 import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer, wrap_elements)
 
 
+internal_rmsk_quant$panc_normal$quant_meta %>%
+  ggplot(aes(diagnosis,
+             age,
+             color = diagnosis)) +
+  geom_boxplot(
+    fill = NA,
+    outlier.shape = NA,
+    aes(group = diagnosis),
+    show.legend = F
+  ) +
+  geom_jitter(width = 0.125,
+              size = txt.mm_to_pts(0.8),
+              aes(fill = after_scale(alpha(color, 0.4)))) +
+  scale_color_manual(values = disc_identity_color_pal) +
+  scale_shape_manual(values = disc_identity_shape_pal) +
+  ggpubr::stat_compare_means(
+    comparisons = list(c('normal', 'panc')),
+    method = 'wilcox',
+    size = 2.5,
+    method.args = list(exact = TRUE, paired = F),
+    label = 'p.signif',
+    show.legend = F
+  ) -> fig.S1D
+
+internal_rmsk_quant$panc_normal$quant_meta %>%
+  filter(diagnosis != 'esoph') %>%
+  ggplot(aes(diagnosis, fill = gender)) +
+  geom_bar() -> fig.S1E
+
+
+
+
+
 fig_S1_layout <- "
 AB
 CC
 DD
-EE
+EG
+FG
 "
 
 wrap_plots(fig.S1A.plt,
            fig.S1B.plt,
            fig.S1C.plt,
            guide_area(),
+           fig.S1D+ coord_cartesian(clip = 'off'),
+           fig.S1E,
            plot_spacer(),
            design = fig_S1_layout, 
            guides = 'collect',
-           heights = c(0.8,0.8,0.2,1.4)) + plot_annotation(tag_levels = 'A') & 
+           heights = c(0.8,0.8,0.2,1,1)) + plot_annotation(tag_levels = 'A') & 
   theme(plot.tag.position = c(0.01, 0.99), 
         legend.position = 'bottom',
         legend.title = element_text(vjust = 1.25),
@@ -2375,17 +2411,13 @@ save.manuscript.panel(figure = 3,
 ## Fig_S3F
 ```{r}
 calc_entropy(
-  internal_rmsk_quant$panc_normal$deseq$norm_counts.df,
-  original_discovery_meta_data,
+  elife_rmsk_quant$rmsk$deseq$norm_counts.df,
+  elife_meta_data,
   grouping_level = 'clade'
 ) %>%
   filter(
     clade %in% c(
-      'GENCODE_coding',
-      'GENCODE_lncRNA',
-      'SINE',
-      'LTR',
-      'Simple_repeat'
+      names(te_color_pal)
     )
   ) %>%
   ggplot(aes(
@@ -2403,18 +2435,22 @@ calc_entropy(
   ) +
   geom_jitter(width = 0.125, show.legend = F, shape = 21) +
   ggforce::facet_row( ~ clade, space = 'free', strip.position = 'top') +
-  ylim(0, 12) + ylab('Shannon Entropy') + xlab('') +
+  ylim(0, 24) + ylab('Shannon Entropy') + xlab('') +
   # scale_shape_manual(values = disc_identity_shape_pal) +
-  scale_color_manual(values = disc_identity_color_pal) +
+  scale_color_manual(values = elife_identity_color_pal) +
   ggpubr::stat_compare_means(
-    comparisons = list(c('normal', 'panc')),
+    comparisons = list(c('Healthy donor', 'Colorectal Cancer'),
+                       c('Healthy donor', 'Esophagus Cancer'),
+                       c('Healthy donor', 'Liver Cancer'),
+                       c('Healthy donor', 'Lung Cancer'),
+                       c('Healthy donor', 'Stomach Cancer')),
     method = 'wilcox',
     size = 2.5,
     method.args = list(exact = TRUE, paired = F),
     label = 'p.signif'
   ) +
   theme(axis.text.x = element_text(angle = 40, hjust = 1),
-        strip.text = element_text(size = txt.mm_to_pts(1.5)))
+        strip.text = element_text(size = txt.mm_to_pts(1.5))) -> fig.S3.F
 ```
 
 
@@ -2426,6 +2462,7 @@ fig_S3_layout <- "
 AB
 CD
 EF
+GG
 "
 
 wrap_plots(ma_plt_list[[1]] + ggtitle('liver cancer'),
@@ -2434,9 +2471,10 @@ wrap_plots(ma_plt_list[[1]] + ggtitle('liver cancer'),
            ma_plt_list[[4]] + ggtitle('colorectal cancer'),
            ma_plt_list[[5]] + ggtitle('stomach cancer'),
            guide_area(),
+           fig.S3.F,
            # wrap_elements(full = fig.3F.plt + ylim(0,95) + ggtitle('upregulated TEs')),
            # wrap_elements(full = fig.3E.plt + ylim(0,95) + ggtitle('downregulated TEs')),
-           heights = c(1,1,1),
+           heights = c(0.75,0.75,0.75,1.75),
            # widths = c(0.75, 1.25),
            guides = 'collect',
            design = fig_S3_layout) +
@@ -5230,7 +5268,10 @@ count_out_list <-
   )
 
 imap(count_out_list, function(norm_counts.df, name) {
-  calc_entropy(norm_counts.df,
+  
+  message(name)
+  
+  calc_entropy(elife_rmsk_quant$colorectal_healthy$deseq$norm_counts.df,
                elife_meta_data,
                grouping_level = 'clade') %>%
     mutate(clade = ifelse(clade %in% names(te_color_pal), clade, 'other')) %>%
@@ -5275,6 +5316,9 @@ imap(count_out_list, function(norm_counts.df, name) {
   )
   
   imap(feature_set_list, function(feature_set, feature_set_name) {
+    
+    message(feature_set_name)
+    
     binom_model_input_meta_data <-
       elife_meta_data[match(rownames(feature_set), elife_meta_data$sample),] %>%
       mutate(diagnosis = ifelse(diagnosis == 'Healthy donor', 0, 1))
@@ -5290,7 +5334,7 @@ imap(count_out_list, function(norm_counts.df, name) {
       )
     
     binom_elife_x_in <-
-      binom_model_input_data[, colSums(binom_model_input_data != 0) > 0]
+      feature_set[, colSums(feature_set != 0) > 0]
     
     binom_elife_y_in <-
       binom_model_input_meta_data
@@ -5312,6 +5356,9 @@ imap(count_out_list, function(norm_counts.df, name) {
       caret::createFolds(factor(binom_elife_y_in_train), 10, list = F)
     
     lapply(seq(0, 1, 0.1), function(alpha) {
+      
+      message(alpha)
+      
       binom_elife_model <-
         glmnet::cv.glmnet(
           x = binom_elife_x_in_train,
@@ -5371,9 +5418,52 @@ imap(count_out_list, function(norm_counts.df, name) {
 
 
 
+str(final_alpha$liver$entropy)
 
 
+lapply(final_alpha, function(cancer) {
+  lapply(cancer, function(feature_set) {
+    lapply(feature_set, function(alpha) {
+      
+      alpha$perf_list
+      
+    }) %>% bind_rows(.id = 'alpha')
+    
+  }) %>% bind_rows(.id = 'feature_set')
+  
+}) %>% bind_rows(.id = 'cancer') -> alpha_summary
 
+
+alpha_summary %>% 
+  group_by(cancer) %>% 
+  slice(which.max(tpr)) -> top_alpha
+
+alpha_summary %>% 
+  filter(feature_set == 'gencode') %>% 
+  group_by(cancer) %>% 
+  slice(which.max(tpr)) -> gencode_alpha
+
+
+alpha_order <- setNames(c(1:nrow(top_alpha)), top_alpha %>% pull(cancer))
+
+imap(alpha_order, function(index, cancer) {
+  message(cancer)
+  
+  feature_set <- top_alpha[index, 7, drop = T]
+  best_alpha <- as.numeric(top_alpha[index, 6, drop = T])
+  gencode_alpha <- as.numeric(gencode_alpha[index, 6, drop = T])
+  
+  best_model <-
+    final_alpha[[cancer]][[feature_set]][[best_alpha]]
+
+  gencode_model <-
+    final_alpha[[cancer]][['gencode']][[gencode_alpha]]
+
+
+  list('best_model' = best_model,
+       'gencode_model' = gencode_model)
+  
+}) -> model_comparison
 
 
 

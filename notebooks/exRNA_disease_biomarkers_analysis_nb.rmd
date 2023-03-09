@@ -5305,6 +5305,11 @@ elife_meta_data %>%
   select(sample, diagnosis) %>% 
   column_to_rownames('sample') -> elife_labels
 
+binom_CI <- function(x, n, l) {
+    CI <- binom.test(round(x*n), n, 0.5, alternative =  "two.sided", conf.level = 0.90)$conf.int[l]
+    return(CI)
+}
+
 
 lapply(model_comparison, function(model) {
   lapply(model, function(comparison) {
@@ -5331,17 +5336,16 @@ lapply(model_comparison, function(model) {
         x.measure = "fpr"
       )
 
-    # cutoffs <-
-    #   data.frame(
-    #     cut = performances@alpha.values[[1]],
-    #     fpr = performances@x.values[[1]],
-    #     tpr = performances@y.values[[1]]
-    #   )
-    # perf_list <- cutoffs[which.min(abs(cutoffs$fpr - (1 - 0.9))),]
-    # perf_list$cut <-  inverse.logit.calc(perf_list$cut)
-    # perf_list
-    # 
-    
+    cutoffs <-
+      data.frame(
+        cut = performances@alpha.values[[1]],
+        fpr = performances@x.values[[1]],
+        tpr = performances@y.values[[1]],
+        n = length(performances@y.values[[1]])
+      ) %>% rowwise() %>%
+      mutate(ci_low = binom_CI(tpr, n, 1),
+             ci_high = binom_CI(tpr, n, 2))
+
     coef_tmp <-
       cbind(coef(comparison$model, s = comparison$model$lambda.min))
 
@@ -5349,9 +5353,8 @@ lapply(model_comparison, function(model) {
 
     colnames(beta) <-
       names(coef(comparison$model, s = comparison$model$lambda.min))
-    # 
-    # beta
-    # 
+
+    
     rocCurve <-
       as.data.frame(cbind(unlist(slot(
         performances, "x.values"
@@ -5372,12 +5375,13 @@ lapply(model_comparison, function(model) {
     
     list('roc' = rocCurv.plt,
          'response_prob' = binomial_model_response_prob,
-         'beta' = beta)
+         'beta' = beta,
+         'perf' = performances,
+         'pred' = predictions,
+         'cutoffs' = cutoffs)
     
   })
 }) -> training_performance
-
-training_performance$colorectal$best_model$roc
 
 
 lapply(model_comparison, function(model) {

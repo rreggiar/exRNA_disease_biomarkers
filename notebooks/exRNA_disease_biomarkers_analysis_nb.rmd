@@ -5300,6 +5300,85 @@ imap(alpha_order, function(index, cancer) {
 }) -> model_comparison
 
 
+elife_meta_data %>% 
+  mutate(diagnosis = ifelse(diagnosis == 'Healthy donor', 0, 1)) %>% 
+  select(sample, diagnosis) %>% 
+  column_to_rownames('sample') -> elife_labels
+
+
+lapply(model_comparison, function(model) {
+  lapply(model, function(comparison) {
+    
+    y_hat_matrix <-
+      comparison$model$fit.preval[, which(comparison$model$lambda == comparison$model$lambda.min)]
+    
+    filt_elife_labels <- elife_labels[rownames(elife_labels) %in% names(y_hat_matrix), ,drop=F]
+    
+    filt_elife_labels <- filt_elife_labels[match(names(y_hat_matrix), rownames(filt_elife_labels)), ]
+    
+    
+    predictions <-
+      ROCR::prediction(
+        labels = filt_elife_labels,
+        predictions = y_hat_matrix,
+        label.ordering = c(0, 1)
+      )
+
+    performances <-
+      ROCR::performance(
+        prediction.obj = predictions,
+        measure = "tpr",
+        x.measure = "fpr"
+      )
+
+    # cutoffs <-
+    #   data.frame(
+    #     cut = performances@alpha.values[[1]],
+    #     fpr = performances@x.values[[1]],
+    #     tpr = performances@y.values[[1]]
+    #   )
+    # perf_list <- cutoffs[which.min(abs(cutoffs$fpr - (1 - 0.9))),]
+    # perf_list$cut <-  inverse.logit.calc(perf_list$cut)
+    # perf_list
+    # 
+    
+    coef_tmp <-
+      cbind(coef(comparison$model, s = comparison$model$lambda.min))
+
+    beta <- coef_tmp[apply(coef_tmp != 0, 1, any),]
+
+    colnames(beta) <-
+      names(coef(comparison$model, s = comparison$model$lambda.min))
+    # 
+    # beta
+    # 
+    rocCurve <-
+      as.data.frame(cbind(unlist(slot(
+        performances, "x.values"
+      )[[1]]),
+      unlist(slot(
+        performances, "y.values"
+      )[[1]])))
+
+    colnames(rocCurve) <- c("X", "Y")
+
+    ggplot(rocCurve, aes(x = X, y = Y)) +
+      geom_line() +
+      geom_abline(linetype = "dotted", color = "grey50") +
+      labs(x = "False Positive Rate", y = "True Positive Rate") +
+      ylim(0, 1) + xlim(0, 1) -> rocCurv.plt
+    
+    binomial_model_response_prob <- inverse.logit.calc(y_hat_matrix)
+    
+    list('roc' = rocCurv.plt,
+         'response_prob' = binomial_model_response_prob,
+         'beta' = beta)
+    
+  })
+}) -> training_performance
+
+training_performance$colorectal$best_model$roc
+
 
 lapply(model_comparison, function(model) {
   lapply(model, function(comparison) {
@@ -5337,87 +5416,7 @@ lapply(model_comparison, function(model) {
     
   })
   
-})
-
-
-
-dbinom_elife_model <-
-  glmnet::cv.glmnet(
-    x = binom_elife_x_in_train,
-    y = binom_elife_y_in_train,
-    family = 'binomial',
-    type.measure = 'deviance',
-    nfolds = 10,
-    alpha = alpha_list[which.max(alpha_list$auc), ]$alpha,
-    foldid = fold_ids,
-    parallel = TRUE,
-    keep = TRUE
-  )
-
-y_hat_matrix <- binom_elife_model$fit.preval[,which(binom_elife_model$lambda == binom_elife_model$lambda.min)]
-
-predictions <-
-  ROCR::prediction(
-    labels = binom_elife_y_in_train,
-    predictions = y_hat_matrix,
-    label.ordering = c(0, 1)
-  )
-
-performances <-
-  ROCR::performance(prediction.obj = predictions,
-                    measure = "tpr",
-                    x.measure = "fpr")
-
-cutoffs <- data.frame(cut=performances@alpha.values[[1]], fpr=performances@x.values[[1]], 
-                      tpr=performances@y.values[[1]])
-
-
-perf_list <- cutoffs[which.min(abs(cutoffs$fpr - (1-0.9))), ]
-perf_list$cut <-  inverse.logit.calc(perf_list$cut)
-perf_list
-
-coef_tmp <- cbind(coef(binom_elife_model, s = binom_elife_model$lambda.min))
-
-beta <- coef_tmp[apply(coef_tmp != 0, 1, any), ]
-
-colnames(beta) <- names(coef(binom_elife_model, s = binom_elife_model$lambda.min))
-
-beta
-
-#
-rocCurve <-
-  as.data.frame(cbind(unlist(slot(
-    performances, "x.values"
-  )[[1]]),
-  unlist(slot(
-    performances, "y.values"
-  )[[1]])))
-
-colnames(rocCurve) <- c("X","Y")
-
-ggplot(rocCurve, aes(x = X, y = Y)) +
-  geom_line() +
-  geom_abline(linetype = "dotted", color = "grey50") +
-  labs(x = "False Positive Rate", y = "True Positive Rate") +
-  ylim(0,1) + xlim(0,1)
-
-binomial_model_response_prob <- inverse.logit.calc(y_hat_matrix)
-
-binomial_model_response_prob %>%
-  as.data.frame() %>% 
-  rownames_to_column('sample') %>%
-  dplyr::rename('prob' = '.') %>%
-  merge(binom_elife_y_in, by = 'sample') %>% 
-  mutate(diagnosis = ifelse(diagnosis == 1, 'cancer', 'normal')) %>%
-  ggplot(aes(diagnosis, prob)) +
-  geom_jitter(width = 0.125) +
-  geom_boxplot(outlier.colour = NA, fill = NA) + 
-  geom_hline(yintercept = perf_list$cut, linetype = 'dashed') + 
-  annotate(geom = 'text', y = perf_list$cut + 0.05, x = 1.5, 
-           label = '~90% specificity prob. threshold', size = txt.mm_to_pts(0.8)) +
-  ylab('probability') + 
-  xlab('')
-
+}) -> testing_performance
 
 
 ```

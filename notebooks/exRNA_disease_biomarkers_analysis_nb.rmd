@@ -1342,8 +1342,7 @@ internal_gencode_quant$panc_normal$pca$pca_out.df %>%
   ggplot(aes(PC1, PC2,
              color = diagnosis, shape = gender)) +
   geom_point(size = txt.mm_to_pts(0.8),
-             aes(fill = after_scale(alpha(color, 0.4))),
-             show.legend = F) +
+             aes(fill = after_scale(alpha(color, 0.4)))) +
   geom_rug(show.legend = F) +
   xlab(paste('PC1', round(
     cumsum(internal_gencode_quant$panc_normal$pca$pc_props)[1],
@@ -1366,13 +1365,13 @@ internal_gencode_quant$panc_normal$pca$pca_out.df %>%
     alpha = 0.3,
     size = 0.25
   ) +
-  ggforce::geom_mark_ellipse(
-    aes(group = stage, label = stage),
-    label.fontsize = txt.mm_to_pts(3),
-    expand = 0.01,
-    show.legend = F
-  ) +
-  ggtitle('Repeat-aware') +
+  # ggforce::geom_mark_ellipse(
+  #   aes(group = stage, label = stage),
+  #   label.fontsize = txt.mm_to_pts(3),
+  #   expand = 0.01,
+  #   show.legend = F
+  # ) +
+  ggtitle('Repeat-naive') +
   scale_color_manual(values = disc_identity_color_pal) +
   scale_shape_manual(values = disc_identity_shape_pal) -> fig.S1A.plt
 
@@ -1380,8 +1379,7 @@ internal_rmsk_quant$panc_normal$pca$pca_out.df %>%
   ggplot(aes(PC1, PC2,
              color = diagnosis, shape = gender)) +
   geom_point(size = txt.mm_to_pts(0.8),
-             aes(fill = after_scale(alpha(color, 0.4))),
-             show.legend = F) +
+             aes(fill = after_scale(alpha(color, 0.4)))) +
   geom_rug(show.legend = F) +
   xlab(paste('PC1', round(
     cumsum(internal_rmsk_quant$panc_normal$pca$pc_props)[1],
@@ -1404,12 +1402,12 @@ internal_rmsk_quant$panc_normal$pca$pca_out.df %>%
     alpha = 0.3,
     size = 0.25
   ) +
-  ggforce::geom_mark_ellipse(
-    aes(group = stage, filter = stage != 'none', label = stage), 
-    label.fontsize = txt.mm_to_pts(3),
-    expand = 0.01,
-    show.legend = F
-  ) +
+  # ggforce::geom_mark_ellipse(
+  #   aes(group = stage, filter = stage != 'none', label = stage), 
+  #   label.fontsize = txt.mm_to_pts(3),
+  #   expand = 0.01,
+  #   show.legend = F
+  # ) +
   ggtitle('Repeat-aware') +
   scale_color_manual(values = disc_identity_color_pal) +
   scale_shape_manual(values = disc_identity_shape_pal) -> fig.S1B.plt
@@ -1541,6 +1539,42 @@ save.manuscript.panel(figure = 1,
                       width = figure_double_column_width,
                       height = figure_depth,
                       plot.in = fig.1.patchwork)
+
+
+```
+
+### Fig_S1_patchwork
+```{r Fig1}
+import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer, wrap_elements)
+
+
+fig_S1_layout <- "
+AB
+CC
+DD
+EE
+"
+
+wrap_plots(fig.S1A.plt,
+           fig.S1B.plt,
+           fig.S1C.plt,
+           guide_area(),
+           plot_spacer(),
+           design = fig_S1_layout, 
+           guides = 'collect',
+           heights = c(0.8,0.8,0.2,1.4)) + plot_annotation(tag_levels = 'A') & 
+  theme(plot.tag.position = c(0.01, 0.99), 
+        legend.position = 'bottom',
+        legend.title = element_text(vjust = 1.25),
+        legend.justification = c(0.5, 0.5)) -> fig.S1.patchwork
+
+
+save.manuscript.panel(figure = 1,
+                      figure.dir = figure.dir,
+                      name = 'patchwork_full_fig_S1',
+                      width = figure_double_column_width,
+                      height = figure_depth,
+                      plot.in = fig.S1.patchwork)
 
 
 ```
@@ -1764,7 +1798,7 @@ unsig_ma_plt +
   geom_hline(yintercept = 0, linetype = 'dashed') +
   ylim(-5, 5) +
   scale_color_manual(values = te_color_pal, name = 'biotype/clade') +
-  theme(legend.position = c(0.99, 0.25)) -> fig.S2C.plt
+  theme(legend.position = c(0.99, 0.25)) -> fig.S1C.plt
 
 ```
 ## Fig_2D
@@ -2337,6 +2371,52 @@ save.manuscript.panel(figure = 3,
                       height = figure_depth,
                       plot.in = fig.3.patchwork)
 ```
+
+## Fig_S3F
+```{r}
+calc_entropy(
+  internal_rmsk_quant$panc_normal$deseq$norm_counts.df,
+  original_discovery_meta_data,
+  grouping_level = 'clade'
+) %>%
+  filter(
+    clade %in% c(
+      'GENCODE_coding',
+      'GENCODE_lncRNA',
+      'SINE',
+      'LTR',
+      'Simple_repeat'
+    )
+  ) %>%
+  ggplot(aes(
+    diagnosis,
+    entropy,
+    # shape = gender,
+    color = diagnosis,
+    fill = after_scale(alpha(color, 0.4))
+  )) +
+  geom_boxplot(
+    fill = NA,
+    outlier.shape = NA,
+    aes(group = diagnosis),
+    show.legend = F
+  ) +
+  geom_jitter(width = 0.125, show.legend = F, shape = 21) +
+  ggforce::facet_row( ~ clade, space = 'free', strip.position = 'top') +
+  ylim(0, 12) + ylab('Shannon Entropy') + xlab('') +
+  # scale_shape_manual(values = disc_identity_shape_pal) +
+  scale_color_manual(values = disc_identity_color_pal) +
+  ggpubr::stat_compare_means(
+    comparisons = list(c('normal', 'panc')),
+    method = 'wilcox',
+    size = 2.5,
+    method.args = list(exact = TRUE, paired = F),
+    label = 'p.signif'
+  ) +
+  theme(axis.text.x = element_text(angle = 40, hjust = 1),
+        strip.text = element_text(size = txt.mm_to_pts(1.5)))
+```
+
 
 ### Fig_S3_patchwork
 ```{r}

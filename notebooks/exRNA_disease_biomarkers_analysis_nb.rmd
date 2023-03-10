@@ -826,6 +826,10 @@ elife_rmsk_quant$stomach_healthy$quant_meta <-
         by = 'sample')
 
 ############
+elife_gencode_quant$txonly$quant_meta <-
+  merge(elife_gencode_quant$txonly$quant_meta,
+        elife_meta_data,
+        by = 'sample')
 
 elife_gencode_quant$colorectal_healthy$quant_meta <-
   merge(elife_gencode_quant$colorectal_healthy$quant_meta,
@@ -1127,17 +1131,17 @@ import::from(.directory = r_code.dir,
 
 internal_gencode_quant$panc_normal$pca <- 
   run.pca(input_de = internal_gencode_quant$panc_normal$deseq)
-
-internal_gencode_quant$panc_normal$pca$pca_out.df %>% 
-  extract.meta.pca.correlates() %>% 
-  filter(pval < 0.05, abs(cor) > 0.5) -> internal_gencode_quant$panc_normal$pca$pc_sig_corr
+# 
+# internal_gencode_quant$panc_normal$pca$pca_out.df %>% 
+#   extract.meta.pca.correlates() %>% 
+#   filter(pval < 0.05, abs(cor) > 0.5) -> internal_gencode_quant$panc_normal$pca$pc_sig_corr
 
 internal_rmsk_quant$panc_normal$pca <- 
   run.pca(input_de = internal_rmsk_quant$panc_normal$deseq)
 
-internal_rmsk_quant$panc_normal$pca$pca_out.df %>% 
-  extract.meta.pca.correlates() %>% 
-  filter(pval < 0.05, abs(cor) > 0.6) -> internal_rmsk_quant$panc_normal$pca$pc_sig_corr
+# internal_rmsk_quant$panc_normal$pca$pca_out.df %>% 
+#   extract.meta.pca.correlates() %>% 
+#   filter(pval < 0.05, abs(cor) > 0.6) -> internal_rmsk_quant$panc_normal$pca$pc_sig_corr
 
 
 
@@ -1329,9 +1333,9 @@ tmp_merge_df %>%
 # Fig_1
 ## Fig_flowchart_1A
 ```{r 1A}
-# install.packages('pdftools')
+install.packages('pdftools')
 # install.packages('magick')
-flow_chart.plt <- magick::image_read_pdf(path = file.path(figure.dir, 'fig.1', 'plasma_schematic_v6.pdf'))
+flow_chart.plt <- magick::image_read_pdf(path = file.path(figure.dir, 'fig.1', 'plasma_schematic_v8.pdf'))
 flowchart_wrap_fig1A.plt <- patchwork::wrap_elements(full = magick::image_ggplot(flow_chart.plt))
 
 ```
@@ -1542,6 +1546,104 @@ internal_rmsk_quant$panc_normal$pca$pca_out.df %>%
 
 
 ```
+## Fig_S1chm
+```{r}
+cor_in <-
+    internal_rmsk_quant$panc_normal$deseq$norm_counts.df[!rownames(internal_rmsk_quant$panc_normal$deseq$norm_counts.df) %in% reference_meta_data$ucsc_rmsk_insert_info.df$gene, grepl('panc',
+                                                                                                                                                                             colnames(internal_rmsk_quant$panc_normal$deseq$norm_counts.df))]
+
+
+cor(cor_in) -> naive_hm_cor_data
+
+cor_in <-
+    internal_rmsk_quant$panc_normal$deseq$norm_counts.df[rownames(internal_rmsk_quant$panc_normal$deseq$norm_counts.df) %in% reference_meta_data$ucsc_rmsk_insert_info.df$gene, grepl('panc',
+                                                                                                                                                                             colnames(internal_rmsk_quant$panc_normal$deseq$norm_counts.df))]
+
+
+cor(cor_in) -> aware_hm_cor_data
+
+hm_meta_data <-
+  internal_rmsk_quant$panc_normal$deseq$scaled_quant_meta_for_de.df %>% 
+  filter(condition == 'panc')
+
+top_hma <-
+  ComplexHeatmap::columnAnnotation(
+    df = hm_meta_data %>% select(condition),
+    col = list(condition = disc_identity_color_pal[2]),
+    show_annotation_name = F,
+    show_legend = T,
+    simple_anno_size = unit(.3, "cm"),
+    annotation_legend_param =
+      list(title_gp = grid::gpar(
+        fontsize = 6, fontface = 'bold'
+      ))
+  )
+
+left_hma <-
+  ComplexHeatmap::rowAnnotation(
+    df = hm_meta_data %>% select(condition),
+    col = list(condition = disc_identity_color_pal[2]),
+    show_annotation_name = F,
+    show_legend = F,
+    simple_anno_size = unit(.3, "cm"),
+    annotation_legend_param =
+      list(title_gp = grid::gpar(
+        fontsize = 6, fontface = 'bold'
+      ))
+  )
+
+set.seed(2023 - 03 - 07)
+ComplexHeatmap::Heatmap(
+  naive_hm_cor_data,
+  show_row_names = F,
+  show_column_names = F,
+  left_annotation = left_hma,
+  row_dend_width = unit(.25, "cm"),
+  column_dend_height = unit(.25, "cm"),
+  heatmap_legend_param =
+    list(
+      legend_gp = grid::gpar(fontsize = 1),
+      legend_direction = "horizontal",
+      legend_height = unit(.35, "cm"),
+      title_position = "lefttop",
+      title_gp = grid::gpar(fontsize = 6, fontface = 'bold')
+    ),
+  top_annotation = top_hma,
+  column_names_gp = grid::gpar(fontsize = 6),
+  name = 'Repeat-naive'
+) -> naive_panc_hm
+
+set.seed(2023 - 03 - 07)
+ComplexHeatmap::Heatmap(
+  aware_hm_cor_data,
+  show_row_names = F,
+  show_column_names = F,
+  left_annotation = left_hma,
+  row_dend_width = unit(.25, "cm"),
+  column_dend_height = unit(.25, "cm"),
+  heatmap_legend_param =
+    list(
+      legend_gp = grid::gpar(fontsize = 1),
+      legend_direction = "horizontal",
+      legend_height = unit(.35, "cm"),
+      title_position = "lefttop",
+      title_gp = grid::gpar(fontsize = 6, fontface = 'bold')
+    ),
+  top_annotation = top_hma,
+  column_names_gp = grid::gpar(fontsize = 6),
+  name = 'Repeat-aware'
+)  -> aware_panc_hm
+
+patchwork::wrap_elements(full = grid::grid.grabExpr(ComplexHeatmap::draw(aware_panc_hm, 
+                                                                         heatmap_legend_side = "bottom"),
+                                                    merge_legend = T)) -> fig.S1D.chm
+
+patchwork::wrap_elements(full = grid::grid.grabExpr(ComplexHeatmap::draw(naive_panc_hm, 
+                                                                         heatmap_legend_side = "bottom"),
+                                                    merge_legend = T)) -> fig.S1C.chm
+
+```
+
 ### Fig_S1_patchwork
 ```{r Fig1}
 import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer, wrap_elements)
@@ -1572,32 +1674,34 @@ internal_rmsk_quant$panc_normal$quant_meta %>%
   ) -> fig.S1D
 
 internal_rmsk_quant$panc_normal$quant_meta %>%
-  filter(diagnosis != 'esoph') %>%
-  ggplot(aes(diagnosis, fill = gender)) +
-  geom_bar() -> fig.S1E
-
-
+  filter(diagnosis != 'esoph') %>% 
+  group_by(diagnosis, gender) %>% 
+  summarise(count = n()) %>% 
+  ggplot(aes(diagnosis, y = count, fill = gender)) +
+  geom_col(position = position_dodge(1)) +
+  scale_y_continuous(breaks= scales::pretty_breaks()) -> fig.S1E
 
 
 
 fig_S1_layout <- "
 AB
-CC
-DD
-EG
-FG
+CD
+EF
+HH
+GG
 "
 
-wrap_plots(fig.S1A.plt,
+wrap_plots(fig.S1D + coord_cartesian(clip = 'off'),
+           wrap_elements(full = fig.S1E),
+           fig.S1C.chm,
+           fig.S1D.chm,
+           fig.S1A.plt,
            fig.S1B.plt,
            fig.S1C.plt,
            guide_area(),
-           fig.S1D+ coord_cartesian(clip = 'off'),
-           fig.S1E,
-           plot_spacer(),
            design = fig_S1_layout, 
            guides = 'collect',
-           heights = c(0.8,0.8,0.2,1,1)) + plot_annotation(tag_levels = 'A') & 
+           heights = c(0.8,1,0.8,0.2,0.8)) + plot_annotation(tag_levels = 'A') & 
   theme(plot.tag.position = c(0.01, 0.99), 
         legend.position = 'bottom',
         legend.title = element_text(vjust = 1.25),
@@ -2093,10 +2197,10 @@ calc_entropy(elife_rmsk_quant$rmsk$deseq$norm_counts.df,
 
 filt_elife_de_list <- bind_rows(elife_de_list[names(elife_de_list) != 'rmsk'])
 
-elife_rmsk_quant$rmsk$deseq$norm_counts.df %>%
-  # sample_n(100) %>%
+internal_rmsk_quant$panc_normal$deseq$norm_counts.df %>% head()
+  sample_n(100) %>%
   rownames_to_column('ensg') %>%
-  filter(ensg %in% filt_elife_de_list$ensg) %>%
+  filter(ensg %in% reference_meta_data$ucsc_rmsk_insert_info.df$gene) %>%
   # filter(across(where(is.numeric), ~ any(.x != 0))) %>%
   # rowwise() %>%
   # mutate(sum = sum(c_across(where(is.numeric)))) %>%
@@ -2109,68 +2213,7 @@ elife_rmsk_quant$rmsk$deseq$norm_counts.df %>%
   mutate_if(is.numeric, ~ scale(log2(. + 1), center = T)) %>%
   column_to_rownames('ensg') %>% as.matrix() %>% t() -> hm_count_data
 
-
-cor(hm_count_data) -> hm_cor_data
-
-
-
-
-elife_identity_color_pal <-
-  setNames(
-    RColorBrewer::brewer.pal(n = 6, 'Set2'),
-    elife_rmsk_quant$rmsk$deseq$scaled_quant_meta_for_de.df %>%
-      pull(condition) %>% unique()
-  )
-
-hm_meta_data <-
-  elife_rmsk_quant$rmsk$deseq$scaled_quant_meta_for_de.df
-
-top_hma <-
-  ComplexHeatmap::columnAnnotation(
-    df = hm_meta_data %>% select(condition),
-    col = list(condition = elife_identity_color_pal),
-    show_annotation_name = F,
-    show_legend = T,
-    simple_anno_size = unit(.3, "cm"),
-    annotation_legend_param =
-      list(title_gp = grid::gpar(
-        fontsize = 6, fontface = 'bold'
-      ))
-  )
-
-left_hma <-
-  ComplexHeatmap::rowAnnotation(
-    df = hm_meta_data %>% select(condition),
-    col = list(condition = elife_identity_color_pal),
-    show_annotation_name = F,
-    show_legend = F,
-    simple_anno_size = unit(.3, "cm"),
-    annotation_legend_param =
-      list(title_gp = grid::gpar(
-        fontsize = 6, fontface = 'bold'
-      ))
-  )
-
-set.seed(2023 - 03 - 07)
-ComplexHeatmap::Heatmap(
-  hm_cor_data,
-  show_row_names = F,
-  show_column_names = F,
-  left_annotation = left_hma,
-  row_dend_width = unit(.25, "cm"),
-  column_dend_height = unit(.25, "cm"),
-  heatmap_legend_param =
-    list(
-      legend_gp = grid::gpar(fontsize = 1),
-      legend_direction = "horizontal",
-      legend_height = unit(.35, "cm"),
-      title_position = "lefttop",
-      title_gp = grid::gpar(fontsize = 6, fontface = 'bold')
-    ),
-  top_annotation = top_hma,
-  column_names_gp = grid::gpar(fontsize = 6),
-  name = 'Z-score'
-) 
+  
 
 
 
@@ -2339,6 +2382,52 @@ lapply(c(de_out_list), function(de_out) {
 }) -> plt_list
 
 
+
+
+
+
+
+```
+### Fig_3_patchwork
+```{r}
+import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer, wrap_elements)
+
+fig_3_layout <- "
+AB
+CD
+EF
+GH
+"
+
+wrap_plots(plt_list[[1]] + ggtitle('liver cancer'),
+           plt_list[[2]] + ggtitle('lung cancer'),
+           plt_list[[3]] + ggtitle('esophagus cancer'),
+           plt_list[[4]] + ggtitle('colorectal cancer'),
+           plt_list[[5]] + ggtitle('stomach cancer'),
+           guide_area(),
+           wrap_elements(full = fig.3F.plt + ylim(0,95) + ggtitle('upregulated TEs')),
+           wrap_elements(full = fig.3E.plt + ylim(0,95) + ggtitle('downregulated TEs')),
+           heights = c(0.75,0.75,0.75,1.75),
+           # widths = c(0.75, 1.25),
+           guides = 'collect',
+           design = fig_3_layout) +
+  plot_annotation(tag_levels = 'A') &
+  theme(plot.tag.position = c(0.01, 0.99), 
+        legend.position = 'bottom',
+        legend.title = element_text(vjust = 0.5),
+        legend.justification = c(0.5, 0.5)) -> fig.3.patchwork
+
+save.manuscript.panel(figure = 3,
+                      figure.dir = figure.dir,
+                      name = 'patchwork_full_fig_3',
+                      width = figure_double_column_width,
+                      height = figure_depth,
+                      plot.in = fig.3.patchwork)
+```
+
+## Fig_S3
+```{r}
+
 lapply(c(de_out_list), function(de_out) {
   
   de_out %>%
@@ -2404,51 +2493,6 @@ lapply(c(de_out_list), function(de_out) {
   return(plt)
   
 }) -> ma_plt_list
-
-
-
-
-
-```
-### Fig_3_patchwork
-```{r}
-import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer, wrap_elements)
-
-fig_3_layout <- "
-AB
-CD
-EF
-GH
-"
-
-wrap_plots(plt_list[[1]] + ggtitle('liver cancer'),
-           plt_list[[2]] + ggtitle('lung cancer'),
-           plt_list[[3]] + ggtitle('esophagus cancer'),
-           plt_list[[4]] + ggtitle('colorectal cancer'),
-           plt_list[[5]] + ggtitle('stomach cancer'),
-           guide_area(),
-           wrap_elements(full = fig.3F.plt + ylim(0,95) + ggtitle('upregulated TEs')),
-           wrap_elements(full = fig.3E.plt + ylim(0,95) + ggtitle('downregulated TEs')),
-           heights = c(0.75,0.75,0.75,1.75),
-           # widths = c(0.75, 1.25),
-           guides = 'collect',
-           design = fig_3_layout) +
-  plot_annotation(tag_levels = 'A') &
-  theme(plot.tag.position = c(0.01, 0.99), 
-        legend.position = 'bottom',
-        legend.title = element_text(vjust = 0.5),
-        legend.justification = c(0.5, 0.5)) -> fig.3.patchwork
-
-save.manuscript.panel(figure = 3,
-                      figure.dir = figure.dir,
-                      name = 'patchwork_full_fig_3',
-                      width = figure_double_column_width,
-                      height = figure_depth,
-                      plot.in = fig.3.patchwork)
-```
-
-## Fig_S3F
-```{r}
 calc_entropy(
   elife_rmsk_quant$rmsk$deseq$norm_counts.df,
   elife_meta_data,
@@ -2491,8 +2535,6 @@ calc_entropy(
   theme(axis.text.x = element_text(angle = 40, hjust = 1),
         strip.text = element_text(size = txt.mm_to_pts(1.5))) -> fig.S3.F
 ```
-
-
 ### Fig_S3_patchwork
 ```{r}
 import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer, wrap_elements)
@@ -2531,6 +2573,127 @@ save.manuscript.panel(figure = 3,
                       plot.in = fig.S3.patchwork)
 ```
 
+## Fig_S4
+```{r}
+
+elife_rmsk_quant$rmsk$quant_meta %>% 
+  mutate(reference = 'Repeat-aware') %>%
+  rbind(
+    elife_gencode_quant$txonly$quant_meta %>%
+      mutate(reference = 'Repeat-naive')
+  ) %>%
+  mutate(reference = factor(reference, levels = c('Repeat-naive', 'Repeat-aware')),
+         sample = factor(sample)) %>%
+  ggplot(aes(reference, salmon_percent_mapped, shape = gender)) +
+  geom_boxplot(fill = NA, outlier.shape = NULL, aes(group = reference), show.legend = F) +
+  geom_point(size = txt.mm_to_pts(0.8), aes(fill = after_scale(alpha(color, 0.4)))) +
+  geom_line(
+    aes(group = sample),
+    alpha = 0.2,
+    show.legend = F
+  ) +
+  ylab('% of reads mapped') + xlab('') + 
+  scale_shape_manual(values = setNames(disc_identity_shape_pal, c('male', 'female'))) +
+  # scale_color_manual(values = elife_identity_color_pal) +
+  ggforce::facet_row( ~ diagnosis, strip.position = 'bottom') +
+  ggpubr::stat_compare_means(comparisons = list(c('Repeat-naive', 'Repeat-aware')), 
+                           method = 'wilcox', size = txt.mm_to_pts(1.2), 
+                           method.args = list(exact = TRUE, paired = T), label = 'p.signif') -> fig.S4B.plt
+
+elife_rmsk_quant$rmsk$deseq$norm_counts.df %>%
+  rownames_to_column('gene') %>%
+  merge(reference_meta_data$ucsc_rmsk_insert_info.df,
+        by = 'gene',
+        all.x = T) %>%
+  mutate(
+    family = ifelse(
+      gene %in% reference_meta_data$gencode_lncRNA_gene_names.df$ensg,
+      'GENCODE_lncRNA',
+      family
+    ),
+    family = ifelse(is.na(family), 'GENCODE_coding', family),
+    clade = ifelse(grepl('GENCODE', family), family, clade),
+    clade = ifelse(
+      clade %in% c(
+        'GENCODE_coding',
+        'GENCODE_lncRNA',
+        'LINE',
+        'SINE',
+        'LTR',
+        'DNA',
+        'Simple_repeat'
+      ),
+      clade,
+      'other'
+    ),
+    type = ifelse(grepl('GENCODE', family), 'GENCODE', 'TE'),
+    clade = factor(clade, levels = te_aware_annotation_levels)
+  ) %>%
+  filter(!gene %in% chrM.filter.list) -> total_annotated_rmsk_counts
+
+total_annotated_rmsk_counts %>%
+  gather(sample, count, -gene, -clade, -family, -type) %>%
+  filter(count > 0) %>%
+  merge(elife_rmsk_quant$rmsk$quant_met,
+        by = 'sample') -> tidy_total_annotated_rmsk_counts
+
+tidy_total_annotated_rmsk_counts %>%
+  group_by(sample, diagnosis, clade) %>% 
+  summarize(clade_sum = sum(count)) %>%
+  mutate(clade_frac = clade_sum / sum(clade_sum)) %>%
+  merge(elife_rmsk_quant$rmsk$quant_meta %>% select(-diagnosis),
+        by = 'sample') %>%
+  distinct() %>%
+  ggplot(aes(sample, clade_frac, fill = clade, color = diagnosis)) +
+  geom_col(color = 'white', show.legend = T) +
+  scale_fill_manual(values = te_color_pal, name = 'biotype/clade') +
+  ggforce::facet_col(~ diagnosis, scales = 'free_x', space = 'free') +
+  scale_y_continuous(expand = c(0, 0)) +
+  ylab('normalized count fraction') +
+  theme(axis.text.x = element_blank(),
+        axis.ticks.x = element_blank()) -> fig.S4A.plt
+
+```
+### Fig_S4_patchwork
+```{r}
+import::from(.from = 'patchwork',
+             plot_annotation,
+             wrap_plots,
+             guide_area,
+             plot_spacer,
+             wrap_elements)
+
+fig_S4_layout <- "
+AA
+BB
+CC
+"
+
+wrap_plots(
+  fig.S4A.plt,
+  guide_area(),
+  fig.S4B.plt + coord_cartesian(clip = 'off') + theme(axis.text.x = element_text(angle = 40, hjust = 1)),
+  heights = c(1.5, 0.2, 0.7),
+  guides = 'collect',
+  design = fig_S4_layout
+) +
+  plot_annotation(tag_levels = 'A') &
+  theme(
+    plot.tag.position = c(0.01, 0.99),
+    legend.position = 'bottom',
+    legend.title = element_text(vjust = 0.5),
+    legend.justification = c(0.5, 0.5)
+  ) -> fig.S4.patchwork
+
+save.manuscript.panel(
+  figure = 4,
+  figure.dir = figure.dir,
+  name = 'patchwork_full_fig_S4',
+  width = figure_double_column_width,
+  height = figure_depth,
+  plot.in = fig.S4.patchwork
+)
+```
 
 
 # Fig_S1
@@ -3493,17 +3656,17 @@ panc.6.1.1_read_len <- read_csv(file.path(output_data.dir, 'nanopore',
   separate(sample, sep = '[.]', into = c(NA,NA,'biotype',NA)) %>% 
   mutate(biotype = sub('_extraction', '', biotype))
 
-ctrl.6.1.5_read_len <- read_csv(file.path(output_data.dir, 'nanopore',
-                                          'nanopore_read_len', 'ctrl.6.1.5_biotype_read_lengths.csv')) %>%
-  separate(sample, sep = '[.]', into = c(NA,NA,'biotype',NA)) %>%
-  mutate(biotype = sub('_extraction', '', biotype))
+# ctrl.6.1.5_read_len <- read_csv(file.path(output_data.dir, 'nanopore',
+#                                           'nanopore_read_len', 'ctrl.6.1.5_biotype_read_lengths.csv')) %>%
+#   separate(sample, sep = '[.]', into = c(NA,NA,'biotype',NA)) %>%
+#   mutate(biotype = sub('_extraction', '', biotype))
 
 panc.7.1.1_read_len %>% 
   mutate(sample = 'panc.7.1.1') %>% 
   rbind(panc.6.1.1_read_len %>%
          mutate(sample = 'panc.6.1.1')) %>% 
-  rbind(ctrl.6.1.5_read_len %>%
-         mutate(sample = 'ctrl.6.1.5')) %>%
+  # rbind(ctrl.6.1.5_read_len %>%
+  #        mutate(sample = 'ctrl.6.1.5')) %>%
   group_by(biotype) -> panc_nanopore_read_length.df
 
 illumina_read_len <- list.files(file.path(output_data.dir, 'nanopore', 'illumina_read_len'), full.names = T)[1:31]
@@ -3570,8 +3733,8 @@ illumina_roster_names <- read_csv(file.path(output_data.dir, 'nanopore', 'illumi
 # 
 # vroom::vroom_write(illumina_read_len.df, file = file.path(output_data.dir, 'nanopore','illumina_read_len_no_seq.tsv.gz'))
 
-# illumina_read_len.df <-
-#   vroom::vroom(file = file.path(output_data.dir,'nanopore','illumina_read_len_no_seq.tsv.gz'), num_threads = 16)
+illumina_read_len.df <-
+  vroom::vroom(file = file.path(output_data.dir,'nanopore','illumina_read_len_no_seq.tsv.gz'), num_threads = 16)
 ```
 ## Fig_NA
 ```{r}
@@ -3592,6 +3755,7 @@ illumina_read_len.df %>%
   
 
 tmp_mean_read_len.df %>%
+  filter(condition == 'panc') %>% 
   group_by(biotype, condition) %>%
   filter(n() == 10, ! biotype %in% c('polymorphic_pseudogene', 'TR_C_gene', 'TR_V_gene', 'IG_V_gene', 'IG_C_gene',
                                    'TEC', 'non_stop_decay', 'nonsense_mediated_decay'),
@@ -3604,7 +3768,7 @@ tmp_mean_read_len.df %>%
   geom_boxplot(outlier.colour = NA) + 
   geom_jitter(width = 0.24, alpha = 0.2) +
   facet_wrap(~biotype, scales = 'free', ncol = 3, strip.position = 'bottom') +
-  scale_color_manual(values = identity_color_pal, guide = 'none') + 
+  scale_color_manual(values = disc_identity_color_pal, guide = 'none') + 
   ggpubr::stat_compare_means(method = 'wilcox', comparisons = list(c('panc', 'ctrl')), size = txt.mm_to_pts(0.8)) +
   coord_cartesian(clip = 'off') + 
   theme(strip.placement = 'inside') +
@@ -3678,13 +3842,12 @@ panc_nanopore_read_length.df %>%
   merge(nanopore_biotype_labels, by = 'biotype') %>% 
   mutate(biolabel = factor(biolabel, levels = te_aware_annotation_levels),
          sample = case_when(sample == 'panc.7.1.1' ~ 'panc 7', 
-                            sample == 'panc.6.1.1' ~ 'panc 6',
-                            sample == 'ctrl.6.1.5' ~ 'ctrl 6')) %>% 
+                            sample == 'panc.6.1.1' ~ 'panc 6')) %>% 
   ggplot(aes(abs(read_length), fill = sample)) + 
   geom_histogram(aes(y=stat(density*width)), bins = 100) + 
   scale_y_continuous(labels = scales::number_format(accuracy = 0.01)) +
   ggforce::facet_col(~biolabel, scales = 'free') +
-  scale_fill_manual(values = viridisLite::plasma(20)[c(1,8,10)]) +
+  scale_fill_manual(values = viridisLite::plasma(20)[c(8,10)]) +
   coord_cartesian(clip = 'off') +
   ylab('proportion of nanopore reads') + xlab('nanopore read length (bp)') +
   theme(legend.position = c(0.55,0.99), legend.direction = 'horizontal', plot.margin = margin(r = 3, unit = 'mm')) -> plt_NC.plt
@@ -3702,10 +3865,10 @@ panc_nanopore_read_length.df %>%
   merge(reference_meta_data$total_tx_to_gene.df, by.x = 'originally_multisample', by.y = 'enst') %>% 
   mutate(len = as.numeric(len)) -> len_compare.df
 
-len_compare.df %>%
-  filter(biotype.x == 'SINE', sample == 'ctrl.6.1.5') -> ctrl.6.1.5_nanopore_hex_to.plt
+# len_compare.df %>%
+#   filter(biotype.x == 'SINE', sample == 'ctrl.6.1.5') -> ctrl.6.1.5_nanopore_hex_to.plt
 
-len_compare.df %>% 
+len_compare.df %>%
   filter(biotype.x == 'SINE', sample == 'panc.6.1.1') -> panc.6.1.1_nanopore_hex_to.plt
 
 len_compare.df %>% 
@@ -3742,26 +3905,23 @@ len_compare.df %>%
 #   ylab('cumulative proportion (99% CI)') + 
 #   xlab('read length') + 
 #   theme(legend.position = c(0.25, 0.99)) -> plt_ND_1.plt
-# devtools::install_github("SwampThingPaul/AnalystHelper")
-ctrl.6.1.5_nanopore_hex_to.plt %>% 
-  pull(read_length) %>% 
-  AnalystHelper::ecdf_fun(CI = T, CI.interval = 0.99) %>% 
-  mutate(sample = 'ctrl 6') %>% 
-  rbind(panc.6.1.1_nanopore_hex_to.plt %>% 
-        pull(read_length) %>% 
-        AnalystHelper::ecdf_fun(CI = T, CI.interval = 0.99) %>% 
-          mutate(sample = 'panc 6')) %>% 
-  rbind(panc.7.1.1_nanopore_hex_to.plt %>% 
-        pull(read_length) %>% 
-        AnalystHelper::ecdf_fun(CI = T, CI.interval = 0.99) %>% 
-          mutate(sample = 'panc 7')) %>% 
-  ggplot(aes(x = value, y = proportion, min = lwr.CI, ymax = upr.CI, color = sample)) + 
-  geom_ribbon(alpha = 0.05) + 
-  geom_step() + 
+devtools::install_github("SwampThingPaul/AnalystHelper")
+
+panc.6.1.1_nanopore_hex_to.plt %>%
+        pull(read_length) %>%
+        AnalystHelper::ecdf_fun(CI = T, CI.interval = 0.99) %>%
+          mutate(sample = 'panc 6') %>%
+  rbind(panc.7.1.1_nanopore_hex_to.plt %>%
+        pull(read_length) %>%
+        AnalystHelper::ecdf_fun(CI = T, CI.interval = 0.99) %>%
+          mutate(sample = 'panc 7')) %>%
+  ggplot(aes(x = value, y = proportion, min = lwr.CI, ymax = upr.CI, color = sample)) +
+  geom_ribbon(alpha = 0.05) +
+  geom_step() +
   xlim(130,315) +
-  scale_color_manual(values = viridisLite::plasma(20)[c(1,8,10)], guide = 'none') +
-  ylab('cumulative prop. (99% CI)') + 
-  xlab('nanopore SINE read length (bp)') + 
+  scale_color_manual(values = viridisLite::plasma(20)[c(8,10)], guide = 'none') +
+  ylab('cumulative prop. (99% CI)') +
+  xlab('nanopore SINE read length (bp)') +
   theme(legend.position = c(0.25, 0.99)) -> plt_ND_2.plt
 
 # p4 <- ggplot(data.frame(l = plt_ND_2.plt$labels$y, x = 1, y = 1)) +
@@ -3803,25 +3963,25 @@ panc.6.1.1_nanopore_hex_to.plt %>%
   theme(legend.position = c(0.98,0.45), legend.direction = 'horizontal', legend.key.width = unit(1, 'mm')) +
   guides(fill = guide_colorbar(title.position = 'left', title.vjust = 1)) -> plt_NE.plt
 
-ctrl.6.1.5_nanopore_hex_to.plt %>%
-  group_by(tx, len, biotype.x, sample) %>%
-  summarize(read_length = mean(read_length)) %>%
-  merge(nanopore_biotype_labels, by.x = 'biotype.x', by.y = 'biotype') %>%
-  mutate(biolabel = factor(biolabel, levels = te_aware_annotation_levels),
-         condition = ifelse(grepl('ctrl', sample), 'ctrl', 'panc')) %>%
-  ggplot(aes(read_length, len, fill = scales::rescale((..count../(sum(..count..) * 1e6))))) +
-  geom_hex(bins = 120) +
-  # annotate(geom = 'text', x = 275, y = 150, label = 'ctrl 6') +
-  # geom_vline(xintercept = median(ctrl.6.1.5_nanopore_hex_to.plt$read_length), 
-  #            color = 'grey', linetype = 'dashed') +
-  xlab('avg. observed read length (bp)') + ylab('expected SINE insert length (bp)') +
-  # ggforce::facet_col(~sample) +
-  ggtitle('ctrl 6') + 
-  scale_fill_viridis_c(option = 'viridis', direction = 1, name = 'scaled cpm', guide = 'none') +
-  # theme(legend.position = c(0.95,1), legend.direction = 'horizontal', legend.key.width = unit(1, 'mm'))  +
-  # guides(fill = guide_colorbar(title.position = 'left', title.vjust = 1)) +
-  scale_y_continuous(breaks = c(100,200,300,400), limits = c(75,425)) +
-  scale_x_continuous(breaks = c(100,200,300,400), limits = c(75,370)) -> plt_SNA_1.plt
+# ctrl.6.1.5_nanopore_hex_to.plt %>%
+#   group_by(tx, len, biotype.x, sample) %>%
+#   summarize(read_length = mean(read_length)) %>%
+#   merge(nanopore_biotype_labels, by.x = 'biotype.x', by.y = 'biotype') %>%
+#   mutate(biolabel = factor(biolabel, levels = te_aware_annotation_levels),
+#          condition = ifelse(grepl('ctrl', sample), 'ctrl', 'panc')) %>%
+#   ggplot(aes(read_length, len, fill = scales::rescale((..count../(sum(..count..) * 1e6))))) +
+#   geom_hex(bins = 120) +
+#   # annotate(geom = 'text', x = 275, y = 150, label = 'ctrl 6') +
+#   # geom_vline(xintercept = median(ctrl.6.1.5_nanopore_hex_to.plt$read_length), 
+#   #            color = 'grey', linetype = 'dashed') +
+#   xlab('avg. observed read length (bp)') + ylab('expected SINE insert length (bp)') +
+#   # ggforce::facet_col(~sample) +
+#   ggtitle('ctrl 6') + 
+#   scale_fill_viridis_c(option = 'viridis', direction = 1, name = 'scaled cpm', guide = 'none') +
+#   # theme(legend.position = c(0.95,1), legend.direction = 'horizontal', legend.key.width = unit(1, 'mm'))  +
+#   # guides(fill = guide_colorbar(title.position = 'left', title.vjust = 1)) +
+#   scale_y_continuous(breaks = c(100,200,300,400), limits = c(75,425)) +
+#   scale_x_continuous(breaks = c(100,200,300,400), limits = c(75,370)) -> plt_SNA_1.plt
 
 panc.7.1.1_nanopore_hex_to.plt %>% 
   group_by(tx, len, biotype.x, sample) %>% 
@@ -3843,12 +4003,10 @@ panc.7.1.1_nanopore_hex_to.plt %>%
 panel_SNA_layout <- "
 AA
 BB
-CC
 "
 
-wrap_plots(plt_SNA_1.plt + xlab('') + ylab(''),
-           plt_NE.plt + xlab(''),
-           plt_SNA_3.plt + ylab(''),
+wrap_plots(plt_NE.plt + xlab(''),
+           plt_SNA_3.plt,
            design = panel_SNA_layout) -> panel.SNA.patchwork
   
 ```
@@ -3879,9 +4037,9 @@ wrap_plots(plt_NC.plt,
 
 # fig.N.patchwork
 
-save.manuscript.panel(figure = 4,
+save.manuscript.panel(figure = 6,
                       figure.dir = figure.dir,
-                      name = 'patchwork_full_fig_4',
+                      name = 'patchwork_full_fig_S6',
                       width = figure_double_column_width,
                       height = figure_depth,
                       plot.in = fig.N.patchwork)
@@ -4460,14 +4618,14 @@ panc.6.1.1_nanopore_tpm <-
   read_tsv(file.path(output_data.dir, 
                      'nanopore', 'gencode_39_rmsk_nanopore_abundance', 'panc.6.1.1_gene_abundance.tsv'))
 
-ctrl.6.1.5_nanopore_tpm <- 
-  read_tsv(file.path(output_data.dir, 
-                     'nanopore', 'gencode_39_rmsk_nanopore_abundance', 'ctrl.6.1.5_gene_abundance.tsv'))
+# ctrl.6.1.5_nanopore_tpm <- 
+#   read_tsv(file.path(output_data.dir, 
+#                      'nanopore', 'gencode_39_rmsk_nanopore_abundance', 'ctrl.6.1.5_gene_abundance.tsv'))
 
 import::from(.from = 'SummarizedExperiment', assay)
 
 count_matrix.df <- 
-  as.data.frame(as.matrix(assay(ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$gxi, 'counts')))
+  as.data.frame(as.matrix(assay(internal_rmsk_quant$panc_normal$gxi, 'counts')))
 
 count_matrix.df[, 'panc.7.1.1', drop = F] %>% rownames_to_column('Gene ID') %>% 
   mutate(panc.7.1.1_tpm = panc.7.1.1*1e6/(sum(panc.7.1.1))) %>% 
@@ -4487,18 +4645,17 @@ count_matrix.df[, 'panc.6.1.1', drop = F] %>% rownames_to_column('Gene ID') %>%
             panc_6_nanopore_tpm = mean(panc.6.1.1_nanopore_tpm)) %>% 
   distinct() -> panc_6.1.1_tpm
 
-count_matrix.df[, 'ctrl.6.1.5', drop = F] %>% rownames_to_column('Gene ID') %>%
-  mutate(ctrl.6.1.5_tpm = ctrl.6.1.5 *1e6/(sum(ctrl.6.1.5))) %>% 
-  merge(ctrl.6.1.5_nanopore_tpm %>% select(`Gene ID`, TPM), by = 'Gene ID') %>% 
-  dplyr::rename('ctrl.6.1.5_nanopore_tpm' = TPM) %>% 
-  group_by(`Gene ID`) %>% 
-  summarize(ctrl_6_tpm = mean(ctrl.6.1.5_tpm),
-            ctrl_6_nanopore_tpm = mean(ctrl.6.1.5_nanopore_tpm)) %>% 
-  distinct() -> ctrl.6.1.5_tpm
+# count_matrix.df[, 'ctrl.6.1.5', drop = F] %>% rownames_to_column('Gene ID') %>%
+#   mutate(ctrl.6.1.5_tpm = ctrl.6.1.5 *1e6/(sum(ctrl.6.1.5))) %>% 
+#   merge(ctrl.6.1.5_nanopore_tpm %>% select(`Gene ID`, TPM), by = 'Gene ID') %>% 
+#   dplyr::rename('ctrl.6.1.5_nanopore_tpm' = TPM) %>% 
+#   group_by(`Gene ID`) %>% 
+#   summarize(ctrl_6_tpm = mean(ctrl.6.1.5_tpm),
+#             ctrl_6_nanopore_tpm = mean(ctrl.6.1.5_nanopore_tpm)) %>% 
+#   distinct() -> ctrl.6.1.5_tpm
 
 
-merge(panc_7.1.1_tpm, panc_6.1.1_tpm, by = 'Gene ID') %>% 
-  merge(ctrl.6.1.5_tpm, by = 'Gene ID') -> panc_compare.df
+merge(panc_7.1.1_tpm, panc_6.1.1_tpm, by = 'Gene ID') -> panc_compare.df
 
 
 panc_compare.df %>% 
@@ -4565,21 +4722,21 @@ panc_compare_annotated.df %>%
   scale_color_manual(values = te_color_pal) + 
   scale_fill_manual(values = te_color_pal) -> plt_SN2C.plt
 
-lm(ctrl_6_nanopore_tpm ~ ctrl_6_tpm, data = panc_compare_annotated.df) %>% 
-  summary() -> panc_lm_out
-
-b <- round(panc_lm_out$coefficients[1,1], 2)
-m <- round(panc_lm_out$coefficients[2,1], 2)
-r2 <- round(panc_lm_out$adj.r.squared, 2)
-
-panc_compare_annotated.df %>% 
-  ggplot(aes(log2(ctrl_6_nanopore_tpm + 1), log2(ctrl_6_tpm + 1), color = clade, fill = clade)) + 
-  geom_hex(alpha = 0.4, bins = 250) +
-  annotate(geom = 'text', x = 6, y = 16, fontface = 'italic',
-         label = paste0('y', ' ', ' = ',b,' + ',m,'x; adj. R2 = ', r2), 
-         size = rel(3.75), alpha = 0.8) +
-  scale_color_manual(values = te_color_pal) + 
-  scale_fill_manual(values = te_color_pal) -> plt_SN2D.plt
+# lm(ctrl_6_nanopore_tpm ~ ctrl_6_tpm, data = panc_compare_annotated.df) %>% 
+#   summary() -> panc_lm_out
+# 
+# b <- round(panc_lm_out$coefficients[1,1], 2)
+# m <- round(panc_lm_out$coefficients[2,1], 2)
+# r2 <- round(panc_lm_out$adj.r.squared, 2)
+# 
+# panc_compare_annotated.df %>% 
+#   ggplot(aes(log2(ctrl_6_nanopore_tpm + 1), log2(ctrl_6_tpm + 1), color = clade, fill = clade)) + 
+#   geom_hex(alpha = 0.4, bins = 250) +
+#   annotate(geom = 'text', x = 6, y = 16, fontface = 'italic',
+#          label = paste0('y', ' ', ' = ',b,' + ',m,'x; adj. R2 = ', r2), 
+#          size = rel(3.75), alpha = 0.8) +
+#   scale_color_manual(values = te_color_pal) + 
+#   scale_fill_manual(values = te_color_pal) -> plt_SN2D.plt
 
 # lm(panc_6_nanopore_tpm ~ panc_7_nanopore_tpm, data = panc_compare_annotated.df) %>% 
 #   summary() -> panc_lm_out
@@ -4598,19 +4755,19 @@ panc_compare_annotated.df %>%
 #   scale_fill_manual(values = te_color_pal) -> plt_SN2D.plt
 
 
-panc_compare_annotated.df %>% 
-  select('gene' = 'Gene ID', contains('nanopore'), clade) %>% 
-  gather(sample, tpm, -gene, -clade) %>% 
-  mutate(sample = str_replace(sample, '_nanopore_tpm', ''),
-         sample = str_replace(sample, '_', ' ')) %>% 
-  filter(tpm > 0.17) %>% 
-  group_by(sample, clade) %>% 
-  summarize(detected = n()) %>% 
-  ggplot(aes(sample, detected, fill = sample)) + 
-  geom_col() + 
-  xlab('') + ylab('detected genes/elements') +
-  scale_fill_manual(values = viridisLite::plasma(20)[c(1,8,10)]) +
-  facet_wrap(~clade, scales = 'free_y', ncol = 2, strip.position = 'bottom') -> plt_SN2E.plt
+# panc_compare_annotated.df %>% 
+#   select('gene' = 'Gene ID', contains('nanopore'), clade) %>% 
+#   gather(sample, tpm, -gene, -clade) %>% 
+#   mutate(sample = str_replace(sample, '_nanopore_tpm', ''),
+#          sample = str_replace(sample, '_', ' ')) %>% 
+#   filter(tpm > 0.17) %>% 
+#   group_by(sample, clade) %>% 
+#   summarize(detected = n()) %>% 
+#   ggplot(aes(sample, detected, fill = sample)) + 
+#   geom_col() + 
+#   xlab('') + ylab('detected genes/elements') +
+#   scale_fill_manual(values = viridisLite::plasma(20)[c(1,8,10)]) +
+#   facet_wrap(~clade, scales = 'free_y', ncol = 2, strip.position = 'bottom') -> plt_SN2E.plt
 
 import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer, wrap_elements)
 
@@ -4618,7 +4775,6 @@ import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_
 fig_SN2_layout <- "
 AA
 BB
-CC
 DD
 "
 
@@ -4626,7 +4782,7 @@ wrap_plots(plt_SN2B.plt + ggtitle('panc 7 nanopore v illumina'),
            guide_area(),
            # plt_SN2B.plt + ggtitle('nanopore v illumina'),
            plt_SN2C.plt + ggtitle('panc 6 nanopore v illumina'),
-           plt_SN2D.plt + ggtitle('ctrl 6 nanopore v illumina'),
+           # plt_SN2D.plt + ggtitle('ctrl 6 nanopore v illumina'),
            # plt_SN2E.plt,
            guides = 'collect',
            design = fig_SN2_layout,
@@ -4635,9 +4791,9 @@ wrap_plots(plt_SN2B.plt + ggtitle('panc 7 nanopore v illumina'),
   theme(legend.position = 'bottom', 
         legend.justification = c(0.5, 0.5))-> fig.SN2.patchwork
 
-save.manuscript.panel(figure = 6,
+save.manuscript.panel(figure = 7,
                       figure.dir = figure.dir,
-                      name = 'patchwork_full_fig_S6',
+                      name = 'patchwork_full_fig_S7',
                       width = figure_double_column_width,
                       height = figure_depth,
                       plot.in = fig.SN2.patchwork)
@@ -5611,6 +5767,7 @@ lapply(names(training_performance), function(cancer) {
     rbind(training_performance[[cancer]]$gencode_model$cutoffs %>%
             mutate(model = 'naive')) %>%
     group_by(model) %>%
+    mutate(model = factor(model, levels = c('naive', 'aware'))) %>%
     filter(fpr == model_comparison[[cancer]]$best_model$perf_list$fpr) %>%
     slice(which.max(tpr)) %>%
     mutate(split = 'Training') %>%
@@ -5633,6 +5790,7 @@ lapply(names(training_performance), function(cancer) {
     rbind(testing_performance[[cancer]]$gencode_model$cutoffs %>%
             mutate(model = 'naive')) %>%
     group_by(model) %>%
+    mutate(model = factor(model, levels = c('naive', 'aware'))) %>%
     mutate(split = 'Testing') %>%
     ggplot(aes(
       model,

@@ -28,42 +28,22 @@ parse.input <- function(data_path, output_name, gencode_ver) {
     	print('target dirs:')
     	print(output_files)
 
-	imap(output_files, function(path, path_name) {
+	lapply(output_files, function(this_path) {
 
-		     list.files(path, full.names = T) -> quant_paths
 
-		     names(quant_paths) <- quant_paths
+		quant_name <- basename(this_path)
 
-		     lapply(quant_paths, function(this_path) {
+		quant_path <- Sys.glob(file.path(this_path, "*-PST", "quant.sf"))
 
-				    quant_path <- Sys.glob(file.path(this_path,paste0("*v", gencode_ver, ".",output_name,"*"), "quant.sf"))[1]
 
-				    quant_name <- basename(this_path)
-
-				    quant_name_split <- str_split(quant_name, '[.]', n = 3)[[1]]
-
-				    if(quant_name_split[length(quant_name_split)] %in% c('intra', 'exo')) {
 					    
-					    name_list <- lst('files' = quant_path,
-							     'names' = quant_name,
-							     'condition' = quant_name_split[1], 
-							     'rep' = quant_name_split[2],
-							     'context' = quant_name_split[3],
-							     'input_vol' = NA)
+		name_list <- lst('files' = quant_path, 
+				 'names' = quant_name,
+				 'project' = 'pancPA_resub')
 
-
-				    } else {
-					    
-					    name_list <- lst('files' = quant_path, 
-							     'names' = quant_name,
-							     'condition' = quant_name_split[1], 
-							     'rep' = quant_name_split[2],
-							     'context' = 'exo',
-							     'input_vol' = quant_name_split[3])
-				    }
-
-		     }) %>% bind_rows()
-	}) %>% bind_rows(.id = 'project') %>% mutate(project = basename(project))  -> sample_df
+	}) %>% bind_rows() -> sample_df
+	
+	print(sample_df$files)
 
 	sample_df
 }
@@ -88,8 +68,8 @@ build.tximeta.obj <- function(output_name, sample_df, tx2gene, txome_tsv, projec
 	print('import data with tximeta')
 	txi <- tximeta::tximeta(coldata = sample_df, type = 'salmon', skipMeta=FALSE)
 
-	print('save tx h5')
-	saveHDF5SummarizedExperiment(txi, dir=file.path(outpath,paste0(project, '_',output_name, '_h5_se')) , replace=TRUE)
+	#print('save tx h5')
+	#saveHDF5SummarizedExperiment(txi, dir=file.path(outpath,paste0(project, '_',output_name, '_h5_se')) , replace=TRUE)
 
 	# TE genes will appear on multiple strands, tximeta has an argument to allow this
 	singleStrand = T

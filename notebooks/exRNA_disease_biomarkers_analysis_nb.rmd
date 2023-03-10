@@ -1195,13 +1195,12 @@ msig.df <-
   dplyr::select(gene_symbol, gs_name) %>% 
   split(x = .$gene_symbol, f = .$gs_name)
 
-internal_rmsk_quant$panc_normal$deseq$fgsea <- 
+internal_gencode_quant$panc_normal$deseq$fgsea <- 
   make.fgsea.ranks(de.seq = 
-                     internal_rmsk_quant$panc_normal$deseq$de_out %>% 
-                     filter(gene %in% reference_meta_data$gencode_tx_to_gene.df$gene))
+                     internal_gencode_quant$panc_normal$deseq$de_out)
 
-salmon_quant$analysis_set$ctrl_panc_covid$deseq$fgsea$covid_v_ctrl <- 
-  make.fgsea.ranks(de.seq = salmon_quant$analysis_set$covid_ctrl$deseq$de_out)
+# salmon_quant$analysis_set$ctrl_panc_covid$deseq$fgsea$covid_v_ctrl <- 
+#   make.fgsea.ranks(de.seq = salmon_quant$analysis_set$covid_ctrl$deseq$de_out)
 
 ```
 
@@ -1336,86 +1335,6 @@ flow_chart.plt <- magick::image_read_pdf(path = file.path(figure.dir, 'fig.1', '
 flowchart_wrap_fig1A.plt <- patchwork::wrap_elements(full = magick::image_ggplot(flow_chart.plt))
 
 ```
-## Fig_1B/C
-```{r 1B/C}
-internal_gencode_quant$panc_normal$pca$pca_out.df %>%
-  ggplot(aes(PC1, PC2,
-             color = diagnosis, shape = gender)) +
-  geom_point(size = txt.mm_to_pts(0.8),
-             aes(fill = after_scale(alpha(color, 0.4)))) +
-  geom_rug(show.legend = F) +
-  xlab(paste('PC1', round(
-    cumsum(internal_gencode_quant$panc_normal$pca$pc_props)[1],
-    digits = 3
-  ) * 100, '%', sep = ' ')) +
-  ylab(paste('PC2', round(
-    cumsum(internal_gencode_quant$panc_normal$pca$pc_props)[2] -
-      cumsum(internal_gencode_quant$panc_normal$pca$pc_props)[1],
-    digits = 3
-  ) * 100, '%', sep = ' ')) +
-  geom_vline(
-    xintercept = 0,
-    linetype = 'dotted',
-    alpha = 0.3,
-    size = 0.25
-  ) +
-  geom_hline(
-    yintercept = 0,
-    linetype = 'dotted',
-    alpha = 0.3,
-    size = 0.25
-  ) +
-  # ggforce::geom_mark_ellipse(
-  #   aes(group = stage, label = stage),
-  #   label.fontsize = txt.mm_to_pts(3),
-  #   expand = 0.01,
-  #   show.legend = F
-  # ) +
-  ggtitle('Repeat-naive') +
-  scale_color_manual(values = disc_identity_color_pal) +
-  scale_shape_manual(values = disc_identity_shape_pal) -> fig.S1A.plt
-
-internal_rmsk_quant$panc_normal$pca$pca_out.df %>%
-  ggplot(aes(PC1, PC2,
-             color = diagnosis, shape = gender)) +
-  geom_point(size = txt.mm_to_pts(0.8),
-             aes(fill = after_scale(alpha(color, 0.4)))) +
-  geom_rug(show.legend = F) +
-  xlab(paste('PC1', round(
-    cumsum(internal_rmsk_quant$panc_normal$pca$pc_props)[1],
-    digits = 3
-  ) * 100, '%', sep = ' ')) +
-  ylab(paste('PC2', round(
-    cumsum(internal_rmsk_quant$panc_normal$pca$pc_props)[2] -
-      cumsum(internal_rmsk_quant$panc_normal$pca$pc_props)[1],
-    digits = 3
-  ) * 100, '%', sep = ' ')) +
-  geom_vline(
-    xintercept = 0,
-    linetype = 'dotted',
-    alpha = 0.3,
-    size = 0.25
-  ) +
-  geom_hline(
-    yintercept = 0,
-    linetype = 'dotted',
-    alpha = 0.3,
-    size = 0.25
-  ) +
-  # ggforce::geom_mark_ellipse(
-  #   aes(group = stage, filter = stage != 'none', label = stage), 
-  #   label.fontsize = txt.mm_to_pts(3),
-  #   expand = 0.01,
-  #   show.legend = F
-  # ) +
-  ggtitle('Repeat-aware') +
-  scale_color_manual(values = disc_identity_color_pal) +
-  scale_shape_manual(values = disc_identity_shape_pal) -> fig.S1B.plt
-    
-    
-
-
-```
 ## Fig_1D
 ```{r 1D}
 
@@ -1543,6 +1462,86 @@ save.manuscript.panel(figure = 1,
 
 ```
 
+## Fig_S1B/C
+```{r 1B/C}
+internal_gencode_quant$panc_normal$pca$pca_out.df %>%
+  ggplot(aes(PC1, PC2,
+             color = diagnosis, shape = gender)) +
+  geom_point(size = txt.mm_to_pts(0.8),
+             aes(fill = after_scale(alpha(color, 0.4)))) +
+  geom_rug(show.legend = F) +
+  xlab(paste('PC1', round(
+    cumsum(internal_gencode_quant$panc_normal$pca$pc_props)[1],
+    digits = 3
+  ) * 100, '%', sep = ' ')) +
+  ylab(paste('PC2', round(
+    cumsum(internal_gencode_quant$panc_normal$pca$pc_props)[2] -
+      cumsum(internal_gencode_quant$panc_normal$pca$pc_props)[1],
+    digits = 3
+  ) * 100, '%', sep = ' ')) +
+  geom_vline(
+    xintercept = 0,
+    linetype = 'dotted',
+    alpha = 0.3,
+    size = 0.25
+  ) +
+  geom_hline(
+    yintercept = 0,
+    linetype = 'dotted',
+    alpha = 0.3,
+    size = 0.25
+  ) +
+  # ggforce::geom_mark_ellipse(
+  #   aes(group = stage, label = stage),
+  #   label.fontsize = txt.mm_to_pts(3),
+  #   expand = 0.01,
+  #   show.legend = F
+  # ) +
+  ggtitle('Repeat-naive') +
+  scale_color_manual(values = disc_identity_color_pal) +
+  scale_shape_manual(values = disc_identity_shape_pal) -> fig.S1A.plt
+
+internal_rmsk_quant$panc_normal$pca$pca_out.df %>%
+  ggplot(aes(PC1, PC2,
+             color = diagnosis, shape = gender)) +
+  geom_point(size = txt.mm_to_pts(0.8),
+             aes(fill = after_scale(alpha(color, 0.4)))) +
+  geom_rug(show.legend = F) +
+  xlab(paste('PC1', round(
+    cumsum(internal_rmsk_quant$panc_normal$pca$pc_props)[1],
+    digits = 3
+  ) * 100, '%', sep = ' ')) +
+  ylab(paste('PC2', round(
+    cumsum(internal_rmsk_quant$panc_normal$pca$pc_props)[2] -
+      cumsum(internal_rmsk_quant$panc_normal$pca$pc_props)[1],
+    digits = 3
+  ) * 100, '%', sep = ' ')) +
+  geom_vline(
+    xintercept = 0,
+    linetype = 'dotted',
+    alpha = 0.3,
+    size = 0.25
+  ) +
+  geom_hline(
+    yintercept = 0,
+    linetype = 'dotted',
+    alpha = 0.3,
+    size = 0.25
+  ) +
+  # ggforce::geom_mark_ellipse(
+  #   aes(group = stage, filter = stage != 'none', label = stage), 
+  #   label.fontsize = txt.mm_to_pts(3),
+  #   expand = 0.01,
+  #   show.legend = F
+  # ) +
+  ggtitle('Repeat-aware') +
+  scale_color_manual(values = disc_identity_color_pal) +
+  scale_shape_manual(values = disc_identity_shape_pal) -> fig.S1B.plt
+    
+    
+
+
+```
 ### Fig_S1_patchwork
 ```{r Fig1}
 import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer, wrap_elements)
@@ -2930,13 +2929,25 @@ sample_pred_pca.out %>%
 ```{r}
 library(survival)
 library(adjustedCurves)
-devtools::install_github("tagteam/riskRegression")
+# devtools::install_github("tagteam/riskRegression")
+
+internal_gencode_quant$panc_normal$deseq$fgsea %>% 
+  filter(pathway == "HALLMARK EPITHELIAL MESENCHYMAL TRANSITION") %>% 
+  pull(leadingEdge) %>% unlist() -> emt_sig
+
+internal_gencode_quant$panc_normal$deseq$fgsea %>% 
+  filter(pathway == "HALLMARK HEME METABOLISM" ) %>% 
+  pull(leadingEdge) %>% unlist() -> heme_sig
+
+internal_gencode_quant$panc_normal$deseq$fgsea %>% 
+  filter(pathway == "HALLMARK INTERFERON GAMMA RESPONSE" ) %>% 
+  pull(leadingEdge) %>% unlist() -> ifng_sig
 
 gene_set <- filter(
   internal_rmsk_quant$panc_normal$deseq$de_out,
-  padj < 0.05,
-  abs(log2FoldChange) > 0.25,
-  gene %in% reference_meta_data$ucsc_rmsk_insert_info.df$gene
+  # padj < 0.05,
+  # log2FoldChange <= -1,
+  gene %in% emt_sig
 )$gene
 
 t(tcga_paad_dds_norm_counts.df[rownames(tcga_paad_dds_norm_counts.df) %in% gene_set, ]) %>%
@@ -2979,17 +2990,19 @@ merge_luad_surv %>%
 adj_surv_final <- merge_luad_surv_final %>%
   mutate(stage = case_when(
     stage %in% c('stage i', 'stage ia', 'stage ib') ~ 1,
-    stage %in% c('stage iia', 'stage iib', 'stage iii') ~ 2,
-  )) %>%
+    stage %in% c('stage iia', 'stage iib') ~ 2,
+    stage == 'stage iii' ~ 3,
+    stage == 'stage iv' ~ 4
+  )) %>% 
   filter(!is.na(stage)) %>%
-  mutate(stage = ifelse(stage == 1, 'stage 1', 'stage 2/3')) %>%
+  # mutate(stage = ifelse(stage == 1, 'stage 1', 'stage 2/3')) %>%
   mutate(signature = factor(signature, levels = c('low', 'high')),
          age = scale(age)[, 1])
 
 adj_surv_final -> tmp_surv
 
 cox_fit <-
-  coxph(Surv(time = OS.time, event = OS) ~ age + gender + signature,
+  coxph(Surv(time = OS.time, event = OS) ~ age + gender + stage + signature,
         data = tmp_surv,
         x = T)
 
@@ -3010,6 +3023,8 @@ tmp_pval <-
                       from = 0,
                       to = max(adjsurv$adjsurv$time),
   )$p_value
+
+
 adjsurv$adjsurv %>%
   group_by(group) %>%
   ggplot(aes(
@@ -5292,11 +5307,16 @@ binom_prob_thresh.plt
 doMC::registerDoMC(cores = 12)
 
 
-str(final_alpha$liver$entropy)
+# write_rds(final_alpha_new, file = file.path(output_data.dir, 'final_alpha_new.rds'))
+# 
+# str(final_alpha$liver$entropy)
+
+# final_alpha_new <- read_rds(file = file.path(output_data.dir, 'final_alpha_new.rds'))
+
+inverse.logit.calc <- function(y_hat) { exp(y_hat)/(1+exp(y_hat)) }
 
 
-
-lapply(final_alpha, function(cancer) {
+lapply(final_alpha_new, function(cancer) {
   lapply(cancer, function(feature_set) {
     lapply(feature_set, function(alpha) {
       
@@ -5311,7 +5331,8 @@ lapply(final_alpha, function(cancer) {
 
 alpha_summary %>% 
   group_by(cancer) %>% 
-  slice(which.max(tpr)) -> top_alpha
+  slice(which.max(tpr)) %>% 
+  mutate(auc = as.numeric(auc))-> top_alpha
 
 alpha_summary %>% 
   filter(feature_set == 'gencode') %>% 
@@ -5329,10 +5350,10 @@ imap(alpha_order, function(index, cancer) {
   gencode_alpha <- as.numeric(gencode_alpha[index, 6, drop = T])
   
   best_model <-
-    final_alpha[[cancer]][[feature_set]][[best_alpha]]
+    final_alpha_new[[cancer]][[feature_set]][[best_alpha]]
 
   gencode_model <-
-    final_alpha[[cancer]][['gencode']][[gencode_alpha]]
+    final_alpha_new[[cancer]][['gencode']][[gencode_alpha]]
 
 
   list('best_model' = best_model,
@@ -5340,9 +5361,6 @@ imap(alpha_order, function(index, cancer) {
   
 }) -> model_comparison
 
-model_comparison$colorectal$best_model$model$glmnet.fit[,which.min(model_comparison$colorectal$best_model$model$glmnet.fit$lambda)]
-
-model_comparison$colorectal$best_model$model$glmnet.fit
 
 elife_meta_data %>% 
   mutate(diagnosis = ifelse(diagnosis == 'Healthy donor', 0, 1)) %>% 
@@ -5424,8 +5442,8 @@ lapply(model_comparison, function(model) {
   })
 }) -> training_performance
 
+training_performance$Esophagus$best_model$beta
 
-length(training_performance$colorectal$best_model$beta)
 
 lapply(training_performance, function(model) {
   lapply(model, function(cancer) {
@@ -5433,8 +5451,9 @@ lapply(training_performance, function(model) {
       length(comparison$beta)
       
     }) %>% bind_rows(.id = 'comparison')
-  }) %>% bind_rows(.id = 'cancer')
-}) %>% bind_rows(.id = 'model') %>% distinct()
+  }) %>% bind_rows(.id = 'model')
+}) %>% bind_rows(.id = 'cancer') %>% distinct() %>% 
+  filter(model == 'best_model')
 
 
 lapply(model_comparison, function(model) {
@@ -5483,8 +5502,77 @@ lapply(model_comparison, function(model) {
   
 }) -> testing_performance
 
+make_anno_de <- function(de_out) {
+  de_out %>%
+    merge(reference_meta_data$ucsc_rmsk_insert_info.df,
+          by = 'gene',
+          all.x = T) %>%
+    mutate(
+      family = ifelse(
+        ensg %in% reference_meta_data$gencode_lncRNA_gene_names.df$ensg,
+        'GENCODE_lncRNA',
+        family
+      ),
+      family = ifelse(is.na(family), 'GENCODE_coding', family),
+      clade = ifelse(grepl('GENCODE', family), family, clade),
+      clade = ifelse(
+        clade %in% c(
+          'GENCODE_coding',
+          'GENCODE_lncRNA',
+          'LINE',
+          'SINE',
+          'LTR',
+          'DNA',
+          'Simple_repeat'
+        ),
+        clade,
+        'other'
+      ),
+      type = ifelse(grepl('GENCODE', family), 'GENCODE', 'TE'),
+      clade = factor(clade, levels = te_aware_annotation_levels)
+    ) %>%
+    filter(!ensg %in% chrM.filter.list,
+           !grepl('^MT', gene))
+}
 
-lapply(names(count_out_list), function(cancer) {
+
+
+lapply(names(training_performance), function(cancer) {
+  
+  message(cancer)
+  
+  elife_select <- ifelse(cancer == 'Esophagus', 'esoph', tolower(cancer))
+  elife_select <- paste0(elife_select, '_healthy')
+  
+  training_performance[[cancer]]$best_model$beta %>%
+    as.matrix() %>%
+    as.data.frame() %>%
+    rownames_to_column('gene') %>%
+    rename('beta' = V1) -> feature_df
+  
+  feature_df %>% 
+    filter(gene %in% reference_meta_data$ucsc_rmsk_insert_info.df$gene) %>%
+    merge(elife_rmsk_quant[[elife_select]]$deseq$de_out %>% make_anno_de()) %>%
+    ggplot(aes(
+      beta,
+      log2FoldChange,
+      color = clade,
+      fill = after_scale(alpha(color, 0.4))
+    )) +
+    geom_hline(yintercept = 0,
+               linetype = 'dashed',
+               alpha = 0.4) +
+    geom_vline(xintercept = 0,
+               linetype = 'dashed',
+               alpha = 0.4) +
+    geom_point(shape = 21, show.legend = F) +
+    scale_color_manual(values = te_color_pal) +
+    ggtitle(paste0("# non-zero features: ", nrow(feature_df) - 1)) +
+    ggrepel::geom_text_repel(aes(label = gene),
+                             show.legend = F ,
+                             size = txt.mm_to_pts(0.8)) -> beta_plot
+  
+  
   training_performance[[cancer]]$best_model$roc$data %>%
     as.data.frame() %>%
     mutate(model = 'aware') %>%
@@ -5500,7 +5588,23 @@ lapply(names(count_out_list), function(cancer) {
     ylab('sensitivity') +
     xlab('1 - specificity') +
     ggtitle(cancer) +
-    theme(legend.position = c(0.9, 0.55)) -> roc.plt
+    annotate(
+      "text",
+      label = paste0(
+        "AUC: ",
+        round(as.numeric(training_performance[[cancer]]$best_model$cutoffs$auc), 2),
+        ' > ',
+        round(as.numeric(training_performance[[cancer]]$gencode_model$cutoffs$auc), 2)
+        ),
+        y = 0.125,
+        x = 0.5,
+        size = txt.mm_to_pts(0.8)
+      ) +
+        theme(
+          legend.position = c(0.9, 0.7),
+          legend.title = element_blank(),
+          legend.background = element_blank()
+        ) -> roc.plt
   
   training_performance[[cancer]]$best_model$cutoffs %>%
     mutate(model = 'aware') %>%
@@ -5518,8 +5622,10 @@ lapply(names(count_out_list), function(cancer) {
     )) +
     geom_point() +
     geom_errorbar() +
-    ylim(0, 1) + xlab('Repeat') +
-    ylab('sensitivity @ 90% specificity') +
+    geom_text(aes(label = round(tpr, 2)), y = 0.075, size = txt.mm_to_pts(0.8)) +
+    ggtitle(paste0('N: ', training_performance[[cancer]]$best_model$cutoff$n)) +
+    ylim(0, 1) + xlab('') +
+    ylab('sens. @ 90% spec.') +
     ggforce::facet_row(~ split) -> train.plt
   
   testing_performance[[cancer]]$best_model$cutoffs %>%
@@ -5536,47 +5642,66 @@ lapply(names(count_out_list), function(cancer) {
     )) +
     geom_point() +
     geom_errorbar() +
-    ylim(0, 1) + xlab('Repeat') +
-    ylab('sensitivity @ training thresh.') +
+    geom_text(aes(label = round(tpr, 2)), y = 0.075, size = txt.mm_to_pts(0.8)) +
+    ggtitle(paste0('N: ', testing_performance[[cancer]]$best_model$cutoff$n)) +
+    ylim(0, 1) + xlab('') +
+    ylab('testing sens.') +
     ggforce::facet_row( ~ split) -> test.plt
   
   list('roc' = roc.plt,
        'train' = train.plt,
-       'test' = test.plt)
+       'test' = test.plt,
+       'beta' = beta_plot)
   
 }) -> plot_list
+
+# wrap_elements(full = plot_list[[1]]$roc)
+
 ```
 ## Fig 4 modeling
 ```{r}
 import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer, wrap_elements)
 
 fig_4_layout <- "
-ABCJ
-DEFJ
-GHIJ
-KKKK
-KKKK
+ABCD
+EFGH
+IJKL
+MNOP
+QRST
 "
 
-wrap_plots(wrap_elements(full = plot_list[[1]]$roc),
-           plot_list[[1]]$train,
-           plot_list[[1]]$test,
-           wrap_elements(full = plot_list[[3]]$roc),
-           plot_list[[3]]$train,
-           plot_list[[3]]$test,
-           wrap_elements(full = plot_list[[4]]$roc),
-           plot_list[[4]]$train,
-           plot_list[[4]]$test,
-           plot_spacer(),
-           plot_spacer(),
-           widths = c(1, 0.45, 0.45, 1),
-           # guides = 'collect',
-           design = fig_4_layout) +
+wrap_plots(
+  wrap_elements(full = plot_list[[3]]$roc),
+  plot_list[[3]]$train,
+  plot_list[[3]]$test,
+  plot_list[[3]]$beta,
+  wrap_elements(full = plot_list[[2]]$roc),
+  plot_list[[2]]$train,
+  plot_list[[2]]$test,
+  plot_list[[2]]$beta,
+  wrap_elements(full = plot_list[[1]]$roc),
+  plot_list[[1]]$train,
+  plot_list[[1]]$test,
+  plot_list[[1]]$beta,
+  wrap_elements(full = plot_list[[5]]$roc),
+  plot_list[[5]]$train,
+  plot_list[[5]]$test,
+  plot_list[[5]]$beta,
+  wrap_elements(full = plot_list[[4]]$roc),
+  plot_list[[4]]$train,
+  plot_list[[4]]$test,
+  plot_list[[4]]$beta,
+  widths = c(1.3, 0.7, 0.7, 1),
+  # guides = 'collect',
+  design = fig_4_layout
+) +
   plot_annotation(tag_levels = 'A') &
-  theme(plot.tag.position = c(0.01, 0.99), 
-        legend.position = 'bottom',
-        legend.title = element_text(vjust = 0.5),
-        legend.justification = c(0.5, 0.5)) -> fig.4.patchwork
+  theme(
+    plot.tag.position = c(0.01, 0.99),
+    legend.position = 'bottom',
+    legend.title = element_text(vjust = 0.5),
+    legend.justification = c(0.5, 0.5)
+  ) -> fig.4.patchwork
 
 save.manuscript.panel(figure = 4,
                       figure.dir = figure.dir,

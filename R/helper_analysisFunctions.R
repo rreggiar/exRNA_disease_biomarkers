@@ -591,6 +591,92 @@ run.de.seq.individual <- function(type = 'gxi', base_level = 'ctrl',
   
 }
 
+run.de.seq.split <- function(type = 'gxi',
+                             base_level = 'Healthy donor',
+                             top_level,
+                             input_se,
+                             split,
+                             dds_formula = as.formula('~age+gender+diagnosis'),
+                             ref_type = 'ucsc.rmsk',
+                             reference_meta_in = reference_meta_data$total_tx_to_gene.df) {
+  import::here(.from = 'SummarizedExperiment', colData, assay, rowRanges, assays)
+  import::here(.from = 'DESeq2', .all = T)
+  import::here(.from = 'tibble', lst)
+  
+  if (!"apeglm" %in% rownames(installed.packages())) {
+    BiocManager::install('apeglm', update = FALSE)
+  }
+  
+  scaled_quant_meta_for_de.df <-
+    input_se$quant_meta %>%
+    filter(sample %in% split$sample) %>%
+    mutate(
+      input_vol = as.numeric(input_vol),
+      condition = relevel(as.factor(diagnosis), ref = base_level)
+    ) %>%
+    mutate_if(is.numeric, ~ scale(., center = T)) %>%
+    mutate(across(where(is.character), ~ replace_na(.x, 'none'))) %>%
+    mutate_if(is.character, ~ as.factor(.)) %>%
+    remove_rownames() %>%
+    column_to_rownames('sample')
+  
+  print(levels(scaled_quant_meta_for_de.df$condition))
+  
+  gencode_sex_filter.df <-
+    rowRanges(input_se[[type]]) %>% as.data.frame() %>%
+    filter(seqnames %in% c('chrY'),
+           grepl('ENSG', group_name))
+  
+  count_matrix.df <-
+    assay(input_se[[type]], 'counts') %>%
+    as.data.frame() %>%
+    rownames_to_column('gene') %>%
+    mutate_if(is.numeric, round) %>%
+    column_to_rownames('gene')
+  
+  count_matrix.df <-
+    count_matrix.df[, colnames(count_matrix.df) %in% rownames(scaled_quant_meta_for_de.df)]
+  
+  scaled_quant_meta_for_de.df <-
+    scaled_quant_meta_for_de.df[match(colnames(count_matrix.df),
+                                      rownames(scaled_quant_meta_for_de.df)),]
+  
+  
+  input_set_dds <-
+    DESeqDataSetFromMatrix(countData = count_matrix.df,
+                           colData = scaled_quant_meta_for_de.df,
+                           design = dds_formula)
+  
+  input_set_dds <- estimateSizeFactors(input_set_dds)
+  
+  input_set_dds_norm_counts.df <- as.data.frame(counts(input_set_dds, normalized=T))
+  
+  de_filter <-
+    rowSums(counts(input_set_dds, normalized = T) >= 10) >= ncol(input_set_dds_norm_counts.df) *
+    0.95
+  
+  input_set_dds <- DESeq(input_set_dds[de_filter, ])
+  
+  print(resultsNames(input_set_dds))
+  
+  tail(resultsNames(input_set_dds), n = 1)
+  
+  coef_list <- tail(resultsNames(input_set_dds), n = 1)
+  
+  print(coef_list[[1]])
+  
+  message('ucsc.rmsk')
+
+  de_out <-
+    lfcShrink(input_set_dds, coef = coef_list[[1]]) %>%
+    as.data.frame() %>%
+    filter(padj < 0.01) %>% 
+    rownames()
+  
+  return(de_out)
+  
+}
+
 run.pca <- function(input_de, te_only = FALSE) {
   
   import::here(.from = 'tibble', lst)

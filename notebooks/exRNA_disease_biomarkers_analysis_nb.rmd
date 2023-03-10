@@ -1983,21 +1983,30 @@ top_hma <-
 
   
 
-reference_meta_data$ucsc_rmsk_insert_info.df %>% 
-  filter(gene %in% rownames(hm_count_data)) %>% 
-  select(gene, clade) %>% 
-  # filter(clade != 'Unknown', !grepl('\\?', clade)) %>% 
+reference_meta_data$ucsc_rmsk_insert_info.df %>%
+  filter(gene %in% rownames(hm_count_data)) %>%
+  select(gene, clade) %>%
   mutate(clade = ifelse(clade %in% names(te_color_pal), clade, 'other')) %>%
   distinct() %>% 
-  # group_by(gene) %>% 
-  # filter(!gene %in% c('(GAATG)n', '(CATTC)n')) %>%
+  group_by(gene) %>% 
+  mutate(count = n()) %>% 
+  filter(n() > 1) %>% 
+  filter(if (count==2) clade != 'other' else .) -> dupe_filt
+  
+reference_meta_data$ucsc_rmsk_insert_info.df %>%
+  filter(gene %in% rownames(hm_count_data)) %>%
+  select(gene, clade) %>%
+  mutate(clade = ifelse(clade %in% names(te_color_pal), clade, 'other')) %>%
+  distinct() %>% 
+  filter(!gene %in% dupe_filt$gene) %>% 
+  rbind(dupe_filt %>% select(gene, clade)) %>% 
   column_to_rownames('gene') -> hm_te_data
 
 hm_te_data <- hm_te_data[match(rownames(hm_count_data), rownames(hm_te_data)), , drop = F]
 
 left_hma <- ComplexHeatmap::rowAnnotation(
   df = hm_te_data,
-  col = list(clade = te_color_pal),
+  col = list(clade = te_alone_color_pal),
   show_annotation_name = T,
   annotation_name_side = 'top',
   annotation_name_gp = grid::gpar(fontsize = 8, fontface = 'italic'),

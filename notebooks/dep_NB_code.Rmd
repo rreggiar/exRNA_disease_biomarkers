@@ -1,0 +1,3213 @@
+# DEP Fig_3
+## tcga & gtex load
+```{r}
+tcga_data_path <- file.path(output_data.dir, 'tcga_gtex')
+gtex_colData <-
+  read_csv(
+    file.path(tcga_data_path, 'panc_gtex_colData.csv'),
+    col_names = c('sample', 'name', 'tissue_1', 'tissue_2', 'sex', 'age')
+  )
+
+tcga_colData <-
+  read_tsv(file.path(tcga_data_path, 'paad_tcga_colData.tsv')) %>%
+  mutate(
+    submitter_id.samples = str_replace_all(
+      string = submitter_id.samples,
+      pattern = 'TCGA',
+      replacement = 'PAAD'
+    ),
+    submitter_id.samples = str_replace_all(
+      string = submitter_id.samples,
+      pattern = '01A',
+      replacement = 'TP'
+    ),
+    submitter_id.samples = str_replace_all(
+      string = submitter_id.samples,
+      pattern = '11A',
+      replacement = 'NT'
+    )
+  )
+
+if (!file.exists(file.path(tcga_data_path, 'paad_tcga_gene_readNum_matrix.tsv')) &
+    !file.exists(file.path(tcga_data_path, 'paad_gtex_gene_readNum_matrix.tsv'))) {
+  tcga_paad_counts <-
+    vroom::vroom(file.path(tcga_data_path, 'paad_tcga_readNum_matrix.tsv.gz'))
+  tx_names <- tcga_paad_counts$Name
+  
+  enst_names <- tx_names[grepl('^ENST', tx_names), drop = F]
+  enst_tx2gene <-
+    tibble(tx = enst_names,
+           gene = str_split_fixed(
+             string = enst_names,
+             pattern = '\\|',
+             n = Inf
+           )[, 6])
+  
+  te_names <- tx_names[grepl('^hg38', tx_names), drop = F]
+  te_tx2gene <-
+    tibble(tx = te_names,
+           gene = str_split_fixed(
+             string = te_names,
+             pattern = '_',
+             n = Inf
+           )[, 3])
+  
+  tx2gene <- rbind(enst_tx2gene, te_tx2gene)
+  
+  tx2gene
+  vroom::vroom_write(x = tx2gene, file.path(tcga_data_path, 'tcga_gtex_tx2gene.tsv'))
+  
+  tcga_paad_counts %>%
+    merge(tx2gene, by.x = 'Name', by.y = 'tx') -> tcga_paad_counts
+  
+  tcga_paad_counts %>%
+    group_by(gene) %>%
+    summarize(across(is.numeric, ~ sum(.x))) -> tcga_paad_gene_counts
+  
+  vroom::vroom_write(x = tcga_paad_gene_counts,
+                     file.path(tcga_data_path, 'paad_tcga_gene_readNum_matrix.tsv'))
+  
+  gtex_paad_counts <-
+    vroom::vroom(file.path(tcga_data_path, 'paad_gtex_readNum_matrix.tsv.gz'))
+  
+  gtex_paad_counts %>%
+    merge(tx2gene, by.x = 'Name', by.y = 'tx') -> gtex_paad_counts
+  
+  gtex_paad_counts %>%
+    group_by(gene) %>%
+    summarize(across(is.numeric, ~ sum(.x))) -> gtex_paad_gene_counts
+  
+  rm(gtex_paad_counts)
+  
+  vroom::vroom_write(x = gtex_paad_gene_counts,
+                     file.path(tcga_data_path, 'paad_gtex_gene_readNum_matrix.tsv'))
+  
+} else {
+  message('loading....')
+  tx2gene <-
+    read_tsv(file.path(tcga_data_path, 'tcga_gtex_tx2gene.tsv'))
+  gtex_paad_gene_counts <-
+    read_tsv(file.path(tcga_data_path, 'paad_gtex_gene_readNum_matrix.tsv'))
+  tcga_paad_gene_counts <-
+    read_tsv(file.path(tcga_data_path, 'paad_tcga_gene_readNum_matrix.tsv'))
+  
+}
+```
+## Fig_TCGA_Surv_plt
+```{r 3 prep}
+library(survminer)
+library(survival)
+library(viridis)
+tcga_paad_gene_counts %>% 
+  column_to_rownames('gene') %>% as.matrix() %>% t() -> tcga_paad_te_counts
+
+tcga_paad_meta_data <- tibble('sample' = rownames(tcga_paad_te_counts), 
+                              'condition' = ifelse(grepl('PAAD', sample), 'PAAD', 'GTEx'))
+
+t(tcga_paad_te_counts) %>% 
+  as.data.frame() %>%
+  mutate(across(where(is.numeric), ~round(.x))) -> tcga_paad_te_count_data_for_DEseq
+
+tcga_de_dds <- DESeq2::DESeqDataSetFromMatrix(countData = tcga_paad_te_count_data_for_DEseq, 
+                                              colData = tcga_paad_meta_data, 
+                                              design = as.formula('~1'), tidy = F)
+
+tcga_de_dds <- DESeq2::estimateSizeFactors(tcga_de_dds)
+
+tcga_paad_dds_norm_counts.df <- as.data.frame(DESeq2::counts(tcga_de_dds, normalized=T))
+
+tcga_colData %>% 
+  filter(submitter_id.samples %in% colnames(tcga_paad_dds_norm_counts.df)) %>% 
+  select('sample' = submitter_id.samples, 'type' = sample_type.samples) %>% 
+  filter(type != 'Metastatic') %>% 
+  mutate(patient = str_replace_all(string = sample, 
+                                   pattern = '-TP', replacement = ''),
+         patient = str_replace_all(string = patient, 
+                                   pattern = '-NT', replacement = ''),
+         patient = str_replace_all(string = patient,
+                                   pattern = 'PAAD-',
+                                   replacement = 'TCGA-')) -> tcga_primary_tumors
+
+tcga_primary_tumors %>% 
+  group_by(patient) %>% 
+  filter(n() > 1) -> tcga_matched_samples 
+  
+```
+### TCGA PCA
+```{r}
+input_de$norm_counts.df %>% 
+  rownames_to_column('ensg') %>% 
+  merge(reference_meta_data$total_tx_to_gene.df %>% select(ensg, gene) %>% distinct(), by = 'ensg') %>% 
+  select(-ensg) %>% 
+  group_by(gene) %>% 
+  summarise(across(everything(), ~mean(.x))) %>% 
+  column_to_rownames('gene') -> gene_norm_counts
+
+# tcga_pca_input_data <- t(tcga_de_dds_norm_counts.df)[!grepl('-TM$|-NT$', rownames(hm_count_data)), ]
+tcga_pca_input_data <- t(tcga_paad_dds_norm_counts.df[colnames(tcga_paad_dds_norm_counts.df) %in% 
+                                                         tcga_matched_samples$sample, ])
+# tcga_pca_input_meta_data <- hm_meta_data[match(rownames(tcga_pca_input_data), hm_meta_data$sample), ]
+tcga_pca_input_meta_data <- tcga_matched_samples 
+    
+  
+
+tcga_pca_tmp <- tcga_pca_input_data[, colnames(tcga_pca_input_data) %in% rownames(gene_norm_counts), drop = F]
+gene_norm_counts_tmp <- gene_norm_counts[rownames(gene_norm_counts) %in% colnames(tcga_pca_tmp), ,drop = F]
+
+match_tcga_pca_tmp <- tcga_pca_tmp[, match(colnames(tcga_pca_tmp), rownames(gene_norm_counts_tmp))]
+
+match_tcga_pca_tmp[, !colnames(match_tcga_pca_tmp) %in%
+                           c(ucsc.rmsk.salmon_quant$ucsc_rmsk_quant$deseq$sex_filter.df$group_name), drop = F] ->
+  tcga_pca_tmp_in
+
+# input_de$vst_counts.df[rownames(input_de$vst_counts.df) %in% 
+#                            c(filt_PAAD_1vAll$ensg), ] %>% 
+#     t() -> pca_tmp_in 
+  
+tcga_pca_tmp_in_sd <- apply(tcga_pca_tmp_in, 2, sd)
+tcga_pca_tmp_in_zero_sd <- tcga_pca_tmp_in[,tcga_pca_tmp_in_sd!=0]
+tcga_non_zero_pca <- prcomp(tcga_pca_tmp_in_zero_sd, center = T, scale. = T, rank. = 50)
+
+summary(tcga_non_zero_pca)
+pcs.of.interest <- apply(tcga_non_zero_pca$x, 2, var)
+pcs.props <-  pcs.of.interest/sum(pcs.of.interest)
+cumsum(pcs.props)[c(1,2)]
+print(as.data.frame(pcs.props) %>% 
+        rownames_to_column('pc') %>% 
+        mutate(pc = as.numeric(sub('PC', '', pc))) %>% 
+        ggplot(aes(pc, pcs.props)) + 
+        geom_col())
+
+pca.out <- as.data.frame(tcga_non_zero_pca$x) %>% 
+  rownames_to_column('sample') %>% 
+  merge(tcga_pca_input_meta_data, by = 'sample')
+
+pca.out.summary <- 
+  as.data.frame(summary(non_zero_pca)$importance) %>% 
+  rownames_to_column('metric') %>% 
+  gather(pc, value, -metric) %>% 
+  spread(metric, value)
+
+pca.out %>% 
+  ggplot(aes(PC1, PC2,
+             fill = type, shape = type)) +
+  geom_point(size = txt.mm_to_pts(0.8), alpha = 0.8) +
+  scale_shape_manual(values = c(21,25)) +
+  xlab(paste('PC1', round(cumsum(pcs.props)[1], digits = 3)*100,'%',sep = ' ')) +
+  ylab(paste('PC2', round(cumsum(pcs.props)[2] - cumsum(pcs.props)[1], digits = 3)*100,'%',sep = ' ')) +
+  geom_vline(xintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) +
+  geom_hline(yintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) + 
+  scale_fill_manual(values = c('grey', 'black'))
+
+sample_input_pred <- as.data.frame(t(gene_norm_counts_tmp))
+
+sample_input_pred_filt <- sample_input_pred[, colnames(sample_input_pred) %in% colnames(tcga_pca_tmp_in_zero_sd)]
+
+sample_input_pred_filt_match <- sample_input_pred_filt[, match(colnames(sample_input_pred_filt),
+                                                               colnames(tcga_pca_tmp_in_zero_sd))]
+
+
+sample_pred_pca <- predict(object = tcga_non_zero_pca, newdata = sample_input_pred_filt_match)
+
+
+sample_pred_pca %>% 
+  as.data.frame() %>% 
+  rownames_to_column('sample') %>% 
+  mutate(sample = str_split_fixed(sample, '_S', 2)[, 1]) %>%
+  # merge(original_roster_names, by = 'sample', all.x = T) %>% 
+  # mutate(sample = ifelse(is.na(name), sample, name)) %>% 
+  # select(-name) %>% 
+  merge(input_de$scaled_quant_meta_for_de.df %>% rownames_to_column('sample'), by = 'sample') -> sample_pred_pca.out
+
+
+sample_pred_pca.out %>% 
+  mutate(stage = factor(stage, 
+                        levels = c(NA, 'I-B', 'II', 'II-B', 'III', 'IV', 'IV-B'),
+                        exclude = NULL)) %>% 
+  ggplot(aes(PC3, PC4,
+             shape = condition, fill = stage)) +
+  geom_point(size = txt.mm_to_pts(0.8), alpha = 0.8) +
+  scale_shape_manual(values = c(21,25)) +
+  xlab(paste('PC1', round(cumsum(pcs.props)[1], digits = 3)*100,'%',sep = ' ')) +
+  ylab(paste('PC2', round(cumsum(pcs.props)[2] - cumsum(pcs.props)[1], digits = 3)*100,'%',sep = ' ')) +
+  geom_vline(xintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) +
+  geom_hline(yintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) + 
+  scale_fill_grey(na.value = 'lightgreen', end = 0.25, start = 1)
+
+```
+
+### adjCurves
+```{r}
+library(survival)
+library(adjustedCurves)
+# devtools::install_github("tagteam/riskRegression")
+
+internal_gencode_quant$panc_normal$deseq$fgsea %>% 
+  filter(pathway == "HALLMARK EPITHELIAL MESENCHYMAL TRANSITION") %>% 
+  pull(leadingEdge) %>% unlist() -> emt_sig
+
+internal_gencode_quant$panc_normal$deseq$fgsea %>% 
+  filter(pathway == "HALLMARK HEME METABOLISM" ) %>% 
+  pull(leadingEdge) %>% unlist() -> heme_sig
+
+internal_gencode_quant$panc_normal$deseq$fgsea %>% 
+  filter(pathway == "HALLMARK INTERFERON GAMMA RESPONSE" ) %>% 
+  pull(leadingEdge) %>% unlist() -> ifng_sig
+
+gene_set <- filter(
+  internal_rmsk_quant$panc_normal$deseq$de_out,
+  # padj < 0.05,
+  # log2FoldChange <= -1,
+  gene %in% emt_sig
+)$gene
+
+t(tcga_paad_dds_norm_counts.df[rownames(tcga_paad_dds_norm_counts.df) %in% gene_set, ]) %>%
+  as.data.frame() %>%
+  rownames_to_column('sample') %>%
+  filter(sample %in% tcga_primary_tumors$sample) -> surv_counts_df
+
+paad_survival <-
+  read_tsv(file.path(output_data.dir, 'tcga_gtex', 'PAAD_survival.txt'))
+
+paad_tcga_pheno_merge <-
+  tcga_primary_tumors %>% merge(paad_survival %>% rename('patient' = '_PATIENT'), by = 'patient')
+
+paad_tcga_pheno_merge %>%
+  filter(sample.x %in% colnames(tcga_paad_dds_norm_counts.df)) %>%
+  select(sample = sample.x, everything(), -patient, -sample.y) -> filt_paad_surv
+
+
+filt_paad_surv %>%
+  merge(surv_counts_df, by = 'sample') %>%
+  merge(tcga_colData %>% mutate('sample' = submitter_id.samples), by = 'sample') %>%
+  mutate('gender' = gender.demographic,
+         'stage' = tumor_stage.diagnoses,
+         'age' = age_at_initial_pathologic_diagnosis) -> merge_luad_surv
+
+pivot_exclude <-
+  c(colnames(filt_paad_surv), colnames(tcga_colData))
+
+merge_luad_surv %>%
+  pivot_longer(
+    names_to = 'gene',
+    values_to = 'count',
+    cols = colnames(surv_counts_df)[-1]
+  ) %>%
+  group_by(sample, age, gender, stage, PFI, PFI.time, OS, OS.time) %>%
+  summarize(avg_count = mean(count)) %>%
+  ungroup() %>%
+  mutate(signature = ifelse(avg_count > median(avg_count), 'high', 'low')) -> merge_luad_surv_final
+
+adj_surv_final <- merge_luad_surv_final %>%
+  mutate(stage = case_when(
+    stage %in% c('stage i', 'stage ia', 'stage ib') ~ 1,
+    stage %in% c('stage iia', 'stage iib') ~ 2,
+    stage == 'stage iii' ~ 3,
+    stage == 'stage iv' ~ 4
+  )) %>% 
+  filter(!is.na(stage)) %>%
+  # mutate(stage = ifelse(stage == 1, 'stage 1', 'stage 2/3')) %>%
+  mutate(signature = factor(signature, levels = c('low', 'high')),
+         age = scale(age)[, 1])
+
+adj_surv_final -> tmp_surv
+
+cox_fit <-
+  coxph(Surv(time = OS.time, event = OS) ~ age + gender + stage + signature,
+        data = tmp_surv,
+        x = T)
+
+adjsurv <- adjustedsurv(
+  data = tmp_surv,
+  variable = "signature",
+  ev_time = "OS.time",
+  event = "OS",
+  method = "direct",
+  outcome_model = cox_fit,
+  conf_int = TRUE,
+  bootstrap = TRUE,
+  n_boot = 500
+)
+
+tmp_pval <-
+  adjusted_curve_test(adjsurv,
+                      from = 0,
+                      to = max(adjsurv$adjsurv$time),
+  )$p_value
+
+
+adjsurv$adjsurv %>%
+  group_by(group) %>%
+  ggplot(aes(
+    time,
+    y = surv,
+    group = group,
+    fill = group,
+    color = group
+  )) +
+  geom_step() +
+  pammtools::geom_stepribbon(aes(ymin = ci_lower, ymax = ci_upper),
+                             alpha = 0.085,
+                             linetype = 0) +
+  scale_color_manual('panc DN signature',
+                     values = c(viridis::viridis(3)[1], viridis::viridis(3)[2])) +
+  scale_fill_manual(values = c(viridis::viridis(3)[1], viridis::viridis(3)[2]),
+                    guide = 'none') +
+  annotate(
+    'text',
+    x = 600,
+    y = 0.07,
+    label = paste0('pval = ',
+                   round(tmp_pval,
+                         8)),
+    size = txt.mm_to_pts(0.8)
+  ) +
+  ylab('Overall Survival Probability') +
+  xlab('Days') +
+  scale_x_continuous(breaks = c(0, 500, 1000, 2000)) +
+  theme(
+    legend.position = c(0.99, 0.99),
+    legend.title = element_text(size = rel(0.8)),
+    legend.text = element_text(size = rel(0.6))
+  )
+ 
+```
+
+### UP Surv
+```{r 3A}
+tcga_padd_stratified_counts <-
+  tcga_paad_dds_norm_counts.df %>%
+  t() %>% as.data.frame()
+
+tcga_padd_stratified_counts %>% 
+  rownames_to_column('sample') %>% 
+  filter(sample %in% tcga_primary_tumors$sample) %>% 
+  gather(gene, count, -sample) %>% 
+  filter(gene %in% filter(internal_rmsk_quant$panc_normal$deseq$de_out, 
+                          padj < 0.01, log2FoldChange > 0.75)$gene) %>% 
+  filter(!gene %in% reference_meta_data$ucsc_rmsk_insert_info.df$gene) %>%
+  select(sample, count) %>% 
+  group_by(sample) %>%
+  summarize(avg.count = mean(count)) %>%
+  mutate(gene.set = 'panc_RNA_signal') %>%
+  group_by(gene.set) %>%
+  mutate(stratum = ifelse(avg.count >= quantile(avg.count, 0.66),
+                          'top-third', ifelse(avg.count <= quantile(avg.count, 0.33),
+                                              'bottom-third', 'middle'))) %>%
+  filter(stratum != 'middle') %>%
+  spread(gene.set, stratum) -> tcga_paad_stratified_counts
+
+paad_survival <- read_tsv(file.path(output_data.dir, 'tcga_gtex', 'PAAD_survival.txt'))
+
+paad_tcga_pheno_merge <- 
+  tcga_primary_tumors %>% merge(paad_survival, by.x = 'patient', by.y = '_PATIENT')
+
+surv.obj <- Surv(time = filter(paad_tcga_pheno_merge %>% select(sample.x, OS.time, OS) %>% distinct(), 
+                               sample.x %in% tcga_paad_stratified_counts$sample)$OS.time,
+                 event = filter(paad_tcga_pheno_merge %>% select(sample.x, OS.time, OS) %>% distinct(), 
+                                sample.x %in% tcga_paad_stratified_counts$sample)$OS)
+
+surv.fit <- survfit(as.formula(surv.obj ~ panc_RNA_signal), 
+                    data = tcga_paad_stratified_counts)
+ggsurvplot(surv.fit, 
+           ylab = 'O.S. Probability',
+           xlab = 'Overall Survival Time -- days',
+           pval = T, 
+           pval.size = txt.mm_to_pts(1),
+           legend.title = "",
+           ggtheme = theme_set_fun() + theme(legend.position = c(0.45,0.95)),
+           pval.coord = c(0, 0.08),
+           palette = viridis(3)[c(2,1)]) -> surv.plt
+
+paste0('panc GENCODE up') -> km_title
+
+surv.plt$plot + ggtitle(km_title) -> plt_surv_A.plt
+
+
+
+# ------------------------------------------------------------------------------
+filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
+                        padj < 0.05, log2FoldChange > 0.75) %>%
+  filter(!gene %in% reference_meta_data$ucsc_rmsk_insert_info.df$gene) %>%
+  top_n(wt =-padj, 5) %>% dplyr::pull(gene) -> this_top_10
+
+ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$norm_counts.df %>% 
+  rownames_to_column('ensg') %>% 
+  merge(reference_meta_data$total_tx_to_gene.df %>% select(ensg, gene) %>% distinct(), by = 'ensg') %>% 
+  filter(gene %in% this_top_10) %>% 
+  select(-ensg) %>% 
+  gather(patient, count, -gene) %>% 
+  merge(sample_meta_data$`2022.01.14_bioIVTAndPitts_meta_data.csv`, by = 'patient') -> count_data
+
+
+count_data %>% 
+  ggplot(aes(condition, count, color = condition)) + 
+  geom_boxplot(fill = NA, width = 0.5, position = position_dodge(width = 0.2), outlier.colour = NULL) + 
+  geom_jitter(size = 1, alpha = 0.4, position = position_dodge(width = 0.2)) + 
+  ggforce::facet_row(~gene, strip.position = 'bottom') + 
+  ggpubr::stat_compare_means(comparisons = list(c('ctrl', 'panc')), ref.group = 'ctrl',
+                             method = 'wilcox.test', size = 2.5, method.args = list(exact =T), label = 'p.signif') +
+  scale_color_manual(values = identity_color_pal[1:2]) + xlab('') -> plt_exp_A.plt
+
+
+```
+### DN TEs
+```{r}
+tcga_padd_stratified_counts <-
+  tcga_paad_dds_norm_counts.df %>%
+  t() %>% as.data.frame()
+
+tcga_padd_stratified_counts %>% 
+  rownames_to_column('sample') %>% 
+  filter(sample %in% tcga_primary_tumors$sample) %>% 
+  gather(gene, count, -sample) %>% 
+  filter(gene %in% filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
+                          padj < 0.05, log2FoldChange < -1)$gene) %>% 
+  filter(gene %in% reference_meta_data$ucsc_rmsk_insert_info.df$gene) %>%
+  select(sample, count) %>% 
+  group_by(sample) %>%
+  summarize(avg.count = mean(count)) %>%
+  mutate(gene.set = 'panc_RNA_signal') %>%
+  group_by(gene.set) %>%
+  mutate(stratum = ifelse(avg.count >= quantile(avg.count, 0.66),
+                          'top-third', ifelse(avg.count <= quantile(avg.count, 0.33),
+                                              'bottom-third', 'middle'))) %>%
+  filter(stratum != 'middle') %>%
+  spread(gene.set, stratum) -> tcga_paad_stratified_counts
+
+paad_survival <- read_tsv(file.path(output_data.dir, 'tcga_gtex', 'PAAD_survival.txt'))
+
+paad_tcga_pheno_merge <- 
+  tcga_primary_tumors %>% merge(paad_survival, by.x = 'patient', by.y = '_PATIENT')
+
+surv.obj <- Surv(time = filter(paad_tcga_pheno_merge %>% select(sample.x, OS.time, OS) %>% distinct(), 
+                               sample.x %in% tcga_paad_stratified_counts$sample)$OS.time,
+                 event = filter(paad_tcga_pheno_merge %>% select(sample.x, OS.time, OS) %>% distinct(), 
+                                sample.x %in% tcga_paad_stratified_counts$sample)$OS)
+
+surv.fit <- survfit(as.formula(surv.obj ~ panc_RNA_signal), 
+                    data = tcga_paad_stratified_counts)
+ggsurvplot(surv.fit, 
+           ylab = 'O.S. Probability',
+           xlab = 'Overall Survival Time -- days',
+           pval = T, 
+           pval.size = txt.mm_to_pts(1),
+           legend.title = "", 
+           ggtheme = theme_set_fun() + theme(legend.position = c(0.45,0.95)),
+           pval.coord = c(0, 0.08),
+           palette = viridis(3)[c(2,1)]) -> surv.plt
+
+paste0('panc Repeat down') -> km_title
+
+surv.plt$plot + ggtitle(km_title) -> plt_surv_B.plt
+
+# ------------------------------------------------------------------------------
+
+filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
+                          padj < 0.05, log2FoldChange < -1) %>% 
+  filter(gene %in% reference_meta_data$ucsc_rmsk_insert_info.df$gene) %>%
+  top_n(wt =-padj, 5) %>% dplyr::pull(gene) -> this_top_10
+
+ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$norm_counts.df %>% 
+  rownames_to_column('ensg') %>% 
+  merge(reference_meta_data$total_tx_to_gene.df %>% select(ensg, gene) %>% distinct(), by = 'ensg') %>% 
+  filter(gene %in% this_top_10) %>% 
+  select(-ensg) %>% 
+  gather(patient, count, -gene) %>% 
+  merge(sample_meta_data$`2022.01.14_bioIVTAndPitts_meta_data.csv`, by = 'patient') -> count_data
+
+
+count_data %>% 
+  ggplot(aes(condition, count, color = condition)) + 
+  geom_boxplot(fill = NA, width = 0.5, position = position_dodge(width = 0.2), outlier.colour = NULL) + 
+  geom_jitter(size = 1, alpha = 0.4, position = position_dodge(width = 0.2)) + 
+  ggforce::facet_row(~gene, strip.position = 'bottom') + 
+  ggpubr::stat_compare_means(comparisons = list(c('ctrl', 'panc')), ref.group = 'ctrl',
+                             method = 'wilcox.test', size = 2.5, method.args = list(exact =T), label = 'p.signif') +
+  scale_color_manual(values = identity_color_pal[1:2]) + xlab('') -> plt_exp_B.plt
+
+
+
+```
+### OX PHOS
+```{r}
+tcga_padd_stratified_counts <-
+  tcga_paad_dds_norm_counts.df %>%
+  t() %>% as.data.frame()
+
+tcga_padd_stratified_counts %>% 
+  rownames_to_column('sample') %>% 
+  filter(sample %in% tcga_primary_tumors$sample) %>% 
+  gather(gene, count, -sample) %>% 
+  filter(gene %in% filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
+                          padj < 0.05, log2FoldChange > 0.75)$gene) %>%
+  filter(gene %in% msig.df$HALLMARK_OXIDATIVE_PHOSPHORYLATION) %>%
+  select(sample, count) %>% 
+  group_by(sample) %>%
+  summarize(avg.count = mean(count)) %>%
+  mutate(gene.set = 'panc_RNA_signal') %>%
+  group_by(gene.set) %>%
+  mutate(stratum = ifelse(avg.count >= quantile(avg.count, 0.66),
+                          'top-third', ifelse(avg.count <= quantile(avg.count, 0.33),
+                                              'bottom-third', 'middle'))) %>%
+  filter(stratum != 'middle') %>%
+  spread(gene.set, stratum) -> tcga_paad_stratified_counts
+
+paad_survival <- read_tsv(file.path(output_data.dir, 'tcga_gtex', 'PAAD_survival.txt'))
+
+paad_tcga_pheno_merge <- 
+  tcga_primary_tumors %>% merge(paad_survival, by.x = 'patient', by.y = '_PATIENT')
+
+surv.obj <- Surv(time = filter(paad_tcga_pheno_merge %>% select(sample.x, OS.time, OS) %>% distinct(), 
+                               sample.x %in% tcga_paad_stratified_counts$sample)$OS.time,
+                 event = filter(paad_tcga_pheno_merge %>% select(sample.x, OS.time, OS) %>% distinct(), 
+                                sample.x %in% tcga_paad_stratified_counts$sample)$OS)
+
+surv.fit <- survfit(as.formula(surv.obj ~ panc_RNA_signal), 
+                    data = tcga_paad_stratified_counts)
+ggsurvplot(surv.fit,
+           ylab = 'O.S. Probability',
+           xlab = 'Overall Survival Time -- days',
+           pval = T, 
+           pval.size = txt.mm_to_pts(1),
+           legend.title = "", 
+           ggtheme = theme_set_fun() + theme(legend.position = c(0.45,0.95)),
+           pval.coord = c(0, 0.08),
+           palette = viridis(3)[c(2,1)]) -> surv.plt
+
+paste0('Oxidative Phosphorylation') -> km_title
+
+surv.plt$plot + ggtitle(km_title) -> plt_surv_C.plt
+
+
+# ------------------------------------------------------------------------------
+
+filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
+                          padj < 0.05, log2FoldChange > 0.75) %>%
+  filter(gene %in% msig.df$HALLMARK_OXIDATIVE_PHOSPHORYLATION) %>%
+  top_n(wt =-padj, 5) %>% dplyr::pull(gene) -> this_top_10
+
+ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$norm_counts.df %>% 
+  rownames_to_column('ensg') %>% 
+  merge(reference_meta_data$total_tx_to_gene.df %>% select(ensg, gene) %>% distinct(), by = 'ensg') %>% 
+  filter(gene %in% this_top_10) %>% 
+  select(-ensg) %>% 
+  gather(patient, count, -gene) %>% 
+  merge(sample_meta_data$`2022.01.14_bioIVTAndPitts_meta_data.csv`, by = 'patient') -> count_data
+
+
+count_data %>%
+  ggplot(aes(condition, count, color = condition)) +
+  geom_boxplot(fill = NA, width = 0.5, position = position_dodge(width = 0.2), outlier.colour = NULL) +
+  geom_jitter(size = 1, alpha = 0.4, position = position_dodge(width = 0.2)) +
+  ggforce::facet_row(~gene, strip.position = 'bottom') +
+  ggpubr::stat_compare_means(comparisons = list(c('ctrl', 'panc')), ref.group = 'ctrl',
+                             method = 'wilcox.test', size = 2.5, method.args = list(exact =T), label = 'p.signif') +
+  scale_color_manual(values = identity_color_pal[1:2]) + xlab('') -> plt_exp_C.plt
+
+
+```
+### MYC
+```{r}
+tcga_padd_stratified_counts <-
+  tcga_paad_dds_norm_counts.df %>%
+  t() %>% as.data.frame()
+
+tcga_padd_stratified_counts %>% 
+  rownames_to_column('sample') %>% 
+  filter(sample %in% tcga_primary_tumors$sample) %>% 
+  gather(gene, count, -sample) %>% 
+  filter(gene %in% filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
+                          padj < 0.05, log2FoldChange > 0.75)$gene) %>%
+  filter(gene %in% msig.df$HALLMARK_MYC_TARGETS_V1) %>%
+  select(sample, count) %>% 
+  group_by(sample) %>%
+  summarize(avg.count = mean(count)) %>%
+  mutate(gene.set = 'panc_RNA_signal') %>%
+  group_by(gene.set) %>%
+  mutate(stratum = ifelse(avg.count >= quantile(avg.count, 0.66),
+                          'top-third', ifelse(avg.count <= quantile(avg.count, 0.33),
+                                              'bottom-third', 'middle'))) %>%
+  filter(stratum != 'middle') %>%
+  spread(gene.set, stratum) -> tcga_paad_stratified_counts
+
+paad_survival <- read_tsv(file.path(output_data.dir, 'tcga_gtex', 'PAAD_survival.txt'))
+
+paad_tcga_pheno_merge <- 
+  tcga_primary_tumors %>% merge(paad_survival, by.x = 'patient', by.y = '_PATIENT')
+
+surv.obj <- Surv(time = filter(paad_tcga_pheno_merge %>% select(sample.x, OS.time, OS) %>% distinct(), 
+                               sample.x %in% tcga_paad_stratified_counts$sample)$OS.time,
+                 event = filter(paad_tcga_pheno_merge %>% select(sample.x, OS.time, OS) %>% distinct(), 
+                                sample.x %in% tcga_paad_stratified_counts$sample)$OS)
+
+surv.fit <- survfit(as.formula(surv.obj ~ panc_RNA_signal), 
+                    data = tcga_paad_stratified_counts)
+ggsurvplot(surv.fit, 
+           ylab = 'O.S. Probability',
+           xlab = 'Overall Survival Time -- days',
+           pval = T, 
+           pval.size = txt.mm_to_pts(1),
+           legend.title = "", 
+           ggtheme = theme_set_fun() + theme(legend.position = c(0.45,0.95)),
+           pval.coord = c(0, 0.08),
+           palette = viridis(3)[c(2,1)]) -> surv.plt
+
+paste0('MYC Targets') -> km_title
+
+surv.plt$plot + ggtitle(km_title) -> plt_surv_D.plt
+
+# ------------------------------------------------------------------------------
+
+filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
+                          padj < 0.05, log2FoldChange > 0.75) %>%
+  filter(gene %in% msig.df$HALLMARK_MYC_TARGETS_V1) %>%
+  top_n(wt =-padj, 5) %>% dplyr::pull(gene) -> this_top_10
+
+ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$norm_counts.df %>% 
+  rownames_to_column('ensg') %>% 
+  merge(reference_meta_data$total_tx_to_gene.df %>% select(ensg, gene) %>% distinct(), by = 'ensg') %>% 
+  filter(gene %in% this_top_10) %>% 
+  select(-ensg) %>% 
+  gather(patient, count, -gene) %>% 
+  merge(sample_meta_data$`2022.01.14_bioIVTAndPitts_meta_data.csv`, by = 'patient') -> count_data
+
+
+count_data %>% 
+  ggplot(aes(condition, count, color = condition)) + 
+  geom_boxplot(fill = NA, width = 0.5, position = position_dodge(width = 0.2), outlier.colour = NULL) + 
+  geom_jitter(size = 1, alpha = 0.4, position = position_dodge(width = 0.2)) + 
+  ggforce::facet_row(~gene, strip.position = 'bottom') + 
+  ggpubr::stat_compare_means(comparisons = list(c('ctrl', 'panc')), ref.group = 'ctrl',
+                             method = 'wilcox.test', size = 2.5, method.args = list(exact =T), label = 'p.signif') +
+  scale_color_manual(values = identity_color_pal[1:2]) + xlab('') -> plt_exp_D.plt
+
+```
+### plt_surv_patchwork
+```{r}
+import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer, wrap_elements)
+
+fig_surv_layout <- "
+AC
+DE
+FG
+HI
+BB
+"
+
+wrap_plots(plt_surv_A.plt + theme(legend.background = element_blank()),
+           guide_area(),
+           plt_exp_A.plt + coord_cartesian(clip = 'off') + ylab('norm. counts'),
+           plt_surv_B.plt + theme(legend.background = element_blank()),
+           plt_exp_B.plt + coord_cartesian(clip = 'off') + ylab('norm. counts'),
+           plt_surv_C.plt + theme(legend.background = element_blank()),
+           plt_exp_C.plt + coord_cartesian(clip = 'off') + ylab('norm. counts'),
+           plt_surv_D.plt + theme(legend.background = element_blank()),
+           plt_exp_D.plt + coord_cartesian(clip = 'off') + ylab('norm. counts'),
+           heights = c(0.9,0.9,0.9,0.9,0.4),
+           widths = c(0.75, 1.25),
+           guides = 'collect',
+           design = fig_surv_layout) +
+  plot_annotation(tag_levels = 'A') &
+  theme(plot.tag.position = c(0.01, 0.99), 
+        legend.position = 'bottom',
+        legend.title = element_text(vjust = 0.5),
+        legend.justification = c(0.5, 0.5)) -> fig.surv.patchwork
+
+save.manuscript.panel(figure = 3,
+                      figure.dir = figure.dir,
+                      name = 'patchwork_full_fig_3',
+                      width = figure_double_column_width,
+                      height = figure_depth,
+                      plot.in = fig.surv.patchwork)
+```
+
+# DEP Fig_S3
+```{r}
+SummarizedExperiment::assay(ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$gxi, 
+                            'counts') %>% as.data.frame() -> ucsc_rmsk_counts
+
+ucsc_rmsk_counts <- ucsc_rmsk_counts[, !colnames(ucsc_rmsk_counts) %in% qc_fails]
+
+ucsc_rmsk_counts %>% 
+  rownames_to_column('gene') %>% 
+  merge(reference_meta_data$ucsc_rmsk_insert_info.df, by = 'gene', all.x = T) %>% 
+  mutate(family = ifelse(gene %in% reference_meta_data$gencode_lncRNA_gene_names.df$ensg,
+                         'GENCODE_lncRNA', family),
+         family = ifelse(is.na(family), 'GENCODE_coding', family),
+         clade = ifelse(grepl('GENCODE', family), family, clade),
+         clade = ifelse(clade %in% c('GENCODE_coding',
+                                     'GENCODE_lncRNA',
+                                     'LINE',
+                                     'SINE',
+                                     'LTR',
+                                     'DNA',
+                                     'Simple_repeat'), clade, 'other'),
+         type = ifelse(grepl('GENCODE',family), 'GENCODE', 'TE'),
+         clade = factor(clade, levels = te_aware_annotation_levels)) %>% 
+    distinct() -> ucsc_rmsk_counts
+
+ucsc_rmsk_counts %>% 
+  pivot_longer(cols = panc.1.2.3:ctrl.9.1.2, names_to = 'sample', values_to = 'count') %>% 
+  mutate(condition = case_when(grepl('panc', sample) ~ 'panc',
+                               grepl('covid', sample) ~ 'covid',
+                               grepl('ctrl', sample) ~ 'ctrl')) %>% 
+  group_by(sample, clade, condition) %>% 
+  filter(count >= 5) %>% 
+  summarize(count = n()) -> ucsc_rmsk_biotype_summary
+
+
+ucsc_rmsk_biotype_summary %>% 
+  group_by(clade) %>% 
+  filter(!grepl('\\?', clade)) %>% 
+  ggplot(aes(condition, count, color = condition)) + 
+  geom_boxplot(fill = NA, outlier.colour = NA) + 
+  geom_jitter(width = 0.25) +
+  ylab('detected genes/elements') + 
+  xlab('') +
+  scale_color_manual(values = identity_color_pal) + 
+  facet_wrap(~clade, scales = 'free_y', ncol = 2, strip.position = 'bottom') +
+  coord_cartesian(clip = 'off') +
+  ggpubr::stat_compare_means(method = 'wilcox', 
+                             comparisons = list(c('covid', 'ctrl'), c('panc', 'ctrl')),
+                             size = txt.mm_to_pts(1), label = 'p.signif') +
+  theme(axis.text.x = element_text(angle = 40, hjust = 1),
+        legend.position = 'bottom', legend.direction = 'horizontal') -> biotype_count_fig_S3
+
+
+```
+### Fig_S3_patchwork
+```{r}
+import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer, wrap_elements)
+
+wrap_plots(biotype_count_fig_S3) -> patchwork_fig_S3
+
+save.manuscript.panel(figure = 3,
+                      figure.dir = figure.dir,
+                      name = 'patchwork_full_fig_S3',
+                      width = figure_double_column_width,
+                      height = figure_depth,
+                      plot.in = patchwork_fig_S3)
+
+```
+
+# DEP Fig_4
+
+## Fig_NA
+```{r}
+table(illumina_read_len.df$biotype) %>% 
+  as.data.frame() %>% 
+  select(biotype = Var1) %>% 
+  filter(biotype %in% c('LINE', 'lncRNA', 'LTR', 'protein_coding', 'SINE')) %>% 
+  mutate(biolabel = c('LINE', 'GENCODE_lncRNA', 'LTR', 'GENCODE_coding', 'SINE')) -> illumina_biotype_labels
+
+illumina_read_len.df %>% 
+  filter(biotype %in% illumina_biotype_labels$biotype,
+         ! sample %in% qc_fails) -> illumina_biotype_to.plt
+
+illumina_read_len.df %>% 
+  filter(! sample %in% qc_fails) %>% 
+  group_by(sample, biotype, condition) %>% 
+  summarize(read_length = median(abs(read_length))) -> tmp_mean_read_len.df
+  
+
+tmp_mean_read_len.df %>%
+  filter(condition == 'panc') %>% 
+  group_by(biotype, condition) %>%
+  filter(n() == 10, ! biotype %in% c('polymorphic_pseudogene', 'TR_C_gene', 'TR_V_gene', 'IG_V_gene', 'IG_C_gene',
+                                   'TEC', 'non_stop_decay', 'nonsense_mediated_decay'),
+         condition != 'covid') %>% 
+  mutate(biotype = ifelse(biotype == 'lncRNA', 'gencode_lncRNA', biotype),
+         biotype = ifelse(biotype == 'protein_coding', 'gencode_coding', biotype)) %>% 
+  mutate(biotype = factor(biotype, levels = c('SINE', 'LINE', 'LTR', 'GENCODE_lncRNA', 
+                                              'retained_intron', 'GENCODE_coding'))) %>% 
+  ggplot(aes(condition, read_length, color = condition)) +
+  geom_boxplot(outlier.colour = NA) + 
+  geom_jitter(width = 0.24, alpha = 0.2) +
+  facet_wrap(~biotype, scales = 'free', ncol = 3, strip.position = 'bottom') +
+  scale_color_manual(values = disc_identity_color_pal, guide = 'none') + 
+  ggpubr::stat_compare_means(method = 'wilcox', comparisons = list(c('panc', 'ctrl')), size = txt.mm_to_pts(0.8)) +
+  coord_cartesian(clip = 'off') + 
+  theme(strip.placement = 'inside') +
+  xlab('') + ylab('median fragment size (bp)') -> plt_NA.plt
+```
+## Fig_NB
+```{r}
+tmp_mean_read_len.df %>% 
+  filter(condition != 'covid',
+         ! sample %in% qc_fails) %>% 
+  pivot_wider(names_from = biotype, values_from = read_length) %>% 
+  select(-condition) %>% 
+  column_to_rownames('sample') -> read_len_pca.tmp
+  
+pca_tmp_in_sd <- apply(read_len_pca.tmp, 2, sd)
+pca_tmp_in_zero_sd <- read_len_pca.tmp[,pca_tmp_in_sd!=0 & !is.na(pca_tmp_in_sd)]
+non_zero_pca <- prcomp(pca_tmp_in_zero_sd, center = T, scale. = T, rank. = 50)
+
+summary(non_zero_pca)
+pcs.of.interest <- apply(non_zero_pca$x, 2, var)
+pcs.props <-  pcs.of.interest/sum(pcs.of.interest)
+cumsum(pcs.props)[c(1,2)]
+print(as.data.frame(pcs.props) %>% 
+        rownames_to_column('pc') %>% 
+        mutate(pc = as.numeric(sub('PC', '', pc))) %>% 
+        ggplot(aes(pc, pcs.props)) + 
+        geom_col())
+
+pca.out <- as.data.frame(non_zero_pca$x) %>% 
+  rownames_to_column('sample') %>% 
+  merge(tmp_mean_read_len.df %>% select(sample, condition) %>% ungroup() %>% distinct(), by = 'sample') %>% 
+  ungroup() %>% 
+  select(-biotype) %>% 
+  distinct()
+
+pca.out.summary <- 
+  as.data.frame(summary(non_zero_pca)$importance) %>% 
+  rownames_to_column('metric') %>% 
+  gather(pc, value, -metric) %>% 
+  spread(metric, value)
+
+pca.out %>% 
+  ggplot(aes(PC1, PC2,
+             color = condition)) +
+  geom_point(size = rel(2), alpha = 1) + 
+  # scale_shape_manual(values = c(21,25)) +
+  xlab(paste('PC1', round(cumsum(pcs.props)[1], digits = 3), sep = ' ')) +
+  ylab(paste('PC2', round(cumsum(pcs.props)[2] - cumsum(pcs.props)[1], digits = 3), sep = ' ')) +
+  geom_vline(xintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) +
+  geom_hline(yintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) + 
+  scale_color_manual(values = identity_color_pal[1:2]) + 
+  annotate(geom = 'text', x = -3.75, y = -3.25, label = 'size-aware', size = txt.mm_to_pts(1)) +
+  theme(legend.position = c(0.95,1), legend.direction = 'horizontal') -> plt_NB.plt
+```
+
+## Fig_NE
+```{r}
+# install.packages('hexbin')
+panc.6.1.1_nanopore_hex_to.plt %>% 
+  group_by(tx, len, biotype.x, sample) %>% 
+  summarize(read_length = mean(read_length)) %>% 
+  merge(nanopore_biotype_labels, by.x = 'biotype.x', by.y = 'biotype') %>% 
+  mutate(biolabel = factor(biolabel, levels = te_aware_annotation_levels),
+         condition = ifelse(grepl('ctrl', sample), 'ctrl', 'panc')) %>% 
+  # ggplot(aes(read_length, len, fill = scale(..count../(sum(..count..) * 1e6)))) + 
+  ggplot(aes(read_length, len, fill = scales::rescale((..count../(sum(..count..) * 1e6))))) + 
+  geom_hex(bins = 120) +
+  # geom_vline(xintercept = median(panc.6.1.1_nanopore_hex_to.plt$read_length), color = 'grey', linetype = 'dashed') +
+  # annotate(geom = 'text', x = 275, y = 120, label = 'panc 6') +
+  xlab('avg. observed SINE read length (bp)') + ylab('expected SINE insert length (bp)') +
+  # ggforce::facet_col(~sample) +
+  ggtitle('panc 6') + 
+  scale_fill_viridis_c(option = 'viridis', direction = 1, name = 'scaled cpm', breaks = c(0,1)) +
+  scale_y_continuous(breaks = c(100,200,300,400), limits = c(75,425)) +
+  scale_x_continuous(breaks = c(100,200,300,400), limits = c(75,370)) +
+  theme(legend.position = c(0.98,0.45), legend.direction = 'horizontal', legend.key.width = unit(1, 'mm')) +
+  guides(fill = guide_colorbar(title.position = 'left', title.vjust = 1)) -> plt_NE.plt
+
+# ctrl.6.1.5_nanopore_hex_to.plt %>%
+#   group_by(tx, len, biotype.x, sample) %>%
+#   summarize(read_length = mean(read_length)) %>%
+#   merge(nanopore_biotype_labels, by.x = 'biotype.x', by.y = 'biotype') %>%
+#   mutate(biolabel = factor(biolabel, levels = te_aware_annotation_levels),
+#          condition = ifelse(grepl('ctrl', sample), 'ctrl', 'panc')) %>%
+#   ggplot(aes(read_length, len, fill = scales::rescale((..count../(sum(..count..) * 1e6))))) +
+#   geom_hex(bins = 120) +
+#   # annotate(geom = 'text', x = 275, y = 150, label = 'ctrl 6') +
+#   # geom_vline(xintercept = median(ctrl.6.1.5_nanopore_hex_to.plt$read_length), 
+#   #            color = 'grey', linetype = 'dashed') +
+#   xlab('avg. observed read length (bp)') + ylab('expected SINE insert length (bp)') +
+#   # ggforce::facet_col(~sample) +
+#   ggtitle('ctrl 6') + 
+#   scale_fill_viridis_c(option = 'viridis', direction = 1, name = 'scaled cpm', guide = 'none') +
+#   # theme(legend.position = c(0.95,1), legend.direction = 'horizontal', legend.key.width = unit(1, 'mm'))  +
+#   # guides(fill = guide_colorbar(title.position = 'left', title.vjust = 1)) +
+#   scale_y_continuous(breaks = c(100,200,300,400), limits = c(75,425)) +
+#   scale_x_continuous(breaks = c(100,200,300,400), limits = c(75,370)) -> plt_SNA_1.plt
+
+panc.7.1.1_nanopore_hex_to.plt %>% 
+  group_by(tx, len, biotype.x, sample) %>% 
+  summarize(read_length = mean(read_length)) %>% 
+  merge(nanopore_biotype_labels, by.x = 'biotype.x', by.y = 'biotype') %>% 
+  mutate(biolabel = factor(biolabel, levels = te_aware_annotation_levels),
+         condition = ifelse(grepl('ctrl', sample), 'ctrl', 'panc')) %>% 
+  ggplot(aes(read_length, len, fill = scales::rescale((..count../(sum(..count..) * 1e6))))) + 
+  geom_hex(bins = 120) +
+  # geom_vline(xintercept = median(panc.7.1.1_nanopore_hex_to.plt$read_length), color = 'grey', linetype = 'dashed') +
+  # annotate(geom = 'text', x = 275, y = 150, label = 'panc 7') +
+  xlab('avg. observed SINE read length (bp)') + ylab('expected SINE insert length (bp)') +
+  # ggforce::facet_col(~sample) +
+  ggtitle('panc 7') + 
+  scale_fill_viridis_c(option = 'viridis', direction = 1, name = 'scaled cpm', guide = 'none') +
+  scale_y_continuous(breaks = c(100,200,300,400), limits = c(75,425)) +
+  scale_x_continuous(breaks = c(100,200,300,400), limits = c(75,370)) -> plt_SNA_3.plt
+
+panel_SNA_layout <- "
+AA
+BB
+"
+
+wrap_plots(plt_NE.plt + xlab(''),
+           plt_SNA_3.plt,
+           design = panel_SNA_layout) -> panel.SNA.patchwork
+  
+```
+
+# DEP Fig_S4
+## Fig_S4A
+```{r}
+# bind_rows(list('panc' = salmon_quant$analysis_set$ctrl_panc_covid$deseq$fgsea$panc_v_ctrl,
+#           'covid' = salmon_quant$analysis_set$ctrl_panc_covid$deseq$fgsea$covid_v_ctrl),
+#           .id = 'condition') %>% 
+#   select(condition, 'enriched pathway' = pathway, padj, NES) %>% 
+#   mutate(padj = round(padj, 10),
+#          NES = round(NES, 3)) %>% 
+#   dplyr::rename('GSEA padj' = padj, 'GSEA NES' = NES) %>% 
+#   gridExtra::tableGrob(theme = gridExtra::ttheme_minimal(), rows = NULL) -> fig.S2A.fgsea_table.grob
+
+bind_rows(list('panc' = salmon_quant$analysis_set$ctrl_panc_covid$deseq$fgsea$panc_v_ctrl,
+          'covid' = salmon_quant$analysis_set$ctrl_panc_covid$deseq$fgsea$covid_v_ctrl),
+          .id = 'condition') %>% 
+  select(condition, pathway, padj, NES, leadingEdge, size) %>% 
+  arrange(NES) %>% 
+  mutate(rank = row_number()) %>% 
+  group_by(pathway) %>% 
+  mutate(pathway = str_replace_all(pathway, 'HALLMARK ', ''),
+         # pathway = str_replace_all(pathway, ' ', '\n'),
+         observed = length(unlist(leadingEdge)),
+         NES = round(NES, 3)) %>% 
+  # arrange(-NES, padj) %>% 
+  ggplot(aes(NES, rank, color = -log10(padj))) + 
+  geom_point(size = 2.5) +
+  geom_segment(aes(x=0, xend=NES, y=rank, yend=rank)) +
+  geom_text(aes(label = paste0(condition),
+                x = NES - 0.75 * sign(NES)),
+            nudge_y = 0.15,
+            color = 'black',
+            size = txt.mm_to_pts(1)) +
+  geom_text(aes(label = pathway, 
+              x = - .55 * sign(NES)), 
+              nudge_y = 0.025,
+              color = 'black', 
+              size = txt.mm_to_pts(1)) + 
+  scale_color_viridis_c() +
+  xlim(-1,2.5) +
+  # ggforce::facet_col(~condition, scales = 'free_y') +
+  ylab('gene set') + xlab('GSEA NES') +
+  geom_vline(xintercept = 0, alpha = 0.3, linetype = 'dashed') +
+  theme(legend.position = c(0.99, 0.17),
+        axis.ticks.y = element_blank(),
+        axis.text.y = element_blank()) -> fig.S4A.plt
+
+
+```
+## Fig_S4B
+```{r}
+de_compare_list <- list('panc' = ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out,
+                        'covid' = ucsc.rmsk.salmon_quant$analysis_set$covid_ctrl$deseq$de_out)
+
+purrr::imap(de_compare_list, function(de, de_name) {
+  
+  de %>% 
+    filter(gene %in% msig.df$HALLMARK_MYC_TARGETS_V1,
+           padj < 0.05,
+           abs(log2FoldChange) > 0.5) %>% 
+    mutate(id = de_name)
+  
+}) %>% bind_rows() -> de_upset.df
+
+de_upset.df %>% 
+  group_by(gene) %>% 
+  summarize(context = list(id)) %>% 
+  ggplot(aes(context)) + 
+  geom_bar(fill = 'white', color = 'black') + 
+  ggupset::scale_x_upset() +
+  geom_text(stat='count', aes(label=after_stat(count)), nudge_y = -2) + 
+  xlab('') + ylab('DE MYC Target V1') -> fig.S2B.plt
+
+
+de_upset.df %>% 
+  group_by(id) %>% 
+  top_n(5, wt = log2FoldChange) %>% 
+  ggplot(aes(reorder(gene, -log2FoldChange), log2FoldChange)) + 
+  geom_col(fill = NA, color = 'black') + 
+  coord_flip() + 
+  ggforce::facet_col(~id, scales = 'free_y') + 
+  geom_hline(yintercept = 1.0, linetype = 'dashed', alpha = 0.6) + 
+  xlab('')
+
+de_upset.df %>% 
+  select(gene, log2FoldChange, id) %>% 
+  spread(id, log2FoldChange) %>% 
+  ggplot(aes(covid, panc, label = gene)) + 
+  geom_point() + 
+  geom_hline(yintercept = 0, linetype = 'dashed', alpha = 0.6) +
+  geom_vline(xintercept = 0, linetype = 'dashed', alpha = 0.6) + 
+  xlab('covid MYC Targets V1 log2FC') + ylab('panc MYC Targets V1 log2FC') +
+  ggrepel::geom_text_repel() -> fig.S2B_2.plt
+
+```
+## Fig_S4C
+```{r}
+import::from(.from = 'SummarizedExperiment',
+             rowRanges)
+
+rowRanges(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$gxi) %>% 
+  as.data.frame() %>% 
+  filter(seqnames == 'chrM') %>% 
+  select(group_name) %>% 
+  unlist() %>% unname() -> chrM.filter.list
+
+ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out %>% 
+# ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$deseq$panc_vs_ctrl %>% 
+  merge(reference_meta_data$ucsc_rmsk_insert_info.df, by = 'gene', all.x = T) %>% 
+  mutate(family = ifelse(ensg %in% reference_meta_data$gencode_lncRNA_gene_names.df$ensg,
+                         'GENCODE_lncRNA', family),
+         family = ifelse(is.na(family), 'GENCODE_coding', family),
+         clade = ifelse(grepl('GENCODE', family), family, clade),
+         clade = ifelse(clade %in% c('GENCODE_coding',
+                                     'GENCODE_lncRNA',
+                                     'LINE',
+                                     'SINE',
+                                     'LTR',
+                                     'DNA',
+                                     'Simple_repeat'), clade, 'other'),
+         type = ifelse(grepl('GENCODE',family), 'GENCODE', 'TE'),
+         clade = factor(clade, levels = te_aware_annotation_levels[c(1,8)])) %>% 
+  filter(ensg %in% chrM.filter.list | grepl('^MT', gene)) -> mt_panc_annotated_rmsk_de
+
+mt_panc_label_list <- mt_panc_annotated_rmsk_de %>% 
+  top_n(6, wt = abs(log2FoldChange))
+
+mt_panc_annotated_rmsk_de %>%
+  filter(clade == 'GENCODE_coding') %>% 
+  ggplot(aes(log2FoldChange, -log10(padj), color = clade)) + 
+  geom_point(size = 2, alpha = 0.6, show.legend = FALSE) -> gencode_layer.plt
+
+gencode_layer.plt + 
+  geom_point(data = filter(mt_panc_annotated_rmsk_de, clade != 'GENCODE_coding') %>% 
+               mutate(clade = factor(clade, levels = te_aware_annotation_levels[c(1,8)])),
+             aes(log2FoldChange, -log10(padj), color = clade), size = 2, alpha = 0.8) +
+  scale_color_manual(values = te_color_pal[c(1,8)], name = 'biotype/clade') + 
+  ggrepel::geom_text_repel(data = mt_panc_annotated_rmsk_de %>% 
+             mutate(clade = factor(clade, levels = te_aware_annotation_levels[c(1,8)])),
+                    aes(label = ifelse(gene %in% mt_panc_label_list$gene, gene, '')), 
+                         show.legend = F, color = 'black', max.overlaps = 1000, size = txt.mm_to_pts(1)) + 
+  xlim(-8.5,8.5) + 
+  ggtitle('chrM panc DE') -> fig.S2C.plt
+
+fig.S2C.plt
+```
+## Fig_S4D
+```{r}
+ucsc.rmsk.salmon_quant$analysis_set$covid_ctrl$deseq$de_out %>% 
+  merge(reference_meta_data$ucsc_rmsk_insert_info.df, by = 'gene', all.x = T) %>% 
+  mutate(family = ifelse(ensg %in% reference_meta_data$gencode_lncRNA_gene_names.df$ensg,
+                         'GENCODE_lncRNA', family),
+         family = ifelse(is.na(family), 'GENCODE_coding', family),
+         clade = ifelse(grepl('GENCODE', family), family, clade),
+         clade = ifelse(clade %in% c('GENCODE_coding',
+                                     'GENCODE_lncRNA',
+                                     'LINE',
+                                     'SINE',
+                                     'LTR',
+                                     'DNA',
+                                     'Simple_repeat'), clade, 'other'),
+         type = ifelse(grepl('GENCODE',family), 'GENCODE', 'TE'),
+         clade = factor(clade, levels = te_aware_annotation_levels)) %>% 
+  filter(ensg %in% chrM.filter.list | grepl('^MT', gene)) -> mt_covid_annotated_rmsk_de
+
+mt_covid_label_list <- mt_covid_annotated_rmsk_de %>% 
+  top_n(6, wt = abs(log2FoldChange))
+
+mt_covid_annotated_rmsk_de %>%
+  filter(clade == 'GENCODE_coding') %>% 
+  ggplot(aes(log2FoldChange, -log10(padj), color = clade)) + 
+  geom_point(size = 2, alpha = 0.6, show.legend = FALSE) -> gencode_layer.plt
+
+gencode_layer.plt + 
+  geom_point(data = filter(mt_covid_annotated_rmsk_de, clade != 'GENCODE_coding') %>% 
+               mutate(clade = factor(clade, levels = te_aware_annotation_levels)),
+             aes(log2FoldChange, -log10(padj), color = clade), size = 2, alpha = 0.8) +
+  scale_color_manual(values = te_color_pal[c(1,8)], name = 'biotype/clade') + 
+  ggrepel::geom_text_repel(data = mt_covid_annotated_rmsk_de %>% 
+             mutate(clade = factor(clade, levels = te_aware_annotation_levels)),
+                    aes(label = ifelse(gene %in% mt_covid_label_list$gene, gene, '')), 
+                         show.legend = F, color = 'black', max.overlaps = 1000, size = txt.mm_to_pts(1)) + 
+  xlim(-7.5,7.5) + 
+  ggtitle('chrM covid DE') -> fig.S2D.plt
+
+fig.S2D.plt
+```
+### Fig_S4_patchwork
+```{r Fig1}
+import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer)
+
+
+fig_S2_layout <- "
+AA
+DD
+BC
+EF
+"
+
+wrap_plots(fig.S4A.plt,
+           patchwork::wrap_elements(full = fig.S2B.plt),
+           fig.S2B_2.plt,
+           guide_area(),
+           fig.S2C.plt + theme(legend.background = element_blank()) + coord_cartesian(clip = 'off'),
+           fig.S2D.plt + theme(legend.background = element_blank()) + coord_cartesian(clip = 'off'),
+           design = fig_S2_layout, 
+           guides = 'collect',
+           heights = c(0.6,0.2,1.2,1)) + plot_annotation(tag_levels = 'A') & 
+  theme(plot.tag.position = c(0.01, 0.99), 
+        legend.position = 'bottom',
+        legend.title = element_text(vjust = 0.5),
+        legend.justification = c(0.5, 0.5)) -> fig.S2.patchwork
+
+save.manuscript.panel(figure = 4,
+                      figure.dir = figure.dir,
+                      name = 'patchwork_full_fig_S4',
+                      width = figure_double_column_width,
+                      height = figure_depth,
+                      plot.in = fig.S2.patchwork)
+
+
+```
+
+# DEP Fig_S5
+## Fig_S5_patchwork
+```{r}
+
+panc_annotated_rmsk_de %>% 
+  filter(clade %in% c('gencode_coding', 'gencode_lncRNA')) %>% 
+  ggplot(aes(log2FoldChange, -log10(padj), color = clade)) + 
+  geom_point(size = 2, alpha = 0.6) + 
+  scale_color_manual(values = te_color_pal[1:2], name = 'biotype') + 
+  ggtitle('panc GENCODE DE') +
+  ggrepel::geom_text_repel(aes(label = ifelse(-log10(padj) > 2.5, gene, '')), 
+                         show.legend = F, color = 'black', 
+             max.overlaps = 30, box.padding = unit(4.5, 'mm'), segment.colour = 'grey') -> plt_S2_2A
+
+covid_annotated_rmsk_de %>% 
+  filter(clade %in% c('gencode_coding', 'gencode_lncRNA')) %>% 
+  ggplot(aes(log2FoldChange, -log10(padj), color = clade)) + 
+  geom_point(size = 2, alpha = 0.6) + 
+  scale_color_manual(values = te_color_pal[1:2], name = 'biotype') + 
+  ggtitle('covid GENCODE DE') +
+  ggrepel::geom_text_repel(aes(label = ifelse(-log10(padj) > 2.5, gene, '')), 
+                         show.legend = F, color = 'black', 
+             max.overlaps = 60, box.padding = unit(4.5, 'mm'), segment.colour = 'grey') -> plt_S2_2B
+
+import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer)
+
+
+fig_S2_2_layout <- "
+AA
+BB
+CC
+"
+
+wrap_plots(plt_S2_2A,
+           guide_area(),
+           plt_S2_2B,
+           design = fig_S2_2_layout, 
+           guides = 'collect',
+           heights = c(1,0.125,1)) + plot_annotation(tag_levels = 'A') & 
+  theme(plot.tag.position = c(0.01, 0.99), 
+        legend.position = 'bottom',
+        legend.title = element_text(vjust = 0.5),
+        legend.justification = c(0.5, 0.5)) -> fig.S2_2.patchwork
+
+save.manuscript.panel(figure = 5,
+                      figure.dir = figure.dir,
+                      name = 'patchwork_full_fig_S5',
+                      width = figure_double_column_width,
+                      height = figure_depth,
+                      plot.in = fig.S2_2.patchwork)
+
+
+```
+
+
+# DEP Fig_SNA_dep
+```{r}
+illumina_biotype_to.plt %>% 
+  filter(biotype == 'SINE') %>% 
+  group_by(tx, len, biotype, condition) %>% 
+  mutate(len = as.numeric(len)) %>%
+  summarize(read_length = median(abs(read_length))) -> tmp
+
+tmp %>% 
+  filter(condition == 'ctrl') -> ctrl_hex_to.plt
+
+ctrl_hex_to.plt %>% 
+  ggplot(aes(read_length, len, fill = scales::rescale((..count../(sum(..count..) * 1e6))))) + 
+  geom_hex(bins = 120) +
+  # geom_vline(xintercept = median(ctrl_hex_to.plt$read_length), color = 'grey', linetype = 'dashed') +
+  annotate(geom = 'text', x = 275, y = 175, label = 'ctrl') +
+  xlab('median observed SINE fragment size (bp)') + ylab('expected size (bp)') +
+  # ggforce::facet_col(~sample) +
+  scale_fill_viridis_c(option = 'viridis', direction = 1, name = 'scaled cpm', breaks = c(0,1), guide = 'none') +
+  scale_y_continuous(breaks = c(50,100,200,300,400, 500), limits = c(0,500)) +
+  scale_x_continuous(breaks = c(50,100,200,300,400, 500), limits = c(0,350)) -> plt_SNA_1.plt
+
+tmp %>% 
+  filter(condition == 'panc') -> panc_hex_to.plt
+
+panc_hex_to.plt %>% 
+  ggplot(aes(read_length, len, fill = scales::rescale((..count../(sum(..count..) * 1e6))))) + 
+  geom_hex(bins = 120) +
+  # geom_vline(xintercept = median(panc_hex_to.plt$read_length), color = 'grey', linetype = 'dashed') +
+  annotate(geom = 'text', x = 275, y = 175, label = 'panc') +
+  xlab('avg. observed fragment length') + ylab('expected insertion length') +
+  # ggforce::facet_col(~sample) +
+  scale_fill_viridis_c(option = 'viridis', direction = 1, name = 'scaled cpm', breaks = c(0,1)) +
+  scale_y_continuous(breaks = c(50,100,200,300,400, 500), limits = c(0,500)) +
+  scale_x_continuous(breaks = c(50,100,200,300,400, 500), limits = c(0,350)) +
+  theme(legend.position = c(0.95,0.25), legend.direction = 'horizontal', legend.key.width = unit(1, 'mm')) +
+  guides(fill = guide_colorbar(title.position = 'left', title.vjust = 1)) -> plt_SNA_2.plt
+
+tmp %>% 
+  filter(condition == 'covid') -> covid_hex_to.plt
+
+covid_hex_to.plt %>% 
+  ggplot(aes(read_length, len, fill = scales::rescale((..count../(sum(..count..) * 1e6))))) + 
+  geom_hex(bins = 120) +
+  # geom_vline(xintercept = median(covid_hex_to.plt$read_length), color = 'grey', linetype = 'dashed') +
+  annotate(geom = 'text', x = 275, y = 175, label = 'covid') +
+  xlab('avg. observed fragment length') + ylab('expected insertion length') +
+  # ggforce::facet_col(~sample) +
+  scale_fill_viridis_c(option = 'viridis', direction = 1, name = 'scaled cpm', breaks = c(0,1), guide = 'none') +
+  scale_y_continuous(breaks = c(50,100,200,300,400, 500), limits = c(0,500)) +
+  scale_x_continuous(breaks = c(50,100,200,300,400, 500), limits = c(0,350)) -> plt_SNA_3.plt
+
+p4 <- ggplot(data.frame(l = plt_SNA_1.plt$labels$x, x = 1, y = 1)) +
+      geom_text(aes(x, y, label = l), angle = 0, size = txt.mm_to_pts(0.95)) + 
+      theme_void() +
+      coord_cartesian(clip = "off")
+  
+panel_SNA_layout <- "
+ABC
+"
+
+wrap_plots(plt_SNA_1.plt + xlab(''),
+           plt_SNA_2.plt + xlab('') + ylab(''),
+           plt_SNA_3.plt + xlab('') + ylab(''),
+           heights = c(1),
+           design = panel_SNA_layout) -> panel.SNA.patchwork
+```
+## Fig_SNB
+```{r}
+illumina_biotype_to.plt %>% 
+  filter(biotype == 'SINE',
+         sample_name %in% c('panc.6.1.1', 'panc.7.1.1', 'ctrl.6.1.5')) %>% 
+  group_by(tx, len, biotype, sample_name) %>% 
+  mutate(len = as.numeric(len)) %>% 
+  summarize(read_length = median(abs(read_length))) -> tmp
+
+tmp %>%
+  filter(sample_name == 'ctrl.6.1.5') -> ctrl_hex_to.plt
+
+ctrl_hex_to.plt %>%
+  ggplot(aes(read_length, len, fill = scales::rescale((..count../(sum(..count..) * 1e6))))) +
+  geom_hex(bins = 120) +
+  annotate(geom = 'text', x = 250, y = 175, label = 'ctrl 6') +
+  # geom_vline(xintercept = median(ctrl_hex_to.plt$read_length), color = 'grey', linetype = 'dashed') +
+  xlab('avg. observed fragment size (bp)') + ylab('expected size (bp)') +
+  ggtitle('illumina exp. vs obs. size') + 
+  scale_y_continuous(breaks = c(100,200,300,400), limits = c(75,425)) +
+  scale_x_continuous(breaks = c(100,200,300,400), limits = c(75,370)) +
+  scale_fill_viridis_c(option = 'viridis', direction = 1, name = 'scaled cpm', breaks = c(0,1), guide = 'none') -> plt_SNB_1.plt
+  
+
+tmp %>% 
+  filter(sample_name == 'panc.6.1.1') -> panc.6.1.1_hex_to.plt
+
+panc.6.1.1_hex_to.plt %>% 
+  mutate(bin = ifelse(read_length > 180, 'large', 'small')) %>% 
+  group_by(tx) %>%
+  ggplot(aes(read_length, len, fill = scales::rescale((..count../(sum(..count..) * 1e6))))) + 
+  geom_hex(bins = 120) +
+  annotate(geom = 'text', x = 250, y = 175, label = 'panc 6') +
+  # geom_vline(xintercept = median(panc.6.1.1_hex_to.plt$read_length), color = 'grey', linetype = 'dashed') +
+  xlab('avg. observed fragment size (bp)') + ylab('expected size (bp)') +
+  scale_y_continuous(breaks = c(100,200,300,400), limits = c(75,425)) +
+  scale_x_continuous(breaks = c(100,200,300,400), limits = c(75,370)) +
+  scale_fill_viridis_c(option = 'viridis', direction = 1, name = 'scaled cpm', breaks = c(0,1), guide = 'none') -> plt_SNB_2.plt
+
+
+tmp %>%
+  filter(sample_name == 'panc.7.1.1') -> panc.7.1.1_hex_to.plt
+
+panc.7.1.1_hex_to.plt %>% 
+  ggplot(aes(read_length, len, fill = scales::rescale((..count../(sum(..count..) * 1e6))))) + 
+  geom_hex(bins = 120) +
+  annotate(geom = 'text', x = 250, y = 175, label = 'panc 7') +
+  # geom_vline(xintercept = median(panc.7.1.1_hex_to.plt$read_length), color = 'grey', linetype = 'dashed') +
+  xlab('avg. observed fragment size (bp)') + ylab('expected size (bp)') +
+  scale_y_continuous(breaks = c(100,200,300,400), limits = c(75,425)) +
+  scale_x_continuous(breaks = c(100,200,300,400), limits = c(75,370)) +
+  scale_fill_viridis_c(option = 'viridis', direction = 1, name = 'scaled cpm', breaks = c(0,1), guide = 'none') -> plt_SNB_3.plt
+
+p4 <- ggplot(data.frame(l = plt_SNB_3.plt$labels$x, x = 1, y = 1)) +
+      geom_text(aes(x, y, label = l), angle = 0, size = txt.mm_to_pts(0.95)) + 
+      theme_void() +
+      coord_cartesian(clip = "off")
+  
+panel_SNB_layout <- "
+ABC
+DDD
+"
+
+wrap_plots(plt_SNB_1.plt + xlab(''),
+           plt_SNB_2.plt + xlab('') + ylab(''),
+           plt_SNB_3.plt + xlab('') + ylab(''),
+           p4,
+           heights = c(1,0.06),
+           design = panel_SNB_layout) -> panel.SNB.patchwork
+
+```
+## Fig_SNC
+```{r}
+tmp_mean_read_len.df %>%
+  group_by(biotype, condition) %>%
+  filter(n() == 10, ! biotype %in% c('polymorphic_pseudogene', 'TR_C_gene', 'TR_V_gene', 'IG_V_gene', 'IG_C_gene',
+                                   'TEC', 'non_stop_decay', 'nonsense_mediated_decay'),
+         condition != 'panc') %>% 
+  mutate(biotype = ifelse(biotype == 'lncRNA', 'gencode_lncRNA', biotype),
+         biotype = ifelse(biotype == 'protein_coding', 'gencode_coding', biotype)) %>% 
+  mutate(biotype = factor(biotype, levels = c('SINE', 'LINE', 'LTR', 'gencode_lncRNA', 'retained_intron', 'gencode_coding'))) %>% 
+  ggplot(aes(condition, read_length, color = condition)) +
+  geom_boxplot(outlier.colour = NA) + 
+  geom_jitter(width = 0.24, alpha = 0.2) +
+  facet_wrap(~biotype, scales = 'free', ncol = 3, strip.position = 'bottom') +
+  scale_color_manual(values = identity_color_pal, guide = 'none') + 
+  ggpubr::stat_compare_means(method = 'wilcox', comparisons = list(c('covid', 'ctrl')), size = txt.mm_to_pts(0.8)) +
+  coord_cartesian(clip = 'off') + 
+  theme(strip.placement = 'inside') +
+  xlab('') + ylab('median fragment size (bp)') -> plt_SNC.plt
+```
+## Fig_SND
+```{r}
+tmp_mean_read_len.df %>% 
+  filter(condition != 'panc',
+         ! sample %in% qc_fails) %>% 
+  pivot_wider(names_from = biotype, values_from = read_length) %>% 
+  select(-condition) %>% 
+  column_to_rownames('sample') -> read_len_pca.tmp
+  
+pca_tmp_in_sd <- apply(read_len_pca.tmp, 2, sd)
+pca_tmp_in_zero_sd <- read_len_pca.tmp[,pca_tmp_in_sd!=0 & !is.na(pca_tmp_in_sd)]
+non_zero_pca <- prcomp(pca_tmp_in_zero_sd, center = T, scale. = T, rank. = 50)
+
+summary(non_zero_pca)
+pcs.of.interest <- apply(non_zero_pca$x, 2, var)
+pcs.props <-  pcs.of.interest/sum(pcs.of.interest)
+cumsum(pcs.props)[c(1,2)]
+print(as.data.frame(pcs.props) %>% 
+        rownames_to_column('pc') %>% 
+        mutate(pc = as.numeric(sub('PC', '', pc))) %>% 
+        ggplot(aes(pc, pcs.props)) + 
+        geom_col())
+
+pca.out <- as.data.frame(non_zero_pca$x) %>% 
+  rownames_to_column('sample') %>% 
+  merge(tmp_mean_read_len.df %>% select(sample, condition) %>% ungroup() %>% distinct(), by = 'sample') %>% 
+  ungroup() %>% 
+  select(-biotype) %>% 
+  distinct()
+
+pca.out.summary <- 
+  as.data.frame(summary(non_zero_pca)$importance) %>% 
+  rownames_to_column('metric') %>% 
+  gather(pc, value, -metric) %>% 
+  spread(metric, value)
+
+pca.out %>% 
+  ggplot(aes(PC1, PC2,
+             color = condition)) +
+  geom_point(size = rel(2), alpha = 1) + 
+  # scale_shape_manual(values = c(21,25)) +
+  xlab(paste('PC1', round(cumsum(pcs.props)[1], digits = 3), sep = ' ')) +
+  ylab(paste('PC2', round(cumsum(pcs.props)[2] - cumsum(pcs.props)[1], digits = 3), sep = ' ')) +
+  geom_vline(xintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) +
+  geom_hline(yintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) + 
+  scale_color_manual(values = identity_color_pal[c(1,3)]) + 
+  annotate(geom = 'text', x = -5.5, y = 2.25, label = 'size-aware', size = txt.mm_to_pts(1)) +
+  theme(legend.position ='top', legend.direction = 'horizontal') -> plt_SND.plt
+```
+### Fig_SNanopore_patchwork
+```{r}
+import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer, wrap_elements)
+
+
+fig_SN_layout <- "
+AA
+BB
+CC
+DD
+"
+
+wrap_plots(wrap_elements(full = panel.SNA.patchwork),
+           wrap_elements(full = panel.SNB.patchwork),
+           plt_SNC.plt,
+           plt_SND.plt,
+           heights = c(1.25,1.25,1,0.5),
+           design = fig_SN_layout) +
+  plot_annotation(tag_levels = 'A') -> fig.SN.patchwork
+
+save.manuscript.panel(figure = 6,
+                      figure.dir = figure.dir,
+                      name = 'patchwork_full_fig_S6',
+                      width = figure_double_column_width,
+                      height = figure_depth,
+                      plot.in = fig.SN.patchwork)
+```
+
+
+
+# DEP Figure_process_aware
+## Fig_4A
+```{r}
+process.aware.salmon_quant$analysis_set$ctrl_panc_covid$unsplice_data.df %>% 
+  merge(process.aware.salmon_quant$analysis_set$ctrl_panc_covid$quant_meta, by = 'sample') %>% 
+  # filter(condition != 'covid') %>% 
+  mutate(condition = factor(condition, levels = c('panc', 'ctrl', 'covid'))) %>% 
+  ggplot(aes(condition, unsplice_rate, color = condition)) + 
+  geom_boxplot(fill = NA, outlier.colour = NA) + 
+  geom_point() + 
+  scale_color_manual(values = identity_color_pal, guide = 'none') + 
+  theme(legend.position = c(0.99,0.99)) + 
+  coord_cartesian(clip = 'off') +
+  ggpubr::stat_compare_means(method = 'wilcox', 
+                             comparisons = list(c('panc', 'ctrl'), c('covid', 'ctrl'))) + 
+  xlab('') + ylab('detection rate of un-spliced genes') -> plt_4A.plt
+```
+## Fig_4B
+```{r}
+SummarizedExperiment::assay(process.aware.salmon_quant$analysis_set$ctrl_panc_covid$gxi.split,
+                            'unspliced') %>% as.data.frame() -> unsplice_counts_pca.df
+
+unsplice_counts_pca.df %>% 
+  select(!contains(qc_fails)) %>% 
+  t() %>% 
+  as.data.frame() -> unsplice_counts_pca.tmp
+  
+pca_tmp_in_sd <- apply(unsplice_counts_pca.tmp, 2, sd)
+pca_tmp_in_zero_sd <- unsplice_counts_pca.tmp[,pca_tmp_in_sd!=0 & !is.na(pca_tmp_in_sd)]
+non_zero_pca <- prcomp(pca_tmp_in_zero_sd, center = T, scale. = T, rank. = 50)
+
+summary(non_zero_pca)
+pcs.of.interest <- apply(non_zero_pca$x, 2, var)
+pcs.props <-  pcs.of.interest/sum(pcs.of.interest)
+cumsum(pcs.props)[c(1,2)]
+print(as.data.frame(pcs.props) %>% 
+        rownames_to_column('pc') %>% 
+        mutate(pc = as.numeric(sub('PC', '', pc))) %>% 
+        ggplot(aes(pc, pcs.props)) + 
+        geom_col())
+
+pca.out <- as.data.frame(non_zero_pca$x) %>% 
+  rownames_to_column('sample') %>% 
+  merge(process.aware.salmon_quant$analysis_set$ctrl_panc_covid$quant_meta %>% 
+          select(sample, condition) %>% 
+          ungroup() %>% distinct(), by = 'sample')
+
+pca.out.summary <- 
+  as.data.frame(summary(non_zero_pca)$importance) %>% 
+  rownames_to_column('metric') %>% 
+  gather(pc, value, -metric) %>% 
+  spread(metric, value)
+
+pca.out %>% 
+  ggplot(aes(PC1, PC2,
+             color = condition)) +
+  geom_point(size = rel(2), alpha = 1) + 
+  # scale_shape_manual(values = c(21,25)) +
+  xlab(paste('PC1', round(cumsum(pcs.props)[1], digits = 3), sep = ' ')) +
+  ylab(paste('PC2', round(cumsum(pcs.props)[2] - cumsum(pcs.props)[1], digits = 3), sep = ' ')) +
+  geom_vline(xintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) +
+  geom_hline(yintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) + 
+  scale_color_manual(values = identity_color_pal) + 
+  annotate(geom = 'text', x = -55, y = -160, label = 'intron-aware', size = txt.mm_to_pts(1)) +
+  theme(legend.position = c(0.95,1), legend.direction = 'horizontal') -> plt_4B.plt
+```
+### Fig_4_patchwork
+```{r}
+import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer, wrap_elements)
+
+
+fig_4_layout <- "
+AAAA
+CCCC
+CCCC
+"
+
+wrap_plots(plt_4A.plt,
+           plot_spacer(),
+           design = fig_4_layout) +
+  plot_annotation(tag_levels = 'A') -> fig.4.patchwork
+
+save.manuscript.panel(figure = 4,
+                      figure.dir = figure.dir,
+                      name = 'patchwork_full_fig_4',
+                      width = figure_double_column_width,
+                      height = figure_depth,
+                      plot.in = fig.4.patchwork)
+```
+
+```{r}
+process.aware.salmon_quant$analysis_set$ctrl_panc_covid$unsplice_data.df %>% 
+  merge(process.aware.salmon_quant$analysis_set$ctrl_panc_covid$quant_meta, by = 'sample') %>%
+  mutate(condition = factor(condition, levels = c('panc', 'ctrl', 'covid'))) %>% 
+  ggplot(aes(unsplice_rate, star_multimapped_percent, color = condition)) + 
+  geom_point() + 
+  ggforce::facet_col(~condition) + 
+  geom_smooth(method = 'lm', se = F, linetype = 'dashed') + 
+  scale_color_manual(values = identity_color_pal, guide = 'none')
+
+SummarizedExperiment::assay(process.aware.salmon_quant$analysis_set$panc_ctrl$gxi, 'counts')  %>% 
+  as.data.frame() %>% 
+  rownames_to_column('ensg') %>% 
+  filter(ensg == 'ENSG00000230021.10-I') %>% 
+  gather(sample, count, -ensg) %>% 
+  mutate(condition = ifelse(grepl('panc', sample), 'panc', 'ctrl')) %>% 
+  ggplot(aes(condition, count)) + 
+  geom_boxplot()
+  
+
+
+process.aware.salmon_quant$analysis_set$panc_ctrl$deseq$de_out %>% 
+  merge(salmon_quant$analysis_set$covid_ctrl$deseq$de_out, by = 'gene') %>% 
+  # filter(grepl('-I', ensg)) %>% View()
+  ggplot(aes(log2FoldChange.x, log2FoldChange.y, label = gene)) +
+  geom_point() + 
+  ggrepel::geom_text_repel() + 
+  geom_hline(yintercept = 0, linetype = 'dashed') +
+  geom_vline(xintercept = 0, linetype = 'dashed')
+
+unsplice_counts_pca.df %>% 
+  rownames_to_column('ensg') %>% 
+  merge(reference_meta_data$gencode_tx_to_gene.df %>% select(ensg, gene) %>% distinct(), by = 'ensg')
+
+```
+
+# DEP Fig_modeling
+## Fig_Modeling -- multi_te
+```{r}
+# install.packages('glmnet')
+# install.packages('doMC')
+# install.packages('pROC')
+# install.packages('caret')
+
+library(glmnet)
+library(pROC)
+
+softmax.logit.calc <- function(y_hat) { exp(y_hat)/sum(exp(y_hat)) }
+
+doMC::registerDoMC(cores = 6)
+
+unique(c(filter(ucsc.rmsk.salmon_quant$analysis_set$covid_ctrl$deseq$de_out, 
+                padj < 0.01, !grepl('^ENSG', ensg), !ensg %in% chrM.filter.list)$ensg,
+  filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
+         padj < 0.01, !grepl('^ENSG', ensg), !ensg %in% chrM.filter.list)$ensg)) ->
+  de_ensg_names
+
+x_in <- t(ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$deseq$norm_counts.df)
+
+x_in_filt <- x_in[, colnames(x_in) %in% c(de_ensg_names)]
+
+y_in <- ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$deseq$scaled_quant_meta_for_de.df %>% 
+  select(sample, condition) %>% 
+  mutate(condition = ifelse(condition == 'ctrl', 0, 
+                            ifelse(condition == 'panc', 1, 2))) %>% 
+  column_to_rownames('sample')
+
+y <- y_in[match(rownames(x_in_filt), rownames(y_in)), ]
+
+lapply(seq(0,1,0.1), function(alpha) {
+  set.seed(123)
+
+  mult_model <- 
+    cv.glmnet(x = x_in_filt,
+              y = y,
+              family = 'multinomial',
+              type.measure = 'class',
+              nfolds = nrow(x_in_filt), 
+              alpha = alpha, 
+              parallel = TRUE,
+              keep = TRUE)
+  
+  
+  coef_tmp <- Reduce(cbind, coef(mult_model, s = mult_model$lambda.1se))
+  
+  beta <- coef_tmp[apply(coef_tmp != 0, 1, any), ]
+  
+  colnames(beta) <- names(coef(mult_model, s = mult_model$lambda.1se))
+  
+  beta
+  
+  inverse.logit.calc <- function(y_hat) { exp(y_hat)/(1+exp(y_hat)) }
+  softmax.logit.calc <- function(y_hat) { exp(y_hat)/sum(exp(y_hat)) }
+  
+  y_hat_matrix <- mult_model$fit.preval[,,which(mult_model$lambda == mult_model$lambda.min)]
+  
+  # multi-nomial so need to apply softmax to each row (sample)
+  mult_response_matrix <- 
+    t(apply(y_hat_matrix, 1, softmax.logit.calc))
+  
+  mult_response_matrix
+  
+  # which column is the max -- so need to pull from column names
+  y_hat_predictions <- 
+    colnames(mult_response_matrix)[apply(mult_response_matrix, 1, which.max)]
+  
+  multi_roc <- 
+    pROC::multiclass.roc(response = y, 
+                         predictor = mult_response_matrix, 
+                         levels = c('0','1','2'))
+  
+  # multi_roc$rocs[[3]]$specificities
+  # multi_roc$rocs[[3]]$sensitivities
+  # multi_roc$rocs[[3]]$thresholds
+  # plot(multi_roc$rocs[[2]])
+  
+  caret::confusionMatrix(data = as.factor(y_hat_predictions),
+                         reference = as.factor(y)) -> cm_out
+  
+  ret_lst <- list(cm_out)
+  names(ret_lst) <- alpha
+  
+  ret_lst
+  
+}) %>% purrr::flatten() -> alpha_list
+
+lapply(alpha_list, function(x) {
+  
+  x$overall[['Accuracy']]
+  
+  }
+) %>% bind_rows(.id = 'alpha') %>% 
+  t()
+
+
+set.seed(123)
+
+mult_model <- 
+  cv.glmnet(x = x_in_filt,
+            y = y,
+            family = 'multinomial',
+            type.measure = 'class',
+            nfolds = nrow(x_in_filt), 
+            alpha = 0.3, 
+            parallel = TRUE,
+            keep = TRUE)
+
+
+coef_tmp <- Reduce(cbind, coef(mult_model, s = mult_model$lambda.1se))
+
+beta <- coef_tmp[apply(coef_tmp != 0, 1, any), ]
+
+colnames(beta) <- names(coef(mult_model, s = mult_model$lambda.1se))
+
+beta
+
+y_hat_matrix <- mult_model$fit.preval[,,which(mult_model$lambda == mult_model$lambda.min)]
+
+# multi-nomial so need to apply softmax to each row (sample)
+mult_response_matrix <- 
+  t(apply(y_hat_matrix, 1, softmax.logit.calc))
+
+mult_response_matrix %>% 
+  cbind(y) %>% 
+  as.data.frame() %>% 
+  rownames_to_column('sample') %>% 
+  gather(class, probability, -y, -sample) %>% 
+  mutate(y = case_when(y == "1" ~ "panc", 
+                    y == "2" ~ "covid", 
+                    y == "0" ~ "ctrl"),
+         class = case_when(class == "1" ~ "panc", 
+                    class == "2" ~ "covid", 
+                    class == "0" ~ "ctrl")) %>% 
+  ggplot(aes(class, probability, color = y)) + 
+  geom_point() + 
+  geom_boxplot(outlier.colour = NA, fill = NA) +
+  geom_line(aes(group = sample), alpha = 0.3) +
+  ggforce::facet_row(~y) + 
+  scale_color_manual(values = identity_color_pal, guide = 'none')
+
+# which column is the max -- so need to pull from column names
+y_hat_predictions <- 
+  colnames(mult_response_matrix)[apply(mult_response_matrix, 1, which.max)]
+
+
+factor(case_when(y == "1" ~ "panc", 
+                    y == "2" ~ "covid", 
+                    y == "0" ~ "ctrl"), ordered = T, levels = c('ctrl', 'panc', 'covid')) -> ord_y
+
+factor(case_when(y_hat_predictions == "1" ~ "panc", 
+                    y_hat_predictions == "2" ~ "covid", 
+                    y_hat_predictions == "0" ~ "ctrl"), ordered = T, levels = c('ctrl', 'panc', 'covid')) -> ord_yhat
+
+multi_roc <- 
+  pROC::multiclass.roc(response = ord_y, 
+                       predictor = ord_yhat, 
+                       levels = c('ctrl','panc','covid'))
+
+names(multi_roc$rocs) <- c('ctrl_v_panc', 'ctrl_v_covid', 'panc_v_covid')
+
+ggroc(multi_roc$rocs) + 
+  scale_color_manual(values = RColorBrewer::brewer.pal(name = 'Dark2', n = 3)) -> multi_roc.plt
+
+caret::confusionMatrix(data = as.factor(case_when(y_hat_predictions == "1" ~ "panc", 
+                                                  y_hat_predictions == "2" ~ "covid", 
+                                                  y_hat_predictions == "0" ~ "ctrl")),
+                       reference = as.factor(case_when(y == "1" ~ "panc", 
+                                                       y == "2" ~ "covid", 
+                                                       y == "0" ~ "ctrl"))) -> cm_out
+
+cm_out$table %>% 
+  gridExtra::tableGrob(theme = gridExtra::ttheme_minimal(base_size = 8,
+                                                         core = list(padding=unit(c(1, 2.5), "mm")))) ->
+  multinomial_cm.tbl
+
+ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out %>% 
+  mutate(sample = 'panc') %>% 
+  rbind(ucsc.rmsk.salmon_quant$analysis_set$covid_ctrl$deseq$de_out %>% 
+          mutate(sample = 'covid')) %>% 
+  filter(ensg %in% rownames(beta)) %>% 
+  merge(reference_meta_data$ucsc_rmsk_insert_info.df, by = 'gene', all.x = T) %>% 
+  mutate(family = ifelse(ensg %in% reference_meta_data$gencode_lncRNA_gene_names.df$ensg,
+                         'gencode_lncRNA', family),
+         family = ifelse(is.na(family), 'gencode_coding', family),
+         clade = ifelse(grepl('gencode', family), family, clade),
+         clade = ifelse(clade %in% c('gencode_coding',
+                                     'gencode_lncRNA',
+                                     'LINE',
+                                     'SINE',
+                                     'LTR',
+                                     'DNA',
+                                     'Simple_repeat'), clade, 'other'),
+         type = ifelse(grepl('gencode',family), 'GENCODE', 'TE'),
+         clade = factor(clade, levels = te_aware_annotation_levels)) %>%
+  ggplot(aes(log2FoldChange, -log10(padj), color = clade, label = gene)) + 
+  geom_point() + 
+  scale_color_manual(values = te_color_pal) +
+  ggforce::facet_col(~sample) +
+  ggrepel::geom_text_repel(color = 'black', segment.colour = NA, size = txt.mm_to_pts(0.8)) -> multi_feature_de.plt
+```
+## Fig_modeling -- multi_gt
+```{r}
+unique(c(filter(ucsc.rmsk.salmon_quant$analysis_set$covid_ctrl$deseq$de_out, 
+                padj < 0.01, !ensg %in% chrM.filter.list)$ensg,
+  filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
+         padj < 0.01, !ensg %in% chrM.filter.list)$ensg)) ->
+  de_ensg_names
+
+x_in <- t(ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$deseq$norm_counts.df)
+
+x_in_filt <- x_in[, colnames(x_in) %in% c(de_ensg_names)]
+
+y_in <- ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$deseq$scaled_quant_meta_for_de.df %>% 
+  select(sample, condition) %>% 
+  mutate(condition = ifelse(condition == 'ctrl', 0, 
+                            ifelse(condition == 'panc', 1, 2))) %>% 
+  column_to_rownames('sample')
+
+y <- y_in[match(rownames(x_in_filt), rownames(y_in)), ]
+
+lapply(seq(0,1,0.1), function(alpha) {
+  set.seed(123)
+
+  mult_model <- 
+    cv.glmnet(x = x_in_filt,
+              y = y,
+              family = 'multinomial',
+              type.measure = 'class',
+              nfolds = nrow(x_in_filt), 
+              alpha = alpha, 
+              parallel = TRUE,
+              keep = TRUE)
+  
+  
+  y_hat_matrix <- mult_model$fit.preval[,,which(mult_model$lambda == mult_model$lambda.min)]
+  
+  # multi-nomial so need to apply softmax to each row (sample)
+  mult_response_matrix <- 
+    t(apply(y_hat_matrix, 1, softmax.logit.calc))
+  
+  mult_response_matrix
+  
+  # which column is the max -- so need to pull from column names
+  y_hat_predictions <- 
+    colnames(mult_response_matrix)[apply(mult_response_matrix, 1, which.max)]
+  
+  multi_roc <- 
+    pROC::multiclass.roc(response = y, 
+                         predictor = mult_response_matrix, 
+                         levels = c('0','1','2'))
+  
+  caret::confusionMatrix(data = as.factor(y_hat_predictions),
+                         reference = as.factor(y)) -> cm_out
+  
+  ret_lst <- list(cm_out)
+  names(ret_lst) <- alpha
+  
+  ret_lst
+  
+}) %>% purrr::flatten() -> alpha_list
+
+lapply(alpha_list, function(x) {
+  
+  x$overall[['Accuracy']]
+  
+  }
+) %>% bind_rows(.id = 'alpha') %>% 
+  t()
+
+
+set.seed(123)
+
+mult_model <- 
+  cv.glmnet(x = x_in_filt,
+            y = y,
+            family = 'multinomial',
+            type.measure = 'class',
+            nfolds = nrow(x_in_filt), 
+            alpha = 0.3, 
+            parallel = TRUE,
+            keep = TRUE)
+
+
+coef_tmp <- Reduce(cbind, coef(mult_model, s = mult_model$lambda.min))
+
+beta <- coef_tmp[apply(coef_tmp != 0, 1, any), ]
+
+colnames(beta) <- names(coef(mult_model, s = mult_model$lambda.min))
+
+beta
+
+y_hat_matrix <- mult_model$fit.preval[,,which(mult_model$lambda == mult_model$lambda.min)]
+
+# multi-nomial so need to apply softmax to each row (sample)
+mult_response_matrix <- 
+  t(apply(y_hat_matrix, 1, softmax.logit.calc))
+
+mult_response_matrix %>% 
+  cbind(y) %>% 
+  as.data.frame() %>% 
+  rownames_to_column('sample') %>% 
+  gather(class, probability, -y, -sample) %>% 
+  mutate(y = case_when(y == "1" ~ "panc", 
+                    y == "2" ~ "covid", 
+                    y == "0" ~ "ctrl"),
+         class = case_when(class == "1" ~ "panc", 
+                    class == "2" ~ "covid", 
+                    class == "0" ~ "ctrl")) %>% 
+  ggplot(aes(class, probability, color = y)) + 
+  geom_point() + 
+  geom_boxplot(outlier.colour = NA, fill = NA) +
+  geom_line(aes(group = sample), alpha = 0.3) +
+  ggforce::facet_row(~y) + 
+  scale_color_manual(values = identity_color_pal, guide = 'none')
+
+# which column is the max -- so need to pull from column names
+y_hat_predictions <- 
+  colnames(mult_response_matrix)[apply(mult_response_matrix, 1, which.max)]
+
+
+factor(case_when(y == "1" ~ "panc", 
+                    y == "2" ~ "covid", 
+                    y == "0" ~ "ctrl"), ordered = T, levels = c('ctrl', 'panc', 'covid')) -> ord_y
+
+factor(case_when(y_hat_predictions == "1" ~ "panc", 
+                    y_hat_predictions == "2" ~ "covid", 
+                    y_hat_predictions == "0" ~ "ctrl"), ordered = T, levels = c('ctrl', 'panc', 'covid')) -> ord_yhat
+
+multi_roc <- 
+  pROC::multiclass.roc(response = ord_y, 
+                       predictor = ord_yhat, 
+                       levels = c('ctrl','panc','covid'))
+
+names(multi_roc$rocs) <- c('ctrl_v_panc', 'ctrl_v_covid', 'panc_v_covid')
+
+ggroc(multi_roc$rocs) + 
+  scale_color_manual(values = RColorBrewer::brewer.pal(name = 'Dark2', n = 3)) -> gt_multi_roc.plt
+
+caret::confusionMatrix(data = as.factor(case_when(y_hat_predictions == "1" ~ "panc", 
+                                                  y_hat_predictions == "2" ~ "covid", 
+                                                  y_hat_predictions == "0" ~ "ctrl")),
+                       reference = as.factor(case_when(y == "1" ~ "panc", 
+                                                       y == "2" ~ "covid", 
+                                                       y == "0" ~ "ctrl"))) -> cm_out
+
+cm_out$table %>% 
+  gridExtra::tableGrob(theme = gridExtra::ttheme_minimal(base_size = 8,
+                                                         core = list(padding=unit(c(1, 2.5), "mm")))) ->
+  gt_multinomial_cm.tbl
+
+ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out %>% 
+  mutate(sample = 'panc') %>% 
+  rbind(ucsc.rmsk.salmon_quant$analysis_set$covid_ctrl$deseq$de_out %>% 
+          mutate(sample = 'covid')) %>% 
+  filter(ensg %in% rownames(beta)) %>% 
+  merge(reference_meta_data$ucsc_rmsk_insert_info.df, by = 'gene', all.x = T) %>% 
+  mutate(family = ifelse(ensg %in% reference_meta_data$gencode_lncRNA_gene_names.df$ensg,
+                         'gencode_lncRNA', family),
+         family = ifelse(is.na(family), 'gencode_coding', family),
+         clade = ifelse(grepl('gencode', family), family, clade),
+         clade = ifelse(clade %in% c('gencode_coding',
+                                     'gencode_lncRNA',
+                                     'LINE',
+                                     'SINE',
+                                     'LTR',
+                                     'DNA',
+                                     'Simple_repeat'), clade, 'other'),
+         type = ifelse(grepl('gencode',family), 'GENCODE', 'TE'),
+         clade = factor(clade, levels = te_aware_annotation_levels)) %>%
+  ggplot(aes(log2FoldChange, -log10(padj), color = clade, label = gene)) + 
+  geom_point() + 
+  scale_color_manual(values = te_color_pal) +
+  ggforce::facet_col(~sample) +
+  ggrepel::geom_text_repel(color = 'black', segment.colour = NA, size = txt.mm_to_pts(0.8)) ->
+  gt_multi_feature_de.plt
+
+```
+
+## Fig_Modeling -- binomial
+```{r}
+inverse.logit.calc <- function(y_hat) { exp(y_hat)/(1+exp(y_hat)) }
+
+sens_at_spec_ROC <- function(roc, spec) { 
+  
+  sens <- pROC::coords(roc, input = 'specificity', spec)$sensitivity
+  
+  print(sens)
+  
+  p.thresh <- inverse.logit.calc(pROC::coords(roc, input = 'specificity', spec)$threshold)
+  
+  return(list('sens' = sens, 
+              'spec' = spec, 
+              'p.thresh' = p.thresh))
+  
+}
+
+doMC::registerDoMC(cores = 6)
+
+x_in <-
+  t(internal_rmsk_quant$panc_normal$deseq$norm_counts.df[rownames(internal_rmsk_quant$panc_normal$deseq$norm_counts.df) %in%
+                                                           filter(reference_meta_data$ucsc_rmsk_insert_info.df,
+                                                                  grepl('Alu', gene))$gene,])
+
+calc_entropy(
+  internal_rmsk_quant$panc_normal$deseq$norm_counts.df,
+  original_normal_meta_data,
+  grouping_level = 'clade'
+) %>%
+  mutate(clade = ifelse(clade %in% names(te_color_pal), clade, 'other')) %>% 
+  group_by(sample, clade) %>% 
+  summarize(entropy = mean(entropy)) %>% 
+  pivot_wider(names_from = 'clade', values_from = 'entropy') %>% 
+  column_to_rownames('sample') %>% as.matrix() -> x_in
+
+
+y_in <- internal_rmsk_quant$panc_normal$deseq$scaled_quant_meta_for_de.df %>% 
+  rownames_to_column('sample') %>% 
+  select(sample, condition) %>% 
+  mutate(condition = factor(ifelse(condition == 'normal', 0, 1), levels = c(0,1))) %>% 
+  tibble::column_to_rownames('sample')
+
+y <- y_in[match(rownames(x_in), rownames(y_in)), ]
+
+set.seed(123)
+
+binom_model <- 
+  glmnet::cv.glmnet(x = x_in,
+            y = y_in$condition,
+            family = 'binomial',
+            type.measure = 'deviance',
+            nfolds = 20, 
+            alpha = 0, 
+            parallel = TRUE,
+            keep = TRUE)
+
+
+coef_tmp <- cbind(coef(binom_model, s = binom_model$lambda.min))
+
+beta <- coef_tmp[apply(coef_tmp != 0, 1, any), ]
+
+colnames(beta) <- names(coef(binom_model, s = binom_model$lambda.min))
+
+beta
+
+y_hat_matrix <- binom_model$fit.preval[,which(binom_model$lambda == binom_model$lambda.min)]
+
+binomial_model_response_prob <- inverse.logit.calc(y_hat_matrix)
+# 
+classifications <- ifelse(binomial_model_response_prob > perf_list$p.thresh, 1, 0)
+
+binom_roc_out <- pROC::roc(response = y, predictor = y_hat_matrix)
+
+#
+predictions <-
+  ROCR::prediction(
+    labels = y,
+    predictions = binomial_model_response_prob,
+    label.ordering = c(0, 1)
+  )
+#
+performances <-
+  ROCR::performance(prediction.obj = predictions,
+                    measure = "tpr",
+                    x.measure = "fpr")
+
+
+
+#
+rocCurve <-
+  as.data.frame(cbind(unlist(slot(
+    performances, "x.values"
+  )[[1]]),
+  unlist(slot(
+    performances, "y.values"
+  )[[1]])))
+
+colnames(rocCurve) <- c("X","Y")
+
+ggplot(rocCurve, aes(x = X, y = Y)) +
+  geom_line() +
+  geom_abline(linetype = "dotted", color = "grey50") +
+  labs(x = "False Positive Rate", y = "True Positive Rate") +
+  ylim(0,1) + xlim(0,1)
+
+binomial_model_response_prob <- inverse.logit.calc(y_hat_matrix)
+
+predictions@cutoffs[[1]]
+
+binomial_model_response_prob %>%
+  as.data.frame() %>%
+  rownames_to_column('sample') %>%
+  dplyr::rename('prob' = '.') %>%
+  merge(y_in %>% rownames_to_column('sample'), by = 'sample') %>%
+  mutate(condition = ifelse(condition == 1, 'panc', 'normal')) %>%
+  ggplot(aes(condition, 1-prob)) +
+  geom_jitter(width = 0.125) +
+  geom_boxplot(outlier.colour = NA, fill = NA) + 
+  geom_hline(yintercept = perf_list$p.thresh, linetype = 'dashed') + 
+  annotate(geom = 'text', y = perf_list$p.thresh + 0.05, x = 1.5, 
+           label = '100% specificity prob. threshold', size = txt.mm_to_pts(0.8)) +
+  ylab('probability') + 
+  xlab('') -> binom_prob_thresh.plt
+
+binom_prob_thresh.plt
+
+```
+
+
+
+
+
+## LDA
+```{r}
+calc_entropy(
+  internal_rmsk_quant$panc_normal$deseq$norm_counts.df,
+  original_normal_meta_data,
+  grouping_level = 'clade'
+) %>%
+  mutate(clade = ifelse(clade %in% names(te_color_pal), clade, 'other')) %>% 
+  # filter(!grepl('GENCODE', clade)) %>%
+  group_by(sample, clade) %>% 
+  summarize(entropy = mean(entropy)) %>% 
+  pivot_wider(names_from = 'clade', values_from = 'entropy') %>% 
+  merge(original_normal_meta_data %>% select(sample, diagnosis), by = 'sample') %>% 
+  mutate(diagnosis = ifelse(diagnosis == 'normal', 0, 1),
+         diagnosis = factor(diagnosis)) %>% 
+  select(-sample) -> internal_entropy_input
+
+calc_entropy(elife_rmsk_quant$rmsk$deseq$norm_counts.df,
+             elife_meta_data,
+             grouping_level = 'clade') %>%
+  mutate(clade = ifelse(clade %in% names(te_color_pal), clade, 'other')) %>%
+  # filter(!grepl('GENCODE', clade)) %>%
+  group_by(sample, clade) %>%
+  summarize(entropy = mean(entropy)) %>%
+  pivot_wider(names_from = 'clade', values_from = 'entropy') %>%
+  merge(elife_meta_data %>% select(sample, diagnosis), by = 'sample') %>%
+  mutate(
+    diagnosis = ifelse(diagnosis == 'Healthy donor', 0, 1),
+    diagnosis = factor(diagnosis)
+  ) %>%
+  filter(sample %in% binom_elife_y_in[trainSplitIndex, , drop = F]$sample) -> elife_entropy_train_input
+
+calc_entropy(elife_rmsk_quant$rmsk$deseq$norm_counts.df,
+             elife_meta_data,
+             grouping_level = 'clade') %>%
+  mutate(clade = ifelse(clade %in% names(te_color_pal), clade, 'other')) %>%
+  filter(!grepl('GENCODE', clade)) %>%
+  group_by(sample, clade) %>%
+  summarize(entropy = mean(entropy)) %>%
+  pivot_wider(names_from = 'clade', values_from = 'entropy') %>%
+  merge(elife_meta_data %>% select(sample, diagnosis), by = 'sample') %>%
+  mutate(
+    diagnosis = ifelse(diagnosis == 'Healthy donor', 0, 1),
+    diagnosis = factor(diagnosis)
+  ) %>%
+  filter(!sample %in% binom_elife_y_in[trainSplitIndex, , drop = F]$sample) -> elife_entropy_test_input
+
+calc_entropy(elife_rmsk_quant$rmsk$deseq$norm_counts.df,
+             elife_meta_data,
+             grouping_level = 'clade') %>%
+  mutate(clade = ifelse(clade %in% names(te_color_pal), clade, 'other')) %>%
+  filter(!grepl('GENCODE', clade)) %>%
+  group_by(sample, clade) %>%
+  summarize(entropy = mean(entropy)) %>%
+  pivot_wider(names_from = 'clade', values_from = 'entropy') %>%
+  merge(elife_meta_data %>% select(sample, diagnosis), by = 'sample') %>%
+  mutate(
+    diagnosis = case_when(
+      diagnosis == 'Healthy donor' ~ 0,
+      diagnosis == 'Esophagus Cancer' ~ 1,
+      diagnosis == 'Liver Cancer' ~ 2,
+      diagnosis == 'Lung Cancer' ~ 3,
+      diagnosis == 'Colorectal Cancer' ~ 4,
+      diagnosis == 'Stomach Cancer' ~ 5
+    ),
+    diagnosis = factor(diagnosis)
+  ) %>%
+  filter(sample %in% binom_elife_y_in[trainSplitIndex, , drop = F]$sample) -> multi_entropy_train_input
+
+calc_entropy(elife_rmsk_quant$rmsk$deseq$norm_counts.df,
+             elife_meta_data,
+             grouping_level = 'clade') %>%
+  mutate(clade = ifelse(clade %in% names(te_color_pal), clade, 'other')) %>%
+  filter(!grepl('GENCODE', clade)) %>%
+  group_by(sample, clade) %>%
+  summarize(entropy = mean(entropy)) %>%
+  pivot_wider(names_from = 'clade', values_from = 'entropy') %>%
+  merge(elife_meta_data %>% select(sample, diagnosis), by = 'sample') %>%
+  mutate(
+    diagnosis = case_when(
+      diagnosis == 'Healthy donor' ~ 0,
+      diagnosis == 'Esophagus Cancer' ~ 1,
+      diagnosis == 'Liver Cancer' ~ 2,
+      diagnosis == 'Lung Cancer' ~ 3,
+      diagnosis == 'Colorectal Cancer' ~ 4,
+      diagnosis == 'Stomach Cancer' ~ 5
+    ),
+    diagnosis = factor(diagnosis)
+  ) %>%
+  filter(!sample %in% binom_elife_y_in[trainSplitIndex, , drop = F]$sample) -> multi_entropy_test_input
+
+
+MASS::lda(diagnosis ~ ., data = elife_entropy_train_input %>% column_to_rownames('sample')) -> lin_model
+
+predict(lin_model, internal_entropy_input)
+```
+
+### ensemble
+```{r}
+
+```
+
+## Multinomial
+```{r}
+doMC::registerDoMC(cores = 12)
+
+softmax.logit.calc <- function(y_hat) { exp(y_hat)/sum(exp(y_hat)) }
+
+model_input_data <-
+  t(elife_rmsk_quant$rmsk$deseq$norm_counts.df)
+
+model_input_meta_data <-
+  elife_meta_data[match(rownames(model_input_data), elife_meta_data$sample),]
+
+trainSplitIndex <-
+  caret::createDataPartition(
+    factor(
+      model_input_meta_data$diagnosis,
+      levels = c(
+        'Healthy donor',
+        'Esophagus Cancer',
+        'Liver Cancer',
+        'Lung Cancer',
+        'Colorectal Cancer',
+        'Stomach Cancer'
+      )
+    ),
+    p = .8,
+    list = FALSE,
+    times = 1
+  )
+
+elife_x_in <- model_input_data
+
+elife_y_in <-
+  model_input_meta_data %>%
+  mutate(
+    diagnosis = case_when(
+      diagnosis == 'Healthy donor' ~ 0,
+      diagnosis == 'Esophagus Cancer' ~ 1,
+      diagnosis == 'Liver Cancer' ~ 2,
+      diagnosis == 'Lung Cancer' ~ 3,
+      diagnosis == 'Colorectal Cancer' ~ 4,
+      diagnosis == 'Stomach Cancer' ~ 5
+    )
+  )
+
+elife_x_in_train <- elife_x_in[trainSplitIndex, , drop = F]
+elife_y_in_train <-
+  elife_y_in[trainSplitIndex, , drop = F] %>% pull(diagnosis)
+
+elife_x_in_test <- elife_x_in[-trainSplitIndex, , drop = F]
+elife_y_in_test <-
+  elife_y_in[-trainSplitIndex, , drop = F] %>% pull(diagnosis)
+
+set.seed(2022 - 03 - 07)
+
+print(alpha_list)
+
+mult_model <-
+  cv.glmnet(
+    x = elife_x_in_train,
+    y = elife_y_in_train,
+    family = 'multinomial',
+    type.measure = 'class',
+    nfolds = 20,
+    alpha = 0.2,
+    parallel = TRUE,
+    keep = TRUE
+  )
+
+
+coef_tmp <-
+  Reduce(cbind, coef(mult_model, s = mult_model$lambda.1se))
+
+beta <- coef_tmp[apply(coef_tmp != 0, 1, any),]
+
+colnames(beta) <-
+  names(coef(mult_model, s = mult_model$lambda.1se))
+
+beta
+
+inverse.logit.calc <-
+  function(y_hat) {
+    exp(y_hat) / (1 + exp(y_hat))
+  }
+softmax.logit.calc <-
+  function(y_hat) {
+    exp(y_hat) / sum(exp(y_hat))
+  }
+
+y_hat_matrix <-
+  mult_model$fit.preval[, , which(mult_model$lambda == mult_model$lambda.min)]
+
+# multi-nomial so need to apply softmax to each row (sample)
+mult_response_matrix <-
+  t(apply(y_hat_matrix, 1, softmax.logit.calc))
+
+mult_response_matrix
+
+# which column is the max -- so need to pull from column names
+y_hat_predictions <-
+  colnames(mult_response_matrix)[apply(mult_response_matrix, 1, which.max)]
+
+multi_roc <-
+  pROC::multiclass.roc(
+    response = elife_y_in_train,
+    predictor = mult_response_matrix,
+    levels = c('0', '1', '2', '3', '4', '5')
+  )
+
+
+caret::confusionMatrix(data = as.factor(y_hat_predictions),
+                       reference = as.factor(elife_y_in_train)) -> cm_out
+  
+  
+
+lapply(alpha_list, function(x) {
+  
+  x$overall[['Accuracy']]
+  
+  }
+) %>% bind_rows(.id = 'alpha') %>% 
+  t() %>% which.max()
+```
+
+###
+```{r}
+orig_x_in <- t(ucsc.rmsk.salmon_quant$original_data$deseq$norm_counts.df)
+
+orig_y_in <- ucsc.rmsk.salmon_quant$original_data$deseq$scaled_quant_meta_for_de.df %>% 
+  rownames_to_column('sample') %>% 
+  select(sample, condition) %>% 
+  mutate(condition = ifelse(condition == 'normal', 0, 
+                            ifelse(condition == 'panc', 1, 2))) %>% 
+  column_to_rownames('sample')
+
+orig_y <- orig_y_in[match(rownames(orig_x_in), rownames(orig_y_in)), ]
+
+original_y_hat_predictions <- predict(object = binom_model, s = 'lambda.min', 
+                                      newx = orig_x_in, newy = orig_y_in, type = 'response')
+
+predictions <- ROCR::prediction(labels = orig_y_in, predictions = original_y_hat_predictions, label.ordering = c(0,1,2))
+# 
+performances <- ROCR::performance(prediction.obj = predictions, measure = "tpr", x.measure = "fpr")
+# 
+rocCurve <- as.data.frame(cbind(unlist(slot(performances,"x.values")[[1]]),
+                                unlist(slot(performances,"y.values")[[1]])))
+
+colnames(rocCurve) <- c("X","Y")
+
+ggplot(rocCurve, aes(x = X, y = Y)) +
+  # geom_vline(xintercept = xint, linetype = 'dashed', alpha = 0.3) +
+  # geom_hline(yintercept = yint, linetype = 'dashed', alpha = 0.3) +
+  geom_line(color = "red") +
+  geom_abline(linetype = "dotted", color = "grey50") +
+  labs(x = "False Positive Rate", y = "True Positive Rate") +
+  ylim(0,1) + xlim(0,1) +
+  # scale_y_continuous(breaks = c(0, 0.25, 0.75, yint)) +
+  # scale_x_continuous(breaks = c( 0.25, 0.5, 0.75, xint)) +
+  theme_classic()
+
+orig_binom_roc_out <- pROC::roc(response = orig_y, predictor = y_hat_matrix)
+
+perf_list <- sens_at_spec_ROC(binom_roc_out, 1.0)
+
+original_y_hat_predictions <- ifelse(original_y_hat_predictions > perf_list$p.thresh, 1, 0)
+
+pROC::ggroc(binom_roc_out) -> binom_roc.plt
+
+binomial_model_response_prob <- inverse.logit.calc(y_hat_matrix)
+
+binomial_model_response_prob %>%
+  as.data.frame() %>%
+  rownames_to_column('sample') %>%
+  dplyr::rename('prob' = '.') %>%
+  merge(y_in %>% rownames_to_column('sample'), by = 'sample') %>%
+  mutate(condition = ifelse(condition == 1, 'panc', 'normal')) %>%
+  ggplot(aes(condition, prob)) +
+  geom_jitter(width = 0.125) +
+  geom_boxplot(outlier.colour = NA, fill = NA) + 
+  geom_hline(yintercept = perf_list$p.thresh, linetype = 'dashed') + 
+  annotate(geom = 'text', y = perf_list$p.thresh + 0.05, x = 1.5, 
+           label = '100% specificity prob. threshold', size = txt.mm_to_pts(0.8)) +
+  ylab('probability') + 
+  xlab('') -> binom_prob_thresh.plt
+
+```
+
+####
+```{r}
+# beta %>%
+#   as.matrix() %>%
+#   as.data.frame() %>%
+#   rownames_to_column('gene') %>%
+#   merge(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, by = 'gene') %>%
+#   ggplot(aes(V1, log2FoldChange, label = gene)) +
+#   geom_point() +
+#   ggrepel::geom_text_repel() 
+
+ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out %>% 
+  filter(ensg %in% names(beta)) %>% 
+  merge(reference_meta_data$ucsc_rmsk_insert_info.df, by = 'gene', all.x = T) %>% 
+  mutate(family = ifelse(ensg %in% reference_meta_data$gencode_lncRNA_gene_names.df$ensg,
+                         'GENCODE_lncRNA', family),
+         family = ifelse(is.na(family), 'GENCODE_coding', family),
+         clade = ifelse(grepl('GENCODE', family), family, clade),
+         clade = ifelse(clade %in% c('GENCODE_coding',
+                                     'GENCODE_lncRNA',
+                                     'LINE',
+                                     'SINE',
+                                     'LTR',
+                                     'DNA',
+                                     'Simple_repeat'), clade, 'other'),
+         type = ifelse(grepl('GENCODE',family), 'GENCODE', 'TE'),
+         clade = factor(clade, levels = te_aware_annotation_levels)) %>% 
+  ggplot(aes(log2FoldChange, -log10(padj), color = clade, label = gene)) + 
+  geom_point() + 
+  scale_color_manual(values = te_color_pal, name = 'biotype/clade') + 
+  geom_vline(xintercept = 0, linetype = 'dashed', alpha = 0.4) + 
+  ggrepel::geom_text_repel(color = 'black', segment.colour = NA, size = txt.mm_to_pts(0.8)) -> feature_de.plt
+
+caret::confusionMatrix(data = as.factor(ifelse(as.factor(y_hat_predictions) == 1, 'panc', 'ctrl')),
+                       reference = as.factor(ifelse(as.factor(y) == 1, 'panc', 'ctrl')))$table %>% 
+  gridExtra::tableGrob(theme = gridExtra::ttheme_minimal(base_size = 8,
+                                                         core = list(padding=unit(c(1, 2.5), "mm")))) ->
+  binomial_cm.tbl
+
+tg <- grid::textGrob('Reference', x=0, hjust=0, 
+                     gp = grid::gpar(fontsize = 7, fontface = 'bold'))
+lg <- grid::textGrob('Prediction\n AUC = 1', x=1, hjust=1, 
+                     gp = grid::gpar(fontsize = 7, fontface = 'italic'))
+binomial_cm.tbl <- gtable::gtable_add_rows(binomial_cm.tbl, unit(1,"line"), 0)
+binomial_cm.tbl <- gtable::gtable_add_cols(binomial_cm.tbl, grid::grobWidth(lg), 0)
+binomial_cm.tbl <- gtable::gtable_add_grob(binomial_cm.tbl, tg, t = 1, l=3, r=ncol(binomial_cm.tbl))
+binomial_cm.tbl <- gtable::gtable_add_grob(binomial_cm.tbl, lg, l = 1, t=2)
+```
+
+## Fig_modeling--gt_binom
+```{r}
+doMC::registerDoMC(cores = 6)
+
+filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
+       padj < 0.01, ! ensg %in% chrM.filter.list)$ensg ->
+  de_ensg_names
+
+x_in <- t(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$norm_counts.df)
+
+x_in_filt <- x_in[, colnames(x_in) %in% c(de_ensg_names)]
+
+y_in <- ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$scaled_quant_meta_for_de.df %>% 
+  select(sample, condition) %>% 
+  mutate(condition = ifelse(condition == 'ctrl', 0, 
+                            ifelse(condition == 'panc', 1, 2))) %>% 
+  column_to_rownames('sample')
+
+y <- y_in[match(rownames(x_in_filt), rownames(y_in)), ]
+
+set.seed(123)
+
+binom_model <- 
+  cv.glmnet(x = x_in_filt,
+            y = y,
+            family = 'binomial',
+            type.measure = 'deviance',
+            nfolds = nrow(x_in_filt), 
+            alpha = 0.75, 
+            parallel = TRUE,
+            keep = TRUE)
+
+
+coef_tmp <- cbind(coef(binom_model, s = binom_model$lambda.min))
+
+beta <- coef_tmp[apply(coef_tmp != 0, 1, any), ]
+
+colnames(beta) <- names(coef(binom_model, s = binom_model$lambda.min))
+
+y_hat_matrix <- binom_model$fit.preval[,which(binom_model$lambda == binom_model$lambda.min)]
+
+y_hat_predictions <- predict(object = binom_model, s = 'lambda.min', 
+                             newx = x_in_filt, newy = y_in, type = 'response')
+
+binom_roc_out <- pROC::roc(response = y, predictor = y_hat_matrix)
+
+perf_list <- sens_at_spec_ROC(binom_roc_out, 1.0)
+
+y_hat_predictions <- ifelse(y_hat_predictions > perf_list$p.thresh, 1, 0)
+
+pROC::ggroc(binom_roc_out) -> gt_binom_roc.plt
+
+binomial_model_response_prob <- inverse.logit.calc(y_hat_matrix)
+
+binomial_model_response_prob %>%
+  as.data.frame() %>%
+  rownames_to_column('sample') %>%
+  dplyr::rename('prob' = '.') %>%
+  merge(y_in %>% rownames_to_column('sample'), by = 'sample') %>%
+  mutate(condition = ifelse(condition == 1, 'panc', 'ctrl')) %>%
+  ggplot(aes(condition, prob)) +
+  geom_jitter(width = 0.125) +
+  geom_boxplot(outlier.colour = NA, fill = NA) + 
+  geom_hline(yintercept = perf_list$p.thresh, linetype = 'dashed') + 
+  annotate(geom = 'text', y = perf_list$p.thresh + 0.05, x = 1.5, 
+           label = '100% specificity prob. threshold', size = txt.mm_to_pts(0.8)) +
+  ylab('probability') + 
+  xlab('') -> gt_binom_prob_thresh.plt
+
+beta %>%
+  as.matrix() %>%
+  as.data.frame() %>%
+  rownames_to_column('gene') %>%
+  merge(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, by = 'gene') %>%
+  ggplot(aes(V1, log2FoldChange, label = gene)) +
+  geom_point() +
+  ggrepel::geom_text_repel() 
+
+ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out %>% 
+  filter(ensg %in% names(beta)) %>% 
+  merge(reference_meta_data$ucsc_rmsk_insert_info.df, by = 'gene', all.x = T) %>% 
+  mutate(family = ifelse(ensg %in% reference_meta_data$gencode_lncRNA_gene_names.df$ensg,
+                         'GENCODE_lncRNA', family),
+         family = ifelse(is.na(family), 'GENCODE_coding', family),
+         clade = ifelse(grepl('GENCODE', family), family, clade),
+         clade = ifelse(clade %in% c('GENCODE_coding',
+                                     'GENCODE_lncRNA',
+                                     'LINE',
+                                     'SINE',
+                                     'LTR',
+                                     'DNA',
+                                     'Simple_repeat'), clade, 'other'),
+         type = ifelse(grepl('GENCODE',family), 'GENCODE', 'TE'),
+         clade = factor(clade, levels = te_aware_annotation_levels)) %>% 
+  ggplot(aes(log2FoldChange, -log10(padj), color = clade, label = gene)) + 
+  geom_point() + 
+  scale_color_manual(values = te_color_pal, name = 'biotype/clade') + 
+  geom_vline(xintercept = 0, linetype = 'dashed', alpha = 0.4) + 
+  ggrepel::geom_text_repel(color = 'black', segment.colour = NA, size = txt.mm_to_pts(0.8)) -> gt_feature_de.plt
+
+caret::confusionMatrix(data = as.factor(ifelse(as.factor(y_hat_predictions) == 1, 'panc', 'ctrl')),
+                       reference = as.factor(ifelse(as.factor(y) == 1, 'panc', 'ctrl')))$table %>% 
+  gridExtra::tableGrob(theme = gridExtra::ttheme_minimal(base_size = 8,
+                                                         core = list(padding=unit(c(1, 2.5), "mm")))) ->
+  gt_binomial_cm.tbl
+
+tg <- grid::textGrob('Reference', x=0, hjust=0, 
+                     gp = grid::gpar(fontsize = 7, fontface = 'bold'))
+lg <- grid::textGrob('Prediction\n AUC = 1', x=1, hjust=1, 
+                     gp = grid::gpar(fontsize = 7, fontface = 'italic'))
+gt_binomial_cm.tbl <- gtable::gtable_add_rows(gt_binomial_cm.tbl, unit(1,"line"), 0)
+gt_binomial_cm.tbl <- gtable::gtable_add_cols(gt_binomial_cm.tbl, grid::grobWidth(lg), 0)
+gt_binomial_cm.tbl <- gtable::gtable_add_grob(gt_binomial_cm.tbl, tg, t = 1, l=3, r=ncol(gt_binomial_cm.tbl))
+gt_binomial_cm.tbl <- gtable::gtable_add_grob(gt_binomial_cm.tbl, lg, l = 1, t=2)
+
+```
+## Fig_Modeling -- alu_binomial
+```{r}
+# doMC::registerDoMC(cores = 6)
+# 
+# filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
+#        padj < 0.01, grepl('^Alu', ensg), ! gene %in% chrM.filter.list)$ensg ->
+#   de_ensg_names
+# 
+# x_in <- t(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$norm_counts.df)
+# 
+# x_in_filt <- x_in[, colnames(x_in) %in% c(de_ensg_names)]
+# 
+# y_in <- ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$scaled_quant_meta_for_de.df %>% 
+#   select(sample, condition) %>% 
+#   mutate(condition = ifelse(condition == 'ctrl', 0, 
+#                             ifelse(condition == 'panc', 1, 2))) %>% 
+#   column_to_rownames('sample')
+# 
+# y <- y_in[match(rownames(x_in_filt), rownames(y_in)), ]
+# 
+# set.seed(123)
+# 
+# binom_model <- 
+#   cv.glmnet(x = x_in_filt,
+#             y = y,
+#             family = 'binomial',
+#             type.measure = 'deviance',
+#             nfolds = nrow(x_in_filt), 
+#             alpha = 0.9, 
+#             parallel = TRUE,
+#             keep = TRUE)
+# 
+# 
+# coef_tmp <- cbind(coef(binom_model, s = binom_model$lambda.min))
+# 
+# beta <- coef_tmp[apply(coef_tmp != 0, 1, any), ]
+# 
+# colnames(beta) <- names(coef(binom_model, s = binom_model$lambda.min))
+# 
+# y_hat_matrix <- binom_model$fit.preval[,which(binom_model$lambda == binom_model$lambda.min)]
+# 
+# y_hat_predictions <- predict(object = binom_model, s = 'lambda.min', 
+#                              newx = x_in_filt, newy = y_in, type = 'response')
+# 
+# binom_roc_out <- pROC::roc(response = y, predictor = y_hat_matrix)
+# 
+# perf_list <- sens_at_spec_ROC(binom_roc_out, 1.0)
+# 
+# y_hat_predictions <- ifelse(y_hat_predictions > perf_list$p.thresh, 1, 0)
+# 
+# pROC::ggroc(binom_roc_out) -> binom_roc.plt
+# 
+# binomial_model_response_prob <- inverse.logit.calc(y_hat_matrix)
+# 
+# binomial_model_response_prob %>%
+#   as.data.frame() %>%
+#   rownames_to_column('sample') %>%
+#   dplyr::rename('prob' = '.') %>%
+#   merge(y_in %>% rownames_to_column('sample'), by = 'sample') %>%
+#   mutate(condition = ifelse(condition == 1, 'panc', 'ctrl')) %>%
+#   ggplot(aes(condition, prob)) +
+#   geom_jitter(width = 0.125) +
+#   geom_boxplot(outlier.colour = NA, fill = NA) + 
+#   geom_hline(yintercept = perf_list$p.thresh, linetype = 'dashed') + 
+#   annotate(geom = 'text', y = perf_list$p.thresh + 0.05, x = 1.5, 
+#            label = '100% specificity prob. threshold', size = txt.mm_to_pts(0.8)) +
+#   ylab('probability') + 
+#   xlab('') -> binom_prob_thresh.plt
+# 
+# beta %>%
+#   as.matrix() %>%
+#   as.data.frame() %>%
+#   rownames_to_column('gene') %>%
+#   merge(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, by = 'gene') %>%
+#   ggplot(aes(V1, log2FoldChange, label = gene)) +
+#   geom_point() +
+#   ggrepel::geom_text_repel() 
+# 
+# ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out %>% 
+#   filter(ensg %in% names(beta)) %>% 
+#   merge(reference_meta_data$ucsc_rmsk_insert_info.df, by = 'gene', all.x = T) %>% 
+#   mutate(family = ifelse(ensg %in% reference_meta_data$gencode_lncRNA_gene_names.df$ensg,
+#                          'gencode_lncRNA', family),
+#          family = ifelse(is.na(family), 'gencode_coding', family),
+#          clade = ifelse(grepl('gencode', family), family, clade),
+#          clade = ifelse(clade %in% c('gencode_coding',
+#                                      'gencode_lncRNA',
+#                                      'LINE',
+#                                      'SINE',
+#                                      'LTR',
+#                                      'DNA',
+#                                      'Simple_repeat'), clade, 'other'),
+#          type = ifelse(grepl('gencode',family), 'GENCODE', 'TE'),
+#          clade = factor(clade, levels = te_aware_annotation_levels)) %>% 
+#   ggplot(aes(log2FoldChange, -log10(padj), color = clade, label = gene)) + 
+#   geom_point() + 
+#   scale_color_manual(values = te_color_pal) +
+#   ggrepel::geom_text_repel(color = 'black', segment.colour = NA, size = txt.mm_to_pts(0.8)) -> feature_de.plt
+# 
+# caret::confusionMatrix(data = as.factor(ifelse(as.factor(y_hat_predictions) == 1, 'panc', 'ctrl')),
+#                        reference = as.factor(ifelse(as.factor(y) == 1, 'panc', 'ctrl')))$table %>% 
+#   gridExtra::tableGrob(theme = gridExtra::ttheme_minimal(base_size = 8,
+#                                                          core = list(padding=unit(c(1, 2.5), "mm")))) ->
+#   binomial_cm.tbl
+```
+### fig_modeling_patchwork
+```{r}
+import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer, wrap_elements, inset_element)
+
+fig_surv_layout <- "
+ABC
+KKK
+DDE
+FGH
+IIJ
+"
+
+# wrap_plots(wrap_elements(full = binom_roc.plt + inset_element(binomial_cm.tbl, right = 0.5, 
+#                                          bottom = 0.2, left = 0.6, top = 0.5, ignore_tag = T)),
+#            binom_prob_thresh.plt,
+#            feature_de.plt,
+#            wrap_elements(full = multi_roc.plt + inset_element(multinomial_cm.tbl, right = 0.5, 
+#                                          bottom = 0.2, left = 0.6, top = 0.5, ignore_tag = T)),
+#            multi_feature_de.plt,
+#            wrap_elements(full = gt_binom_roc.plt + inset_element(gt_binomial_cm.tbl, right = 0.5, 
+#                                          bottom = 0.2, left = 0.6, top = 0.5, ignore_tag = T)),
+#            gt_binom_prob_thresh.plt,
+#            gt_feature_de.plt,
+#            wrap_elements(full = gt_multi_roc.plt + inset_element(gt_multinomial_cm.tbl, right = 0.5, 
+#                                          bottom = 0.2, left = 0.6, top = 0.5, ignore_tag = T)),
+#            gt_multi_feature_de.plt,           
+#            guide_area(),
+#            heights = c(1,0.01,1,1,1),
+#            guides = 'collect',
+#            design = fig_surv_layout) +
+#   plot_annotation(tag_levels = 'A') &
+#   theme(plot.tag.position = c(0.01, 0.99),
+#         legend.position = 'bottom', 
+#         legend.justification = c(0.5, 0.5)) -> fig.model.patchwork
+
+fig_surv_layout <- "
+AABB
+EEEE
+CCDD
+FFFF
+"
+
+wrap_plots(wrap_elements(full = gt_binom_roc.plt + inset_element(gt_binomial_cm.tbl, right = 0.5, 
+                                         bottom = 0.2, left = 0.6, top = 0.5, ignore_tag = T)),
+           gt_feature_de.plt + annotate(geom = 'text', label = 'Repeat-aware', x = -2, y = 7),
+           wrap_elements(full = binom_roc.plt + inset_element(binomial_cm.tbl, right = 0.5, 
+                                         bottom = 0.2, left = 0.6, top = 0.5, ignore_tag = T)),
+           feature_de.plt + annotate(geom = 'text', label = 'Repeat-alone', x = -1, y = 3.5),
+           guide_area(),
+           plot_spacer(),
+           heights = c(1,0.2,1,1,1),
+           guides = 'collect',
+           design = fig_surv_layout) +
+  plot_annotation(tag_levels = 'A') &
+  theme(plot.tag.position = c(0.01, 0.99),
+        legend.position = 'bottom', 
+        legend.justification = c(0.5, 0.5)) -> fig.model.patchwork
+
+save.manuscript.panel(figure = 7,
+                      figure.dir = figure.dir,
+                      name = 'patchwork_full_figS7_model',
+                      width = figure_double_column_width,
+                      height = figure_depth,
+                      plot.in = fig.model.patchwork)
+```
+
+# DEP TCGA
+## TCGA GTEx Heatmap
+```{r}
+tcga_paad_gene_counts %>% 
+  merge(gtex_paad_gene_counts, by = 'gene') %>%
+  # filter(gene %in% reference_meta_data$ucsc_rmsk_insert_info.df$gene) %>%
+  # filter(gene %in% filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out,
+  #                         padj < 0.05 & abs(log2FoldChange) > 0.75)$gene) %>%
+  # filter(!if_all(is.numeric, ~.x == 0)) %>% nrow()
+  # mutate(across(where(is.numeric), ~scale(log2(. + 1), center = T)[,1])) %>%
+  # mutate(across(where(is.numeric), ~scale(., center = T)[,1])) %>%
+  # filter(!gene %in% c('AluYm1', 'AluJo')) %>% 
+  # mutate(across(where(is.numeric), ~log2(. + 1))) %>%
+  column_to_rownames('gene') %>% as.matrix() %>% t() -> hm_count_data
+
+tcga_identity_color_pal <- identity_color_pal[1:2]
+names(tcga_identity_color_pal) <- c('GTEx', 'PAAD')
+
+hm_meta_data <- tibble('sample' = rownames(hm_count_data), 'condition' = ifelse(grepl('PAAD', sample), 'PAAD', 'GTEx'))
+
+t(hm_count_data) %>% 
+  as.data.frame() %>%
+  mutate(across(where(is.numeric), ~round(.x))) -> count_data_for_DEseq
+
+tcga_de_dds <- DESeq2::DESeqDataSetFromMatrix(countData = count_data_for_DEseq, colData = hm_meta_data, design = as.formula('~1'), tidy = F)
+
+tcga_de_dds <- DESeq2::estimateSizeFactors(tcga_de_dds)
+
+tcga_de_dds_norm_counts.df <- as.data.frame(DESeq2::counts(tcga_de_dds, normalized=T))
+
+
+
+
+
+
+hm_meta_data %>% pull(condition) -> hm_meta_condition
+names(hm_meta_condition) <- hm_meta_data$sample
+
+left_hma <- ComplexHeatmap::rowAnnotation(df = data.frame('condition' = hm_meta_condition), 
+                                          col = list(condition = tcga_identity_color_pal),
+                                          show_annotation_name = F, simple_anno_size = unit(.3, "cm"))
+
+# hm_te_data <- data.frame('gene' = colnames(hm_count_data)) %>%
+#   merge(reference_meta_data$total_tx_to_gene.df %>% select(gene, biotype) %>% distinct(), by = 'gene') %>%
+#   mutate(biotype = ifelse(biotype %in% c('SINE', 'Simple_repeat'), biotype, 'gencode')) %>%
+#   distinct()
+
+hm_te_data <- data.frame('gene' = colnames(hm_count_data)) %>%
+  merge(reference_meta_data$ucsc_rmsk_insert_info.df %>% select(gene, clade) %>% distinct(), by = 'gene') %>%
+  distinct()
+
+top_hma <- ComplexHeatmap::columnAnnotation(df = hm_te_data %>% select(clade), 
+                                            show_annotation_name = T,
+                                            annotation_name_side = 'left',
+                                            annotation_name_gp = grid::gpar(fontsize = 10, fontface = 'italic'),
+                                            show_legend = T, 
+                                            simple_anno_size = unit(.375, "cm"))
+
+
+set.seed(129)
+ComplexHeatmap::Heatmap(hm_count_data, 
+                        show_row_names = F, 
+                        show_column_names = T, 
+                        heatmap_width = figure_double_column_width * 0.85,
+                        left_annotation = left_hma,
+                        column_dend_height = unit(.75, "cm"),
+                        heatmap_legend_param = 
+                          list(legend_gp = grid::gpar(fontsize = 8)),
+                        # col = circlize::colorRamp2(breaks = c(-4,-2,0,2,4),
+                        #                            colors = viridis::rocket(n = 5)),
+                        top_annotation = top_hma,
+                        column_names_gp = grid::gpar(fontsize = 8),
+                        name = 'Z-score') -> tcga_hm
+
+new_hm <- grid::grid.grabExpr(ComplexHeatmap::draw(tcga_hm), merge_legend = T)
+
+patchwork::wrap_plots(full = new_hm)
+
+
+hm_count_data %>% 
+  as.data.frame() %>% 
+  # select(contains('Alu')) %>% 
+  rownames_to_column('sample') %>% 
+  # merge(hm_meta_data, by = 'sample') %>% 
+  merge(tcga_colData %>% select(submitter_id.samples, tumor_stage.diagnoses), 
+        by.x = 'sample', by.y = 'submitter_id.samples') %>%
+  gather(gene, tpm, -sample, -tumor_stage.diagnoses) %>%
+  ggplot(aes(tumor_stage.diagnoses, tpm)) + 
+  geom_boxplot(outlier.colour = NA, fill = NA) + 
+  # geom_jitter(alpha = 0.4) + 
+  ggforce::facet_row(~gene) 
+  # ggpubr::stat_compare_means(method = 'wilcox', comparisons = list(c('GTEx', 'PAAD')))
+```
+## tcga matched DESeq
+```{r}
+matched_samples <- c(colnames(count_data_for_DEseq[,grepl('-NT', colnames(count_data_for_DEseq))]),
+                     str_replace_all(colnames(count_data_for_DEseq[,grepl('-NT', colnames(count_data_for_DEseq))]), '-NT', '-TP'))
+
+matched_samples_counts <- count_data_for_DEseq[, colnames(count_data_for_DEseq) %in% matched_samples]
+
+tcga_de_colData <- tibble('sample' = colnames(matched_samples_counts), 'condition' = ifelse(grepl('NT', sample), 'control', 'tumor'))
+
+tcga_de_dds <- DESeq2::DESeqDataSetFromMatrix(countData = matched_samples_counts, colData = tcga_de_colData, 
+                                              design = as.formula('~condition'), tidy = F)
+
+tcga_de_dds <- DESeq2::estimateSizeFactors(tcga_de_dds)
+
+de_filter <- rowSums(DESeq2::counts(tcga_de_dds, normalized=T) >= 10) >= ncol(DESeq2::counts(tcga_de_dds, normalized=T))*0.75
+  
+input_set_dds <- DESeq2::DESeq(tcga_de_dds[de_filter,])
+
+DESeq2::resultsNames(input_set_dds)
+
+input_set_dds_de_out <- DESeq2::lfcShrink(input_set_dds, coef = "condition_tumor_vs_control") %>% 
+  as.data.frame() %>% 
+  rownames_to_column('gene') %>% 
+  filter(padj < 0.05)
+
+
+input_set_dds_de_out %>% 
+  merge(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, by = 'gene')
+```
+## tcga_modeling
+```{r}
+library(glmnet)
+library(pROC)
+
+
+
+model_input_data <- t(tcga_de_dds_norm_counts.df)[!grepl('-TM$|-NT$', rownames(hm_count_data)), ]
+model_input_meta_data <- hm_meta_data[match(rownames(model_input_data), hm_meta_data$sample), ]
+
+set.seed(123)
+
+doMC::registerDoMC(cores =12)
+
+trainSplitIndex <- 
+  caret::createDataPartition(factor(model_input_meta_data$condition, levels = c('GTEx', 'PAAD')), p = .8, list = FALSE, times = 1)
+
+tcga_x_in <- hm_count_data
+
+tcga_y_in <- hm_meta_data %>% mutate(condition = ifelse(condition == 'PAAD', 1, 0))
+
+tcga_x_in_train <- tcga_x_in[trainSplitIndex, ,drop = F]
+tcga_y_in_train <- tcga_y_in[trainSplitIndex, ,drop = F] %>% pull(condition)
+
+tcga_x_in_test <- tcga_x_in[-trainSplitIndex, ,drop = F]
+tcga_y_in_test <- tcga_y_in[-trainSplitIndex, ,drop = F] %>% pull(condition)
+
+set.seed(123)
+
+tcga_binomial_model <- 
+  cv.glmnet(x = tcga_x_in_train,
+            y = tcga_y_in_train,
+            family = 'binomial',
+            type.measure = 'deviance',
+            nfolds = 20, 
+            alpha = 0.75, 
+            parallel = TRUE,
+            keep = TRUE)
+
+plot(tcga_binomial_model)
+
+coef_tmp <- coef(tcga_binomial_model, s = tcga_binomial_model$lambda.min)
+
+beta <- coef_tmp[apply(coef_tmp != 0, 1, any), ]
+
+beta
+
+inverse.logit.calc <- function(y_hat) { exp(y_hat)/(1+exp(y_hat)) }
+
+y_hat_matrix <- tcga_binomial_model$fit.preval[,which(tcga_binomial_model$lambda == tcga_binomial_model$lambda.min)]
+
+# predict(tcga_binomial_model, s = 'lambda.min', newx = tcga_x_in_train, type = 'response')
+
+training_pred_matrix <- predict(tcga_binomial_model, s = 'lambda.min', newx = tcga_x_in_train, type = 'response')
+
+pROC::roc(response = tcga_y_in_train, predictor = training_pred_matrix[,1])$auc
+
+
+testing_pred_matrix <- predict(tcga_binomial_model, s = 'lambda.min', newx = tcga_x_in_test, type = 'response')
+
+pROC::roc(response = tcga_y_in_test, predictor = testing_pred_matrix[,1])
+
+
+testing_pred_matrix <- predict(tcga_binomial_model, s = 'lambda.min', newx = x_in, type = 'response')
+
+pROC::roc(response = tcga_y_in_test, predictor = testing_pred_matrix[,1])
+
+
+tcga_binomial_model_response_prob <- inverse.logit.calc(y_hat_matrix)
+
+
+tcga_binomial_model_response_prob %>% 
+  as.data.frame() %>% 
+  rownames_to_column('sample') %>% 
+  dplyr::rename('prob' = '.') %>% 
+  merge(tcga_y_in, by = 'sample') %>% 
+  mutate(condition = ifelse(condition == 1, 'PAAD', 'GTEx')) %>% 
+  ggplot(aes(condition, prob)) + 
+  geom_boxplot()
+
+
+```
+## tcga_pca
+```{r}
+pca_tmp_in_sd <- apply(x_in_train, 2, sd)
+pca_tmp_in_zero_sd <- x_in_train[,pca_tmp_in_sd!=0 & !is.na(pca_tmp_in_sd)]
+non_zero_pca <- prcomp(pca_tmp_in_zero_sd, center = T, scale. = T, rank. = 50)
+
+summary(non_zero_pca)
+pcs.of.interest <- apply(non_zero_pca$x, 2, var)
+pcs.props <-  pcs.of.interest/sum(pcs.of.interest)
+cumsum(pcs.props)[c(1,2)]
+print(as.data.frame(pcs.props) %>% 
+        rownames_to_column('pc') %>% 
+        mutate(pc = as.numeric(sub('PC', '', pc))) %>% 
+        ggplot(aes(pc, pcs.props)) + 
+        geom_col())
+
+pca.out <- as.data.frame(non_zero_pca$x) %>% 
+  rownames_to_column('sample') %>% 
+  merge(hm_meta_data %>% select(sample, condition) %>% ungroup() %>% distinct(), by = 'sample') %>% 
+  ungroup() %>% 
+  distinct()
+
+pca.out.summary <- 
+  as.data.frame(summary(non_zero_pca)$importance) %>% 
+  rownames_to_column('metric') %>% 
+  gather(pc, value, -metric) %>% 
+  spread(metric, value)
+
+pca.out %>% 
+  ggplot(aes(PC1, PC2,
+             color = condition)) +
+  geom_point(size = rel(2), alpha = 1) + 
+  # scale_shape_manual(values = c(21,25)) +
+  xlab(paste('PC1', round(cumsum(pcs.props)[1], digits = 3), sep = ' ')) +
+  ylab(paste('PC2', round(cumsum(pcs.props)[2] - cumsum(pcs.props)[1], digits = 3), sep = ' ')) +
+  geom_vline(xintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) +
+  geom_hline(yintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) + 
+  scale_color_manual(values = tcga_identity_color_pal) +
+  theme(legend.position = 'top', legend.direction = 'horizontal')
+
+
+pca.out %>% 
+  merge(tcga_colData, by.x = 'sample', by.y = 'submitter_id.samples') %>% 
+    ggplot(aes(PC1, PC2,
+             color = tumor_stage.diagnoses)) +
+  geom_point(size = rel(2), alpha = 1) + 
+  # scale_shape_manual(values = c(21,25)) +
+  xlab(paste('PC1', round(cumsum(pcs.props)[1], digits = 3), sep = ' ')) +
+  ylab(paste('PC2', round(cumsum(pcs.props)[2] - cumsum(pcs.props)[1], digits = 3), sep = ' ')) +
+  geom_vline(xintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) +
+  geom_hline(yintercept = 0, linetype = 'dotted', alpha = 0.3, size = 0.25) + 
+  # scale_color_manual(values = tcga_identity_color_pal) +
+  theme(legend.position = 'top', legend.direction = 'horizontal')
+  # extract.meta.pca.correlates()
+  
+```
+
+
+
+## DEP TCGA surv heatmap
+```{r}
+tcga_paad_dds_norm_counts.df %>% 
+  rownames_to_column('gene') %>% 
+  filter(gene %in% msig.df$HALLMARK_MYC_TARGETS_V1,
+         gene %in% filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
+                          padj < 0.05, log2FoldChange > 0.75)$gene) %>% 
+  column_to_rownames('gene') %>% t() -> paad_hm_count_data
+
+
+hm_meta_data %>% 
+  filter(sample %in% rownames(paad_hm_count_data)) %>% 
+  pull(condition) -> hm_meta_condition
+
+names(hm_meta_condition) <- hm_meta_data$sample
+
+left_hma <- ComplexHeatmap::rowAnnotation(df = data.frame('condition' = hm_meta_condition), 
+                                          col = list(condition = tcga_identity_color_pal),
+                                          show_annotation_name = F, simple_anno_size = unit(.3, "cm"))
+
+# hm_te_data <- data.frame('gene' = colnames(hm_count_data)) %>%
+#   merge(reference_meta_data$total_tx_to_gene.df %>% select(gene, biotype) %>% distinct(), by = 'gene') %>%
+#   mutate(biotype = ifelse(biotype %in% c('SINE', 'Simple_repeat'), biotype, 'gencode')) %>%
+#   distinct()
+
+paad_hm_count_data_filt <- data.frame('gene' = colnames(paad_hm_count_data)) %>% 
+  filter(gene %in% msig.df$HALLMARK_MYC_TARGETS_V1,
+         gene %in% filter(ucsc.rmsk.salmon_quant$analysis_set$panc_ctrl$deseq$de_out, 
+                          padj < 0.05, log2FoldChange > 0.75)$gene) %>%
+  distinct()
+
+top_hma <- ComplexHeatmap::columnAnnotation(df = hm_te_data %>% select(clade), 
+                                            show_annotation_name = T,
+                                            annotation_name_side = 'left',
+                                            annotation_name_gp = grid::gpar(fontsize = 10, 
+                                                                            fontface = 'italic'),
+                                            show_legend = T, 
+                                            simple_anno_size = unit(.375, "cm"))
+
+
+set.seed(129)
+ComplexHeatmap::Heatmap(paad_hm_count_data, 
+                        show_row_names = F, 
+                        show_column_names = T, 
+                        heatmap_width = figure_double_column_width * 0.85,
+                        # left_annotation = left_hma,
+                        column_dend_height = unit(.75, "cm"),
+                        heatmap_legend_param = 
+                          list(legend_gp = grid::gpar(fontsize = 8)),
+                        # col = circlize::colorRamp2(breaks = c(-4,-2,0,2,4),
+                        #                            colors = viridis::rocket(n = 5)),
+                        # top_annotation = top_hma,
+                        column_names_gp = grid::gpar(fontsize = 8),
+                        name = 'Z-score') -> paad_tcga_hm
+
+new_hm <- grid::grid.grabExpr(ComplexHeatmap::draw(paad_tcga_hm), merge_legend = T)
+
+patchwork::wrap_plots(full = new_hm)
+```
+
+
+# DEP Fig_S1
+## Fig_S1A/B
+```{r 1B/C}
+
+fig.S1A.plt <- 
+  salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_1v2.plt + xlim(-280,280)
+  
+fig.S1B.plt <- 
+  salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_2v3.plt
+
+```
+## Fig_S1C
+```{r S1A}
+salmon_quant$analysis_set$ctrl_panc_covid$quant_meta %>% 
+  gather(var, value, -sample, -condition, -sex, -context) %>% 
+  mutate(value = as.numeric(value),
+         condition = factor(condition, levels = c('panc', 'ctrl', 'covid'))) -> tidy_quant_meta.df
+
+meta_of_interest <- c('star_multimapped_percent',
+                      'star_uniquely_mapped_percent')
+
+tidy_quant_meta.df %>%  
+  filter(var %in% meta_of_interest) %>% 
+  mutate(var = sub('star_', '', var),
+         var = case_when(var == 'uniquely_mapped_percent' ~ 'uniquely-mapped', 
+                         var == 'multimapped_percent' ~ 'multi-mapped'),
+         var = factor(var, levels = c('uniquely-mapped', 'multi-mapped'))) %>% 
+  ggplot(aes(condition, value, color = condition)) + 
+  geom_boxplot(fill = NA, outlier.colour = NA, show.legend = F) + 
+  geom_point(position = position_jitter(width = 0.2), size = rel(1), alpha = 0.8) +
+  # scale_shape_manual(values = c(21,25)) +
+  ylab('percent mapped') + xlab('') +
+  ggforce::facet_row(~var, scales = 'free_y', strip.position = 'bottom') + 
+  scale_color_manual(values = identity_color_pal) + 
+  theme(legend.position = 'right', legend.justification = 'center') +
+  ggpubr::stat_compare_means(comparisons = list(c('panc', 'covid'),
+                                                c('ctrl', 'covid'), 
+                                                c('ctrl', 'panc')), 
+                             method = 'wilcox.test', size = 2.5, method.args = list(exact =T), label = 'p.signif') -> mapping_rate_dist.plt
+
+fig.S1C.plt <- mapping_rate_dist.plt
+
+
+```
+## Fig_S1D
+```{r S1B}
+s1_flow_chart.plt <- magick::image_read_pdf(path = file.path(figure.dir, 'fig.1', 'complete-seq-diagram-no-process.pdf'))
+flowchart_wrap_figS1D.plt <- wrap_elements(full = magick::image_ggplot(s1_flow_chart.plt))
+```
+### Fig_S1_patchwork
+```{r}
+import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer, wrap_elements)
+
+
+fig_S1_layout <- "
+AB
+CC
+DD
+EE
+"
+
+wrap_plots(fig.S1A.plt,
+           fig.S1B.plt,
+           guide_area(),
+           fig.S1C.plt + coord_cartesian(clip = 'off'),
+           flowchart_wrap_figS1B.plt,
+           design = fig_S1_layout, 
+           guides = 'collect',
+           heights = c(0.55,0.145,1.1,1.3)) + plot_annotation(tag_levels = 'A') & 
+  theme(plot.tag.position = c(0.01, 0.99), 
+        legend.position = 'bottom',
+        legend.title = element_text(vjust = 1.25),
+        legend.justification = c(0.5, 0.5)) -> fig.S1.patchwork
+
+
+save.manuscript.panel(figure = 1,
+                      figure.dir = figure.dir,
+                      name = 'patchwork_full_fig_S1',
+                      width = figure_double_column_width,
+                      height = figure_depth,
+                      plot.in = fig.S1.patchwork)
+```
+
+# DEP Fig_S2
+## Fig_S2A
+```{r S2A}
+salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_corr_out.df %>% 
+  group_by(pc) %>% 
+  mutate(pc = paste0('PC', pc)) %>% 
+  filter(!grepl('num', var),
+         ! var %in% c('input_vol', 'age'),
+         grepl('map', var), grepl('percent', var)) %>% 
+  top_n(7, wt = abs(cor)) %>% 
+  mutate(var = ifelse(var == 'salmon_percent_mapped', 'salmon_mapped_percent', var)) %>% 
+  dplyr::rename('gencode' = 'cor') -> salmon_pca_corr_top_7.df
+
+ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_corr_out.df %>% 
+  group_by(pc) %>% 
+  mutate(pc = paste0('PC', pc)) %>%
+  mutate(var = ifelse(var == 'salmon_percent_mapped', 'salmon_mapped_percent', var)) %>% 
+  dplyr::rename('Repeat-aware' = 'cor') -> ucsc.rmsk.salmon_pca_corr_compare.df
+
+salmon_pca_corr_top_7.df %>% 
+  merge(ucsc.rmsk.salmon_pca_corr_compare.df, by = c('pc', 'var')) %>% 
+  gather(reference, cor, -pc, -var) %>% 
+  filter(reference == 'Repeat-aware') %>% 
+  ggplot(aes(reorder(var, -abs(cor)),cor, fill = reference)) + 
+  geom_col(color = 'white', position = position_dodge()) +
+  # coord_flip() + 
+  ggforce::facet_col(~pc) + 
+  xlab('') + ylab('correlation between metric and PC (pearson)') + 
+  geom_hline(yintercept = c(-0.5, 0.5), linetype = 'dashed', alpha = 0.4) + 
+  theme(legend.position = 'top', legend.justification = 'center', 
+        axis.text.x = element_text(angle = 60, hjust = 1)) + 
+  scale_fill_manual(values = c('black', 'grey')) -> pca_correlation_top7.plt
+  
+fig.S2A.plt <- pca_correlation_top7.plt
+```
+## Fig_S2B
+```{r S2B}
+
+
+meta_grob_input_table %>% 
+  select(-num, -old_name) %>% 
+  gridExtra::tableGrob(theme = gridExtra::ttheme_minimal(base_size = 8,
+                                                         core = list(padding=unit(c(1, 3.25), "mm"))), 
+                       rows = NULL) -> fig.S2B.meta_table.grob
+
+```
+### Fig_S2_patchwork
+```{r Fig1}
+import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer)
+
+
+fig_S2_layout <- "
+AB
+AB
+"
+
+wrap_plots(fig.S2A.plt,
+           patchwork::wrap_elements(full = fig.S2B.meta_table.grob, ignore_tag = F),
+           design = fig_S2_layout, 
+           widths = c(1,1)) + plot_annotation(tag_levels = 'A') -> fig.S2.patchwork
+
+save.manuscript.panel(figure = 2,
+                      figure.dir = figure.dir,
+                      name = 'patchwork_full_fig_S2',
+                      width = figure_double_column_width,
+                      height = figure_depth,
+                      plot.in = fig.S2.patchwork)
+
+
+```
+
+

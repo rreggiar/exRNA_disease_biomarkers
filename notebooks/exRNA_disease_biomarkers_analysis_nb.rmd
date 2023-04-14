@@ -2241,7 +2241,6 @@ elife_rmsk_quant$rmsk$pca$pca_out.df %>%
 ```
 ## Fig_3C
 ```{r}
-
 de_out_list <- list(elife_rmsk_quant$liver_healthy$deseq$de_out,
                  elife_rmsk_quant$lung_healthy$deseq$de_out,
                  elife_rmsk_quant$esoph_healthy$deseq$de_out,
@@ -2309,13 +2308,6 @@ lapply(c(de_out_list), function(de_out) {
   return(plt)
   
 }) -> plt_list
-
-
-
-
-
-
-
 ```
 ## Fig_3_patchwork
 ```{r}
@@ -2486,11 +2478,9 @@ save.manuscript.panel(figure = 3,
                       plot.in = fig.S3.patchwork)
 ```
 
-
 # Fig_S4
 ## Fig_S4A-E
 ```{r}
-
 lapply(c(de_out_list), function(de_out) {
   
   de_out %>%
@@ -2550,15 +2540,18 @@ lapply(c(de_out_list), function(de_out) {
       max.overlaps = 25
     ) +
     geom_hline(yintercept = 0, linetype = 'dashed') +
-    scale_color_manual(values = te_color_pal, name = 'biotype/clade') -> plt
+    scale_color_manual(values = te_color_pal, name = 'biotype/clade', drop = F) -> plt
   
   
   return(plt)
   
-}) -> ma_plt_list
+}) -> Fig_S4_ma_plt_list
 ```
 ## Fig_S4F
 ```{r}
+import::from(.directory = r_code.dir, 
+             .from = 'helper_analysisFunctions.R', 
+              calc_entropy)
 calc_entropy(
   elife_rmsk_quant$rmsk$deseq$norm_counts.df,
   elife_meta_data,
@@ -2605,24 +2598,21 @@ calc_entropy(
 ```{r}
 import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer, wrap_elements)
 
-fig_S3_layout <- "
+fig_S4_layout <- "
 AB
 CD
 EF
 GG
 "
 
-wrap_plots(ma_plt_list[[1]] + ggtitle('liver cancer'),
-           ma_plt_list[[2]] + ggtitle('lung cancer'),
-           ma_plt_list[[3]] + ggtitle('esophagus cancer'),
-           ma_plt_list[[4]] + ggtitle('colorectal cancer'),
-           ma_plt_list[[5]] + ggtitle('stomach cancer'),
+wrap_plots(Fig_S4_ma_plt_list[[1]] + ggtitle('liver cancer'),
+           Fig_S4_ma_plt_list[[2]] + ggtitle('lung cancer'),
+           Fig_S4_ma_plt_list[[3]] + ggtitle('esophagus cancer'),
+           Fig_S4_ma_plt_list[[4]] + ggtitle('colorectal cancer'),
+           Fig_S4_ma_plt_list[[5]] + ggtitle('stomach cancer'),
            guide_area(),
-           fig.S3.F,
-           # wrap_elements(full = fig.3F.plt + ylim(0,95) + ggtitle('upregulated TEs')),
-           # wrap_elements(full = fig.3E.plt + ylim(0,95) + ggtitle('downregulated TEs')),
+           fig.S4.F,
            heights = c(0.75,0.75,0.75,1.75),
-           # widths = c(0.75, 1.25),
            guides = 'collect',
            design = fig_S4_layout) +
   plot_annotation(tag_levels = 'A') &

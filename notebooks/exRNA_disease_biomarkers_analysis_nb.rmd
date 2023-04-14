@@ -18,6 +18,7 @@ suppressPackageStartupMessages(library(tidyverse))
 ```
 
 # global_init
+
 ## ggplot_theme
 ```{r}
 library(ggplot2)
@@ -208,6 +209,7 @@ disc_identity_shape_pal <- c('Male' = 23, 'Female' = 25)
 ```
 
 # meta_data_construction
+
 ## reference meta data
 ```{r}
 
@@ -437,6 +439,7 @@ origCovid_normal_meta_data <-
 ```
 
 # import_data
+
 ## load_tximeta_obj
 ```{r}
 import::from(
@@ -485,6 +488,7 @@ elife_gencode_quant <-
 ```
 
 # filter_data
+
 ## internal
 ```{r}
 import::from(.directory = r_code.dir,
@@ -769,6 +773,7 @@ elife_gencode_quant$stomach_healthy <-
 ```
 
 # merge_metadata
+
 ## internal
 ```{r}
 internal_rmsk_quant$panc_normal$quant_meta <-
@@ -979,6 +984,7 @@ elife_gencode_quant$stomach_healthy$quant_meta <-
 ```
 
 # primary_analysis
+
 ## run_de_seq
 ```{r}
 import::from(.directory = r_code.dir, 
@@ -1164,10 +1170,10 @@ internal_rmsk_quant$panc_normal$pca <-
 
 ```
 
-# Figures
+# general_figures
 
-# Fig_1
-## Fig_flowchart_1A
+## Fig_1
+### Fig_flowchart_1A
 ```{r 1A}
 install.packages('pdftools')
 # install.packages('magick')
@@ -1175,7 +1181,7 @@ flow_chart.plt <- magick::image_read_pdf(path = file.path(figure.dir, 'fig.1', '
 flowchart_wrap_fig1A.plt <- patchwork::wrap_elements(full = magick::image_ggplot(flow_chart.plt))
 
 ```
-## Fig_1D
+### Fig_1D
 ```{r 1D}
 
 internal_rmsk_quant$panc_normal$quant_meta %>%
@@ -1264,7 +1270,7 @@ internal_rmsk_quant$panc_normal$deseq$norm_counts.df %>%
                          method = 'wilcox', size = txt.mm_to_pts(1.2), 
                          method.args = list(exact = TRUE, paired = F), label = 'p.signif') -> fig.1E.plt
 ```
-## Fig_1_patchwork
+### Fig_1_patchwork
 ```{r Fig1}
 import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer, wrap_elements)
 
@@ -1302,8 +1308,8 @@ save.manuscript.panel(figure = 1,
 
 ```
 
-# Fig_S1
-## Fig_S1B/C
+## Fig_S1
+### Fig_S1B/C
 ```{r 1B/C}
 internal_gencode_quant$panc_normal$pca$pca_out.df %>%
   ggplot(aes(PC1, PC2,
@@ -1383,7 +1389,7 @@ internal_rmsk_quant$panc_normal$pca$pca_out.df %>%
 
 
 ```
-## Fig_S1chm
+### Fig_S1chm
 ```{r}
 cor_in <-
     internal_rmsk_quant$panc_normal$deseq$norm_counts.df[!rownames(internal_rmsk_quant$panc_normal$deseq$norm_counts.df) %in% reference_meta_data$ucsc_rmsk_insert_info.df$gene, grepl('panc',
@@ -1480,7 +1486,7 @@ patchwork::wrap_elements(full = grid::grid.grabExpr(ComplexHeatmap::draw(naive_p
                                                     merge_legend = T)) -> fig.S1C.chm
 
 ```
-## Fig_S1_patchwork
+### Fig_S1_patchwork
 ```{r Fig1}
 import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer, wrap_elements)
 
@@ -1554,8 +1560,8 @@ save.manuscript.panel(figure = 1,
 
 ```
 
-# Fig_2
-## Fig_2A
+## Fig_2
+### Fig_2A
 ```{r}
 internal_rmsk_quant$panc_normal$deseq$norm_counts.df %>%
   rownames_to_column('gene') %>%
@@ -1610,7 +1616,7 @@ tidy_total_annotated_rmsk_counts %>%
   theme(axis.text.x = element_blank(),
         axis.ticks.x = element_blank()) -> fig.2A.plt
 ```
-## Fig_2B
+### Fig_2B
 ```{r}
 import::from(.directory = r_code.dir, 
              .from = 'helper_analysisFunctions.R', 
@@ -1658,7 +1664,7 @@ calc_entropy(
   theme(axis.text.x = element_text(angle = 40, hjust = 1),
         strip.text = element_text(size = txt.mm_to_pts(1.5))) -> fig.2B.plt
 ```
-## Fig_2C
+### Fig_2C
 ```{r}
 internal_rmsk_quant$panc_normal$deseq$de_out %>%
   merge(reference_meta_data$ucsc_rmsk_insert_info.df,
@@ -1776,7 +1782,7 @@ unsig_ma_plt +
   theme(legend.position = c(0.99, 0.25)) -> fig.S1C.plt
 
 ```
-## Fig_2D
+### Fig_2D
 ```{r}
 # unique(c(filter(ucsc.rmsk.salmon_quant$analysis_set$covid_ctrl$deseq$de_out,
 #                 abs(log2FoldChange) > 3.5)$ensg,
@@ -1871,7 +1877,7 @@ patchwork::wrap_elements(full = grid::grid.grabExpr(ComplexHeatmap::draw(fig.2D.
                                                     merge_legend = T)) -> fig.2D.chm
   
 ```
-## Fig_2_patchwork
+### Fig_2_patchwork
 ```{r Fig1}
 import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer)
 
@@ -1911,8 +1917,8 @@ save.manuscript.panel(figure = 2,
 
 ```
 
-# Fig_S2
-## Fig_S2A
+## Fig_S2
+### Fig_S2A
 ```{r}
 elife_rmsk_quant$rmsk$deseq$norm_counts.df %>%
   rownames_to_column('gene') %>%
@@ -1968,7 +1974,7 @@ tidy_total_annotated_rmsk_counts %>%
         axis.text.y = element_text(size = base_size-1),
         axis.ticks.x = element_blank()) -> fig.S2A.plt
 ```
-## Fig_S2B
+### Fig_S2B
 ```{r}
 elife_rmsk_quant$rmsk$quant_meta %>% 
   mutate(reference = 'Repeat-aware') %>%
@@ -1994,7 +2000,7 @@ elife_rmsk_quant$rmsk$quant_meta %>%
                            method = 'wilcox', size = txt.mm_to_pts(1.2), 
                            method.args = list(exact = TRUE, paired = T), label = 'p.signif') -> fig.S2B.plt
 ```
-## Fig_S2_patchwork
+### Fig_S2_patchwork
 ```{r}
 import::from(.from = 'patchwork',
              plot_annotation,
@@ -2035,8 +2041,8 @@ save.manuscript.panel(
 )
 ```
 
-# Fig_3
-## Fig_3A
+## Fig_3
+### Fig_3A
 ```{r}
 
 imap(elife_rmsk_quant[names(elife_rmsk_quant) != 'rmsk'], function(analysis_set, name) {
@@ -2204,7 +2210,7 @@ patchwork::wrap_elements(full = grid::grid.grabExpr(
   merge_legend = T
 )) #-> fig.2D.chm
 ```
-## Fig_3B
+### Fig_3B
 ```{r}
 elife_rmsk_quant$rmsk$pca <- 
   run.pca(input_de = elife_rmsk_quant$rmsk$deseq, te_only = FALSE)
@@ -2239,7 +2245,7 @@ elife_rmsk_quant$rmsk$pca$pca_out.df %>%
   ) +
   scale_color_manual(values = elife_identity_color_pal)
 ```
-## Fig_3C
+### Fig_3C
 ```{r}
 de_out_list <- list(elife_rmsk_quant$liver_healthy$deseq$de_out,
                  elife_rmsk_quant$lung_healthy$deseq$de_out,
@@ -2309,7 +2315,7 @@ lapply(c(de_out_list), function(de_out) {
   
 }) -> plt_list
 ```
-## Fig_3_patchwork
+### Fig_3_patchwork
 ```{r}
 import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer, wrap_elements)
 
@@ -2346,8 +2352,8 @@ save.manuscript.panel(figure = 3,
                       plot.in = fig.3.patchwork)
 ```
 
-# Fig_S3
-## Fig_S3A
+## Fig_S3
+### Fig_S3A
 ```{r}
 
 internal_rmsk_quant$panc_normal$deseq$norm_counts.df %>%
@@ -2398,7 +2404,7 @@ tidy_total_annotated_rmsk_counts %>%
         axis.ticks.x = element_blank()) -> fig.S3A.plt
 
 ```
-## Fig_S3B
+### Fig_S3B
 ```{r}
 elife_rmsk_quant$rmsk$deseq$norm_counts.df %>%
   rownames_to_column('gene') %>%
@@ -2447,7 +2453,7 @@ tidy_total_annotated_rmsk_counts %>%
   theme(axis.text.x = element_blank(),
         axis.ticks.x = element_blank()) -> fig.S3B.plt
 ```
-## Fig_S3_patchwork
+### Fig_S3_patchwork
 ```{r}
 import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer, wrap_elements)
 
@@ -2478,8 +2484,8 @@ save.manuscript.panel(figure = 3,
                       plot.in = fig.S3.patchwork)
 ```
 
-# Fig_S4
-## Fig_S4A-E
+## Fig_S4
+### Fig_S4A-E
 ```{r}
 lapply(c(de_out_list), function(de_out) {
   
@@ -2547,7 +2553,7 @@ lapply(c(de_out_list), function(de_out) {
   
 }) -> Fig_S4_ma_plt_list
 ```
-## Fig_S4F
+### Fig_S4F
 ```{r}
 import::from(.directory = r_code.dir, 
              .from = 'helper_analysisFunctions.R', 
@@ -2594,7 +2600,7 @@ calc_entropy(
   theme(axis.text.x = element_text(angle = 40, hjust = 1),
         strip.text = element_text(size = txt.mm_to_pts(1.5))) -> fig.S4.F
 ```
-## Fig_S4_patchwork
+### Fig_S4_patchwork
 ```{r}
 import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer, wrap_elements)
 
@@ -2629,93 +2635,715 @@ save.manuscript.panel(figure = 4,
                       plot.in = fig.S4.patchwork)
 ```
 
+# modeling_&_figures
+
+## binomial_modeling_and_analysis
+```{r}
+doMC::registerDoMC(cores = 12)
+
+# final_alpha_new is generated by running R/job_elifeTrainLoop.R
+
+# final_alpha_new <- read_rds(file = file.path(output_data.dir, 'final_alpha_new.rds'))
+
+inverse.logit.calc <- function(y_hat) { exp(y_hat)/(1+exp(y_hat)) }
 
 
-
-
-
-# Fig_S1
-## Fig_S1A/B
-```{r 1B/C}
-
-fig.S1A.plt <- 
-  salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_1v2.plt + xlim(-280,280)
+lapply(final_alpha_new, function(cancer) {
+  lapply(cancer, function(feature_set) {
+    lapply(feature_set, function(alpha) {
+      
+      alpha$perf_list
+      
+    }) %>% bind_rows(.id = 'alpha')
+    
+  }) %>% bind_rows(.id = 'feature_set')
   
-fig.S1B.plt <- 
-  salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_2v3.plt
+}) %>% bind_rows(.id = 'cancer') -> alpha_summary
+
+
+alpha_summary %>% 
+  group_by(cancer) %>% 
+  slice(which.max(tpr)) %>% 
+  mutate(auc = as.numeric(auc))-> top_alpha
+
+alpha_summary %>% 
+  filter(feature_set == 'gencode') %>% 
+  group_by(cancer) %>% 
+  slice(which.max(tpr)) -> gencode_alpha
+
+
+alpha_order <- setNames(c(1:nrow(top_alpha)), top_alpha %>% pull(cancer))
+
+imap(alpha_order, function(index, cancer) {
+  message(cancer)
+  
+  feature_set <- top_alpha[index, 7, drop = T]
+  best_alpha <- as.numeric(top_alpha[index, 6, drop = T])
+  gencode_alpha <- as.numeric(gencode_alpha[index, 6, drop = T])
+  
+  best_model <-
+    final_alpha_new[[cancer]][[feature_set]][[best_alpha]]
+
+  gencode_model <-
+    final_alpha_new[[cancer]][['gencode']][[gencode_alpha]]
+
+
+  list('best_model' = best_model,
+       'gencode_model' = gencode_model)
+  
+}) -> model_comparison
+
+
+elife_meta_data %>% 
+  mutate(diagnosis = ifelse(diagnosis == 'Healthy donor', 0, 1)) %>% 
+  select(sample, diagnosis) %>% 
+  column_to_rownames('sample') -> elife_labels
+
+binom_CI <- function(x, n, l) {
+    CI <- binom.test(round(x*n), n, 0.5, alternative =  "two.sided", conf.level = 0.90)$conf.int[l]
+    return(CI)
+}
+
+
+lapply(model_comparison, function(model) {
+  lapply(model, function(comparison) {
+    
+    y_hat_matrix <-
+      comparison$model$fit.preval[, which(comparison$model$lambda == comparison$model$lambda.min)]
+    
+    filt_elife_labels <- elife_labels[rownames(elife_labels) %in% names(y_hat_matrix), ,drop=F]
+    
+    filt_elife_labels <- filt_elife_labels[match(names(y_hat_matrix), rownames(filt_elife_labels)), ]
+    
+    
+    predictions <-
+      ROCR::prediction(
+        labels = filt_elife_labels,
+        predictions = y_hat_matrix,
+        label.ordering = c(0, 1)
+      )
+
+    performances <-
+      ROCR::performance(
+        prediction.obj = predictions,
+        measure = "tpr",
+        x.measure = "fpr"
+      )
+
+    cutoffs <-
+      comparison$perf_list %>% 
+      mutate(n = length(performances@y.values[[1]])) %>% 
+      rowwise() %>%
+      mutate(ci_low = binom_CI(tpr, n, 1),
+             ci_high = binom_CI(tpr, n, 2))
+
+    coef_tmp <-
+      cbind(glmnet::coef.glmnet(comparison$model, s = comparison$model$lambda.min))
+
+    beta <- coef_tmp[apply(coef_tmp != 0, 1, any),]
+
+    colnames(beta) <-
+      names(glmnet::coef.glmnet(comparison$model, s = comparison$model$lambda.min))
+
+    
+    rocCurve <-
+      as.data.frame(cbind(unlist(slot(
+        performances, "x.values"
+      )[[1]]),
+      unlist(slot(
+        performances, "y.values"
+      )[[1]])))
+
+    colnames(rocCurve) <- c("X", "Y")
+
+    ggplot(rocCurve, aes(x = X, y = Y)) +
+      geom_line() +
+      geom_abline(linetype = "dotted", color = "grey50") +
+      labs(x = "False Positive Rate", y = "True Positive Rate") +
+      ylim(0, 1) + xlim(0, 1) -> rocCurv.plt
+    
+    binomial_model_response_prob <- inverse.logit.calc(y_hat_matrix)
+    
+    list('roc' = rocCurv.plt,
+         'response_prob' = binomial_model_response_prob,
+         'beta' = beta,
+         'perf' = performances,
+         'pred' = predictions,
+         'cutoffs' = cutoffs)
+    
+  })
+}) -> training_performance
+
+training_performance$Esophagus$best_model$beta
+
+
+lapply(training_performance, function(model) {
+  lapply(model, function(cancer) {
+    lapply(model, function(comparison) {
+      length(comparison$beta)
+      
+    }) %>% bind_rows(.id = 'comparison')
+  }) %>% bind_rows(.id = 'model')
+}) %>% bind_rows(.id = 'cancer') %>% distinct() %>% 
+  filter(model == 'best_model')
+
+
+lapply(model_comparison, function(model) {
+  lapply(model, function(comparison) {
+    
+    test_y_hat <- predict(
+      object = comparison$model,
+      s = 'lambda.min',
+      newx = comparison$test_x,
+      newy = comparison$test_y,
+      type = 'response'
+    )
+    
+    test_y_hat <-
+      ifelse(test_y_hat > comparison$perf_list$cut, 1, 0)
+    
+    data.frame('pred' = test_y_hat, 'label' = comparison$test_y) %>% 
+      mutate(result = case_when(
+        lambda.min == label & label == 1 ~ 'TP',
+        lambda.min == label & label == 0 ~ 'TN',
+        lambda.min != label & label == 1 ~ 'FN',
+        lambda.min != label & label == 0 ~ 'FP'
+      )) -> results
+    
+    TP <- sum(results$result == 'TP')
+    TN <- sum(results$result == 'TN')
+    FN <- sum(results$result == 'FN')
+    FP <- sum(results$result == 'FP')
+    
+    sensitivity <- TP/(TP+FN)
+    specificity <- TN/(TN+FP)
+    
+    data.frame('tpr' = sensitivity, 
+               'fpr' = specificity,
+               'n' = nrow(results)) %>% 
+      rowwise() %>%
+      mutate(ci_low = binom_CI(tpr, n, 1),
+             ci_high = binom_CI(tpr, n, 2)) -> cutoffs
+    
+    list('results' = results,
+         'sens' = sensitivity,
+         'spec' = specificity,
+         'cutoffs' = cutoffs)
+    
+  })
+  
+}) -> testing_performance
+
+make_anno_de <- function(de_out) {
+  de_out %>%
+    merge(reference_meta_data$ucsc_rmsk_insert_info.df,
+          by = 'gene',
+          all.x = T) %>%
+    mutate(
+      family = ifelse(
+        ensg %in% reference_meta_data$gencode_lncRNA_gene_names.df$ensg,
+        'GENCODE_lncRNA',
+        family
+      ),
+      family = ifelse(is.na(family), 'GENCODE_coding', family),
+      clade = ifelse(grepl('GENCODE', family), family, clade),
+      clade = ifelse(
+        clade %in% c(
+          'GENCODE_coding',
+          'GENCODE_lncRNA',
+          'LINE',
+          'SINE',
+          'LTR',
+          'DNA',
+          'Simple_repeat'
+        ),
+        clade,
+        'other'
+      ),
+      type = ifelse(grepl('GENCODE', family), 'GENCODE', 'TE'),
+      clade = factor(clade, levels = te_aware_annotation_levels)
+    ) %>%
+    filter(!ensg %in% chrM.filter.list,
+           !grepl('^MT', gene))
+}
+```
+
+## Fig_4
+### Fig_4A-T
+```{r}
+lapply(names(training_performance), function(cancer) {
+  
+  message(cancer)
+  
+  elife_select <- ifelse(cancer == 'Esophagus', 'esoph', tolower(cancer))
+  elife_select <- paste0(elife_select, '_healthy')
+  
+  training_performance[[cancer]]$best_model$beta %>%
+    as.matrix() %>%
+    as.data.frame() %>%
+    rownames_to_column('gene') %>%
+    rename('beta' = V1) -> feature_df
+  
+  feature_df %>% 
+    filter(gene %in% reference_meta_data$ucsc_rmsk_insert_info.df$gene) %>%
+    merge(elife_rmsk_quant[[elife_select]]$deseq$de_out %>% make_anno_de()) %>%
+    ggplot(aes(
+      beta,
+      log2FoldChange,
+      color = clade,
+      fill = after_scale(alpha(color, 0.4))
+    )) +
+    geom_hline(yintercept = 0,
+               linetype = 'dashed',
+               alpha = 0.4) +
+    geom_vline(xintercept = 0,
+               linetype = 'dashed',
+               alpha = 0.4) +
+    geom_point(shape = 21, show.legend = F) +
+    scale_color_manual(values = te_color_pal) +
+    ggtitle(paste0("# non-zero features: ", nrow(feature_df) - 1)) +
+    ggrepel::geom_text_repel(aes(label = gene),
+                             show.legend = F ,
+                             size = txt.mm_to_pts(0.8)) -> beta_plot
+  
+  
+  training_performance[[cancer]]$best_model$roc$data %>%
+    as.data.frame() %>%
+    mutate(model = 'aware') %>%
+    rbind(
+      training_performance[[cancer]]$gencode_model$roc$data %>%
+        as.data.frame() %>%
+        mutate(model = 'naive')
+    ) %>%
+    ggplot(aes(X, Y, color = model)) +
+    geom_line() +
+    geom_abline(linetype = "dotted", color = "grey50") +
+    scale_color_colorblind() +
+    ylab('sensitivity') +
+    xlab('1 - specificity') +
+    ggtitle(cancer) +
+    annotate(
+      "text",
+      label = paste0(
+        "AUC: ",
+        round(as.numeric(training_performance[[cancer]]$best_model$cutoffs$auc), 2),
+        ' > ',
+        round(as.numeric(training_performance[[cancer]]$gencode_model$cutoffs$auc), 2)
+        ),
+        y = 0.125,
+        x = 0.5,
+        size = txt.mm_to_pts(0.8)
+      ) +
+        theme(
+          legend.position = c(0.9, 0.7),
+          legend.title = element_blank(),
+          legend.background = element_blank()
+        ) -> roc.plt
+  
+  training_performance[[cancer]]$best_model$cutoffs %>%
+    mutate(model = 'aware') %>%
+    rbind(training_performance[[cancer]]$gencode_model$cutoffs %>%
+            mutate(model = 'naive')) %>%
+    group_by(model) %>%
+    mutate(model = factor(model, levels = c('naive', 'aware'))) %>%
+    filter(fpr == model_comparison[[cancer]]$best_model$perf_list$fpr) %>%
+    slice(which.max(tpr)) %>%
+    mutate(split = 'Training') %>%
+    ggplot(aes(
+      model,
+      ymin = ci_low,
+      y = tpr,
+      ymax = ci_high
+    )) +
+    geom_point() +
+    geom_errorbar() +
+    geom_text(aes(label = round(tpr, 2)), y = 0.075, size = txt.mm_to_pts(0.8)) +
+    ggtitle(paste0('N: ', training_performance[[cancer]]$best_model$cutoff$n)) +
+    ylim(0, 1) + xlab('') +
+    ylab('sens. @ 90% spec.') +
+    ggforce::facet_row(~ split) -> train.plt
+  
+  testing_performance[[cancer]]$best_model$cutoffs %>%
+    mutate(model = 'aware') %>%
+    rbind(testing_performance[[cancer]]$gencode_model$cutoffs %>%
+            mutate(model = 'naive')) %>%
+    group_by(model) %>%
+    mutate(model = factor(model, levels = c('naive', 'aware'))) %>%
+    mutate(split = 'Testing') %>%
+    ggplot(aes(
+      model,
+      ymin = ci_low,
+      y = tpr,
+      ymax = ci_high
+    )) +
+    geom_point() +
+    geom_errorbar() +
+    geom_text(aes(label = round(tpr, 2)), y = 0.075, size = txt.mm_to_pts(0.8)) +
+    ggtitle(paste0('N: ', testing_performance[[cancer]]$best_model$cutoff$n)) +
+    ylim(0, 1) + xlab('') +
+    ylab('testing sens.') +
+    ggforce::facet_row( ~ split) -> test.plt
+  
+  list('roc' = roc.plt,
+       'train' = train.plt,
+       'test' = test.plt,
+       'beta' = beta_plot)
+  
+}) -> plot_list
+
+# wrap_elements(full = plot_list[[1]]$roc)
 
 ```
-## Fig_S1C
-```{r S1A}
-salmon_quant$analysis_set$ctrl_panc_covid$quant_meta %>% 
-  gather(var, value, -sample, -condition, -sex, -context) %>% 
-  mutate(value = as.numeric(value),
-         condition = factor(condition, levels = c('panc', 'ctrl', 'covid'))) -> tidy_quant_meta.df
+### Fig_4_patchwork
+```{r}
+import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer, wrap_elements)
 
-meta_of_interest <- c('star_multimapped_percent',
-                      'star_uniquely_mapped_percent')
+fig_4_layout <- "
+ABCD
+EFGH
+IJKL
+MNOP
+QRST
+"
 
-tidy_quant_meta.df %>%  
-  filter(var %in% meta_of_interest) %>% 
-  mutate(var = sub('star_', '', var),
-         var = case_when(var == 'uniquely_mapped_percent' ~ 'uniquely-mapped', 
-                         var == 'multimapped_percent' ~ 'multi-mapped'),
-         var = factor(var, levels = c('uniquely-mapped', 'multi-mapped'))) %>% 
-  ggplot(aes(condition, value, color = condition)) + 
-  geom_boxplot(fill = NA, outlier.colour = NA, show.legend = F) + 
-  geom_point(position = position_jitter(width = 0.2), size = rel(1), alpha = 0.8) +
-  # scale_shape_manual(values = c(21,25)) +
-  ylab('percent mapped') + xlab('') +
-  ggforce::facet_row(~var, scales = 'free_y', strip.position = 'bottom') + 
-  scale_color_manual(values = identity_color_pal) + 
-  theme(legend.position = 'right', legend.justification = 'center') +
-  ggpubr::stat_compare_means(comparisons = list(c('panc', 'covid'),
-                                                c('ctrl', 'covid'), 
-                                                c('ctrl', 'panc')), 
-                             method = 'wilcox.test', size = 2.5, method.args = list(exact =T), label = 'p.signif') -> mapping_rate_dist.plt
+wrap_plots(
+  wrap_elements(full = plot_list[[3]]$roc),
+  plot_list[[3]]$train,
+  plot_list[[3]]$test,
+  plot_list[[3]]$beta,
+  wrap_elements(full = plot_list[[2]]$roc),
+  plot_list[[2]]$train,
+  plot_list[[2]]$test,
+  plot_list[[2]]$beta,
+  wrap_elements(full = plot_list[[1]]$roc),
+  plot_list[[1]]$train,
+  plot_list[[1]]$test,
+  plot_list[[1]]$beta,
+  wrap_elements(full = plot_list[[5]]$roc),
+  plot_list[[5]]$train,
+  plot_list[[5]]$test,
+  plot_list[[5]]$beta,
+  wrap_elements(full = plot_list[[4]]$roc),
+  plot_list[[4]]$train,
+  plot_list[[4]]$test,
+  plot_list[[4]]$beta,
+  widths = c(1.3, 0.7, 0.7, 1),
+  # guides = 'collect',
+  design = fig_4_layout
+) +
+  plot_annotation(tag_levels = 'A') &
+  theme(
+    plot.tag.position = c(0.01, 0.99),
+    legend.position = 'bottom',
+    legend.title = element_text(vjust = 0.5),
+    legend.justification = c(0.5, 0.5)
+  ) -> fig.4.patchwork
 
-fig.S1C.plt <- mapping_rate_dist.plt
-
-
+save.manuscript.panel(figure = 4,
+                      figure.dir = figure.dir,
+                      name = 'patchwork_full_fig_4',
+                      width = figure_double_column_width,
+                      height = figure_depth,
+                      plot.in = fig.4.patchwork)
 ```
-## Fig_S1D
-```{r S1B}
-s1_flow_chart.plt <- magick::image_read_pdf(path = file.path(figure.dir, 'fig.1', 'complete-seq-diagram-no-process.pdf'))
-flowchart_wrap_figS1D.plt <- wrap_elements(full = magick::image_ggplot(s1_flow_chart.plt))
+
+# nanopore_&_figures
+
+## read_len_load
+```{r}
+panc.7.1.1_read_len <- read_csv(file.path(output_data.dir, 'nanopore', 
+                                          'nanopore_read_len', 'panc.7.1.1_biotype_read_lengths.csv')) %>% 
+  separate(sample, sep = '[.]', into = c(NA,NA,'biotype',NA)) %>% 
+  mutate(biotype = sub('_extraction', '', biotype))
+
+panc.6.1.1_read_len <- read_csv(file.path(output_data.dir, 'nanopore', 
+                                          'nanopore_read_len', 'panc.6.1.1_biotype_read_lengths.csv')) %>% 
+  separate(sample, sep = '[.]', into = c(NA,NA,'biotype',NA)) %>% 
+  mutate(biotype = sub('_extraction', '', biotype))
+
+# ctrl.6.1.5_read_len <- read_csv(file.path(output_data.dir, 'nanopore',
+#                                           'nanopore_read_len', 'ctrl.6.1.5_biotype_read_lengths.csv')) %>%
+#   separate(sample, sep = '[.]', into = c(NA,NA,'biotype',NA)) %>%
+#   mutate(biotype = sub('_extraction', '', biotype))
+
+panc.7.1.1_read_len %>% 
+  mutate(sample = 'panc.7.1.1') %>% 
+  rbind(panc.6.1.1_read_len %>%
+         mutate(sample = 'panc.6.1.1')) %>% 
+  # rbind(ctrl.6.1.5_read_len %>%
+  #        mutate(sample = 'ctrl.6.1.5')) %>%
+  group_by(biotype) -> panc_nanopore_read_length.df
+
+# illumina_read_len <- list.files(file.path(output_data.dir, 'nanopore', 'illumina_read_len'), full.names = T)[1:31]
+# names(illumina_read_len) <- gsub(basename(illumina_read_len), pattern = '.csv', replacement = '')[1:31]
+# 
+# name_conversion <- data.frame('in_name' = stringr::str_split_fixed(names(illumina_read_len), '[.]', n = 2)[,1])
+# 
+# name_conversion$out_name <- c('panc.1.2.3', 'panc.2.2.7', 'panc.4.3.9', 
+#                               'panc.5.4.5', 'panc.6.2.5', 'panc.7.2.5',
+#                               'panc.9.2.5', 'panc.7.1.1', 'panc.9.1.1', 
+#                               'panc.10.1.2', 'panc.6.1.1', 'covid.400.0.56', 'covid.381.0.80',
+#                               'covid.396.0.68', 'covid.411.0.75', 'covid.412.0.64',
+#                               'covid.426.0.80', 'covid.432.0.58', 'covid.441.0.64',
+#                               'covid.442.0.61', 'covid.450.0.84', 'ctrl.12.1.1', 
+#                               'ctrl.5.1.3', 'ctrl.7.1.2', 'ctrl.9.1.2', 'ctrl.13.0.7', 
+#                               'ctrl.8.1.2', 'ctrl.10.0.4', 'ctrl.6.1.5', 'ctrl.11.1.1','ctrl.4.1.3')
+# 
+# illumina_roster_names <- read_csv(file.path(output_data.dir, 'nanopore', 'illumina_read_len', 'ROSTER.csv'),
+#                                   col_names = c('read', 'sample'))
+
+# lapply(illumina_read_len, function(file) {
+# 
+#   read_len_file <- read_csv(file = file,
+#                             col_names = c('read', 'read_length', 'seq_1',
+#                                           'seq_2', 'originally_multisample',
+#                                           'tx', 'sample'))
+#   read_len_file %>%
+#     mutate(tx = ifelse(grepl('^ENST', tx),
+#             str_split_fixed(tx, pattern = '[|]', n = 10)[,1],
+#             tx)) %>%
+#     mutate(tx = ifelse(grepl('_range', tx),
+#             str_split_fixed(tx, pattern = '::', n = 2)[,1],
+#             tx)) %>%
+#   mutate(sample = stringr::str_split_fixed(sample, '[.]', n = 2)[,1],
+#          sample = gsub(pattern = 'panc_', replacement = 'panc', sample)) %>%
+#     merge(name_conversion, by.x = 'sample', by.y = 'in_name') %>%
+#     merge(reference_meta_data$total_tx_to_gene.df, by.x = 'tx', by.y = 'enst') %>%
+#     dplyr::rename('sample_name' = 'out_name')
+# 
+# 
+# }) -> illumina_read_len.list
+# 
+# 
+# saveRDS(object = illumina_read_len.list, file = file.path(output_data.dir, 'nanopore', 'illumina_read_len.rds'))
+# illumina_read_len.list <- readRDS(file = file.path(output_data.dir, 'nanopore', 'illumina_read_len.rds'))
+
+# illumina_read_len.list %>%
+#   bind_rows(.id = 'sample') %>%
+#   filter(!sample %in% qc_fails) %>%
+#   merge(sample_meta_data$`2022.01.14_combined_meta_data.csv`, by.x = 'sample_name', by.y = 'patient') %>%
+#   group_by(condition, biotype) %>%
+#   mutate(z_score = scale(abs(read_length))) %>%
+#   filter(between(z_score, -2.5, 2.5)) -> illumina_read_len.df
+# 
+# saveRDS(object = illumina_read_len.df, file = file.path(output_data.dir, 'nanopore',
+#                                                            'illumina_read_len.df.rds'))
+# rm(illumina_read_len.list)
+
+# illumina_read_len.df <- readRDS(file = file.path(output_data.dir, 'nanopore',
+#                                                            'illumina_read_len.df.rds'))
+# 
+# illumina_read_len.df$seq_1 <- NULL
+# illumina_read_len.df$seq_2 <- NULL
+# 
+# vroom::vroom_write(illumina_read_len.df, file = file.path(output_data.dir, 'nanopore','illumina_read_len_no_seq.tsv.gz'))
+
+# illumina_read_len.df <-
+#   vroom::vroom(file = file.path(output_data.dir,'nanopore','illumina_read_len_no_seq.tsv.gz'), num_threads = 16)
 ```
-### Fig_S1_patchwork
+
+## Fig_S7
+### Fig_S7A
+```{r}
+panc_nanopore_read_length.df %>% 
+  group_by(biotype) %>% 
+  mutate(z_score = scale(abs(read_length))) %>% 
+  filter(between(z_score, -2.5, 2.5))-> panc_nanopore_read_length.df
+
+table(panc_nanopore_read_length.df$biotype) %>% 
+  as.data.frame() %>% 
+  select(biotype = Var1) %>% 
+  mutate(biolabel = c('LINE', 'GENCODE_lncRNA', 'LTR', 'GENCODE_coding', 'SINE')) -> nanopore_biotype_labels
+
+panc_nanopore_read_length.df %>% 
+  group_by(biotype) %>% 
+  # mutate(biotype = factor(biotype, levels = c('SINE', ')))
+  # filter(!grepl('ctrl', sample)) %>% 
+  merge(nanopore_biotype_labels, by = 'biotype') %>% 
+  mutate(biolabel = factor(biolabel, levels = te_aware_annotation_levels),
+         sample = case_when(sample == 'panc.7.1.1' ~ 'panc 7', 
+                            sample == 'panc.6.1.1' ~ 'panc 6')) %>% 
+  ggplot(aes(abs(read_length), fill = sample)) + 
+  geom_histogram(aes(y=stat(density*width)), bins = 100) + 
+  scale_y_continuous(labels = scales::number_format(accuracy = 0.01)) +
+  ggforce::facet_col(~biolabel, scales = 'free') +
+  scale_fill_manual(values = viridisLite::plasma(20)[c(8,10)]) +
+  coord_cartesian(clip = 'off') +
+  ylab('proportion of nanopore reads') + xlab('nanopore read length (bp)') +
+  theme(legend.position = c(0.55,0.99), legend.direction = 'horizontal', plot.margin = margin(r = 3, unit = 'mm')) -> plt_NC.plt
+```
+### Fig_S7B
+```{r}
+import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer)
+
+ctrl.6.1.5_nanopore_hex_to.plt %>%
+  group_by(tx, len, biotype.x, sample) %>%
+  summarize(read_length = mean(read_length)) %>%
+  merge(nanopore_biotype_labels, by.x = 'biotype.x', by.y = 'biotype') %>%
+  mutate(biolabel = factor(biolabel, levels = te_aware_annotation_levels),
+         condition = ifelse(grepl('ctrl', sample), 'ctrl', 'panc')) %>%
+  ggplot(aes(read_length, len, fill = scales::rescale((..count../(sum(..count..) * 1e6))))) +
+  geom_hex(bins = 120) +
+  annotate(geom = 'text', x = 275, y = 150, label = 'ctrl 6') +
+  # geom_vline(xintercept = median(ctrl.6.1.5_nanopore_hex_to.plt$read_length), 
+  #            color = 'grey', linetype = 'dashed') +
+  xlab('avg. observed fragment size (bp)') + ylab('expected size (bp)') +
+  # ggforce::facet_col(~sample) +
+  ggtitle('nanopore exp. vs obs. size -- ctrl 6') + 
+  scale_fill_viridis_c(option = 'viridis', direction = 1, name = 'scaled cpm', breaks = c(0,1)) +
+  theme(legend.position = c(0.95,1), legend.direction = 'horizontal', legend.key.width = unit(1, 'mm'))  +
+  guides(fill = guide_colorbar(title.position = 'left', title.vjust = 1)) +
+  scale_y_continuous(breaks = c(100,200,300,400), limits = c(75,425)) +
+  scale_x_continuous(breaks = c(100,200,300,400), limits = c(75,370)) -> plt_SNA_1.plt
+
+
+panc.7.1.1_nanopore_hex_to.plt %>% 
+  group_by(tx, len, biotype.x, sample) %>% 
+  summarize(read_length = mean(read_length)) %>% 
+  merge(nanopore_biotype_labels, by.x = 'biotype.x', by.y = 'biotype') %>% 
+  mutate(biolabel = factor(biolabel, levels = te_aware_annotation_levels),
+         condition = ifelse(grepl('ctrl', sample), 'ctrl', 'panc')) %>% 
+  ggplot(aes(read_length, len, fill = scales::rescale((..count../(sum(..count..) * 1e6))))) + 
+  geom_hex(bins = 120) +
+  # geom_vline(xintercept = median(panc.7.1.1_nanopore_hex_to.plt$read_length), color = 'grey', linetype = 'dashed') +
+  annotate(geom = 'text', x = 275, y = 150, label = 'panc 7') +
+  xlab('avg. observed fragment size (bp)') + ylab('expected size (bp)') +
+  # ggforce::facet_col(~sample) +
+    ggtitle('nanopore exp. vs obs. size -- ctrl 6') + 
+  scale_fill_viridis_c(option = 'viridis', direction = 1, name = 'scaled cpm', guide = 'none') +
+  scale_y_continuous(breaks = c(100,200,300,400), limits = c(75,425)) +
+  scale_x_continuous(breaks = c(100,200,300,400), limits = c(75,370)) -> plt_SNA_3.plt
+  
+panel_SNA_layout <- "
+AB
+"
+
+wrap_plots(plt_SNA_1.plt + xlab(''),
+           plt_SNA_3.plt + ylab('') + xlab(''),
+           design = panel_SNA_layout) -> panel.SNA.patchwork
+```
+### Fig_S7C
+```{r}
+panc_nanopore_read_length.df %>% 
+  ungroup() %>% 
+  mutate(originally_multisample = ifelse(grepl('^ENST', originally_multisample), 
+            str_split_fixed(originally_multisample, pattern = '[|]', n = 10)[,1],
+            originally_multisample)) %>% 
+  mutate(originally_multisample = ifelse(grepl('_range', originally_multisample),
+            str_split_fixed(originally_multisample, pattern = '::', n = 2)[,1],
+            originally_multisample)) %>%
+  merge(reference_meta_data$total_tx_to_gene.df, by.x = 'originally_multisample', by.y = 'enst') %>% 
+  mutate(len = as.numeric(len)) -> len_compare.df
+
+# len_compare.df %>%
+#   filter(biotype.x == 'SINE', sample == 'ctrl.6.1.5') -> ctrl.6.1.5_nanopore_hex_to.plt
+
+len_compare.df %>%
+  filter(biotype.x == 'SINE', sample == 'panc.6.1.1') -> panc.6.1.1_nanopore_hex_to.plt
+
+len_compare.df %>% 
+  filter(biotype.x == 'SINE', sample == 'panc.7.1.1') -> panc.7.1.1_nanopore_hex_to.plt
+
+# illumina_read_len.df %>% 
+#   filter(! sample %in% qc_fails,
+#          abs(read_length) <= 1000,
+#          condition != 'covid') %>% 
+#   mutate(read_length = abs(read_length)) %>% 
+#   group_by(condition) %>% 
+#   select(sample_name, biotype, read_length, condition) -> read_len_cdf_tmp
+# 
+# read_len_cdf_tmp %>% 
+#   filter(sample_name == 'ctrl.6.1.5', biotype == 'SINE') %>% 
+#   pull(read_length) %>% 
+#   AnalystHelper::ecdf_fun(CI = T, CI.interval = 0.99) %>% 
+#   mutate(sample = 'ctrl 6') %>% 
+#   rbind(read_len_cdf_tmp %>% 
+#     filter(sample_name == 'panc.6.1.1', biotype == 'SINE') %>% 
+#     pull(read_length) %>% 
+#     AnalystHelper::ecdf_fun(CI = T, CI.interval = 0.99) %>% 
+#     mutate(sample = 'panc 6')) %>% 
+#   rbind(read_len_cdf_tmp %>% 
+#     filter(sample_name == 'panc.7.1.1', biotype == 'SINE') %>% 
+#     pull(read_length) %>% 
+#     AnalystHelper::ecdf_fun(CI = T, CI.interval = 0.99) %>% 
+#     mutate(sample = 'panc 7')) %>% 
+#   ggplot(aes(x = value, y = proportion, min = lwr.CI, ymax = upr.CI, color = sample)) + 
+#   geom_ribbon(alpha = 0.05) + 
+#   geom_step() +
+#   # xlim(130,315) +
+#   scale_color_manual(values = c(three_color_pal[3], three_color_pal[1], three_color_pal[2])) + 
+#   ylab('cumulative proportion (99% CI)') + 
+#   xlab('read length') + 
+#   theme(legend.position = c(0.25, 0.99)) -> plt_ND_1.plt
+devtools::install_github("SwampThingPaul/AnalystHelper")
+
+panc.6.1.1_nanopore_hex_to.plt %>%
+        pull(read_length) %>%
+        AnalystHelper::ecdf_fun(CI = T, CI.interval = 0.99) %>%
+          mutate(sample = 'panc 6') %>%
+  rbind(panc.7.1.1_nanopore_hex_to.plt %>%
+        pull(read_length) %>%
+        AnalystHelper::ecdf_fun(CI = T, CI.interval = 0.99) %>%
+          mutate(sample = 'panc 7')) %>%
+  ggplot(aes(x = value, y = proportion, min = lwr.CI, ymax = upr.CI, color = sample)) +
+  geom_ribbon(alpha = 0.05) +
+  geom_step() +
+  xlim(130,315) +
+  scale_color_manual(values = viridisLite::plasma(20)[c(8,10)], guide = 'none') +
+  ylab('cumulative prop. (99% CI)') +
+  xlab('nanopore SINE read length (bp)') +
+  theme(legend.position = c(0.25, 0.99)) -> plt_ND_2.plt
+
+# p4 <- ggplot(data.frame(l = plt_ND_2.plt$labels$y, x = 1, y = 1)) +
+#       geom_text(aes(x, y, label = l), angle = 90) + 
+#       theme_void() +
+#       coord_cartesian(clip = "off")
+# 
+# panel_ND_layout <- "
+# CA
+# CB
+# "
+# 
+# wrap_plots(plt_ND_1.plt + ylab('') + xlab(''),
+#            plt_ND_2.plt + ylab(''),
+#            p4,
+#            widths = c(0.02,1),
+#            design = panel_ND_layout) -> panel.ND.patchwork
+```
+### Fig_S7_patchwork
 ```{r}
 import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer, wrap_elements)
 
 
-fig_S1_layout <- "
+fig_S7_layout <- "
 AB
+AB
+AB
+AD
 CC
-DD
-EE
 "
 
-wrap_plots(fig.S1A.plt,
-           fig.S1B.plt,
+wrap_plots(plt_NC.plt,
+           wrap_elements(full = panel.SNA.patchwork, clip = F),
            guide_area(),
-           fig.S1C.plt + coord_cartesian(clip = 'off'),
-           flowchart_wrap_figS1B.plt,
-           design = fig_S1_layout, 
+           plt_ND_2.plt + coord_cartesian(clip = 'off'),
+           # wrap_elements(full = plt_ND_2.plt),
+           design = fig_S7_layout, 
            guides = 'collect',
-           heights = c(0.55,0.145,1.1,1.3)) + plot_annotation(tag_levels = 'A') & 
-  theme(plot.tag.position = c(0.01, 0.99), 
-        legend.position = 'bottom',
-        legend.title = element_text(vjust = 1.25),
-        legend.justification = c(0.5, 0.5)) -> fig.S1.patchwork
+           heights = c(1,1,1,1,0.17)) +
+  plot_annotation(tag_levels = 'A') &
+  theme(legend.justification = 'center', legend.position = 'bottom') -> fig.S7.patchwork
 
-
-save.manuscript.panel(figure = 1,
+save.manuscript.panel(figure = 7,
                       figure.dir = figure.dir,
-                      name = 'patchwork_full_fig_S1',
+                      name = 'patchwork_full_fig_S7',
                       width = figure_double_column_width,
                       height = figure_depth,
-                      plot.in = fig.S1.patchwork)
+                      plot.in = fig.S7.patchwork)
 ```
+
+## Fig_S8
+
 
 # Fig_3
 ## tcga & gtex load
@@ -3511,98 +4139,7 @@ save.manuscript.panel(figure = 3,
 ```
 
 # Fig_4
-## read_len load
-```{r}
-panc.7.1.1_read_len <- read_csv(file.path(output_data.dir, 'nanopore', 
-                                          'nanopore_read_len', 'panc.7.1.1_biotype_read_lengths.csv')) %>% 
-  separate(sample, sep = '[.]', into = c(NA,NA,'biotype',NA)) %>% 
-  mutate(biotype = sub('_extraction', '', biotype))
 
-panc.6.1.1_read_len <- read_csv(file.path(output_data.dir, 'nanopore', 
-                                          'nanopore_read_len', 'panc.6.1.1_biotype_read_lengths.csv')) %>% 
-  separate(sample, sep = '[.]', into = c(NA,NA,'biotype',NA)) %>% 
-  mutate(biotype = sub('_extraction', '', biotype))
-
-# ctrl.6.1.5_read_len <- read_csv(file.path(output_data.dir, 'nanopore',
-#                                           'nanopore_read_len', 'ctrl.6.1.5_biotype_read_lengths.csv')) %>%
-#   separate(sample, sep = '[.]', into = c(NA,NA,'biotype',NA)) %>%
-#   mutate(biotype = sub('_extraction', '', biotype))
-
-panc.7.1.1_read_len %>% 
-  mutate(sample = 'panc.7.1.1') %>% 
-  rbind(panc.6.1.1_read_len %>%
-         mutate(sample = 'panc.6.1.1')) %>% 
-  # rbind(ctrl.6.1.5_read_len %>%
-  #        mutate(sample = 'ctrl.6.1.5')) %>%
-  group_by(biotype) -> panc_nanopore_read_length.df
-
-illumina_read_len <- list.files(file.path(output_data.dir, 'nanopore', 'illumina_read_len'), full.names = T)[1:31]
-names(illumina_read_len) <- gsub(basename(illumina_read_len), pattern = '.csv', replacement = '')[1:31]
-
-name_conversion <- data.frame('in_name' = stringr::str_split_fixed(names(illumina_read_len), '[.]', n = 2)[,1])
-
-name_conversion$out_name <- c('panc.1.2.3', 'panc.2.2.7', 'panc.4.3.9', 
-                              'panc.5.4.5', 'panc.6.2.5', 'panc.7.2.5',
-                              'panc.9.2.5', 'panc.7.1.1', 'panc.9.1.1', 
-                              'panc.10.1.2', 'panc.6.1.1', 'covid.400.0.56', 'covid.381.0.80',
-                              'covid.396.0.68', 'covid.411.0.75', 'covid.412.0.64',
-                              'covid.426.0.80', 'covid.432.0.58', 'covid.441.0.64',
-                              'covid.442.0.61', 'covid.450.0.84', 'ctrl.12.1.1', 
-                              'ctrl.5.1.3', 'ctrl.7.1.2', 'ctrl.9.1.2', 'ctrl.13.0.7', 
-                              'ctrl.8.1.2', 'ctrl.10.0.4', 'ctrl.6.1.5', 'ctrl.11.1.1','ctrl.4.1.3')
-
-illumina_roster_names <- read_csv(file.path(output_data.dir, 'nanopore', 'illumina_read_len', 'ROSTER.csv'),
-                                  col_names = c('read', 'sample'))
-
-# lapply(illumina_read_len, function(file) {
-# 
-#   read_len_file <- read_csv(file = file,
-#                             col_names = c('read', 'read_length', 'seq_1',
-#                                           'seq_2', 'originally_multisample',
-#                                           'tx', 'sample'))
-#   read_len_file %>%
-#     mutate(tx = ifelse(grepl('^ENST', tx),
-#             str_split_fixed(tx, pattern = '[|]', n = 10)[,1],
-#             tx)) %>%
-#     mutate(tx = ifelse(grepl('_range', tx),
-#             str_split_fixed(tx, pattern = '::', n = 2)[,1],
-#             tx)) %>%
-#   mutate(sample = stringr::str_split_fixed(sample, '[.]', n = 2)[,1],
-#          sample = gsub(pattern = 'panc_', replacement = 'panc', sample)) %>%
-#     merge(name_conversion, by.x = 'sample', by.y = 'in_name') %>%
-#     merge(reference_meta_data$total_tx_to_gene.df, by.x = 'tx', by.y = 'enst') %>%
-#     dplyr::rename('sample_name' = 'out_name')
-# 
-# 
-# }) -> illumina_read_len.list
-# 
-# 
-# saveRDS(object = illumina_read_len.list, file = file.path(output_data.dir, 'nanopore', 'illumina_read_len.rds'))
-# illumina_read_len.list <- readRDS(file = file.path(output_data.dir, 'nanopore', 'illumina_read_len.rds'))
-
-# illumina_read_len.list %>%
-#   bind_rows(.id = 'sample') %>%
-#   filter(!sample %in% qc_fails) %>%
-#   merge(sample_meta_data$`2022.01.14_combined_meta_data.csv`, by.x = 'sample_name', by.y = 'patient') %>%
-#   group_by(condition, biotype) %>%
-#   mutate(z_score = scale(abs(read_length))) %>%
-#   filter(between(z_score, -2.5, 2.5)) -> illumina_read_len.df
-# 
-# saveRDS(object = illumina_read_len.df, file = file.path(output_data.dir, 'nanopore',
-#                                                            'illumina_read_len.df.rds'))
-# rm(illumina_read_len.list)
-
-# illumina_read_len.df <- readRDS(file = file.path(output_data.dir, 'nanopore',
-#                                                            'illumina_read_len.df.rds'))
-# 
-# illumina_read_len.df$seq_1 <- NULL
-# illumina_read_len.df$seq_2 <- NULL
-# 
-# vroom::vroom_write(illumina_read_len.df, file = file.path(output_data.dir, 'nanopore','illumina_read_len_no_seq.tsv.gz'))
-
-illumina_read_len.df <-
-  vroom::vroom(file = file.path(output_data.dir,'nanopore','illumina_read_len_no_seq.tsv.gz'), num_threads = 16)
-```
 ## Fig_NA
 ```{r}
 table(illumina_read_len.df$biotype) %>% 
@@ -3690,123 +4227,8 @@ pca.out %>%
   annotate(geom = 'text', x = -3.75, y = -3.25, label = 'size-aware', size = txt.mm_to_pts(1)) +
   theme(legend.position = c(0.95,1), legend.direction = 'horizontal') -> plt_NB.plt
 ```
-## Fig_NC
-```{r}
-panc_nanopore_read_length.df %>% 
-  group_by(biotype) %>% 
-  mutate(z_score = scale(abs(read_length))) %>% 
-  filter(between(z_score, -2.5, 2.5))-> panc_nanopore_read_length.df
 
-table(panc_nanopore_read_length.df$biotype) %>% 
-  as.data.frame() %>% 
-  select(biotype = Var1) %>% 
-  mutate(biolabel = c('LINE', 'GENCODE_lncRNA', 'LTR', 'GENCODE_coding', 'SINE')) -> nanopore_biotype_labels
 
-panc_nanopore_read_length.df %>% 
-  group_by(biotype) %>% 
-  # mutate(biotype = factor(biotype, levels = c('SINE', ')))
-  # filter(!grepl('ctrl', sample)) %>% 
-  merge(nanopore_biotype_labels, by = 'biotype') %>% 
-  mutate(biolabel = factor(biolabel, levels = te_aware_annotation_levels),
-         sample = case_when(sample == 'panc.7.1.1' ~ 'panc 7', 
-                            sample == 'panc.6.1.1' ~ 'panc 6')) %>% 
-  ggplot(aes(abs(read_length), fill = sample)) + 
-  geom_histogram(aes(y=stat(density*width)), bins = 100) + 
-  scale_y_continuous(labels = scales::number_format(accuracy = 0.01)) +
-  ggforce::facet_col(~biolabel, scales = 'free') +
-  scale_fill_manual(values = viridisLite::plasma(20)[c(8,10)]) +
-  coord_cartesian(clip = 'off') +
-  ylab('proportion of nanopore reads') + xlab('nanopore read length (bp)') +
-  theme(legend.position = c(0.55,0.99), legend.direction = 'horizontal', plot.margin = margin(r = 3, unit = 'mm')) -> plt_NC.plt
-```
-## Fig_ND
-```{r}
-panc_nanopore_read_length.df %>% 
-  ungroup() %>% 
-  mutate(originally_multisample = ifelse(grepl('^ENST', originally_multisample), 
-            str_split_fixed(originally_multisample, pattern = '[|]', n = 10)[,1],
-            originally_multisample)) %>% 
-  mutate(originally_multisample = ifelse(grepl('_range', originally_multisample),
-            str_split_fixed(originally_multisample, pattern = '::', n = 2)[,1],
-            originally_multisample)) %>%
-  merge(reference_meta_data$total_tx_to_gene.df, by.x = 'originally_multisample', by.y = 'enst') %>% 
-  mutate(len = as.numeric(len)) -> len_compare.df
-
-# len_compare.df %>%
-#   filter(biotype.x == 'SINE', sample == 'ctrl.6.1.5') -> ctrl.6.1.5_nanopore_hex_to.plt
-
-len_compare.df %>%
-  filter(biotype.x == 'SINE', sample == 'panc.6.1.1') -> panc.6.1.1_nanopore_hex_to.plt
-
-len_compare.df %>% 
-  filter(biotype.x == 'SINE', sample == 'panc.7.1.1') -> panc.7.1.1_nanopore_hex_to.plt
-
-# illumina_read_len.df %>% 
-#   filter(! sample %in% qc_fails,
-#          abs(read_length) <= 1000,
-#          condition != 'covid') %>% 
-#   mutate(read_length = abs(read_length)) %>% 
-#   group_by(condition) %>% 
-#   select(sample_name, biotype, read_length, condition) -> read_len_cdf_tmp
-# 
-# read_len_cdf_tmp %>% 
-#   filter(sample_name == 'ctrl.6.1.5', biotype == 'SINE') %>% 
-#   pull(read_length) %>% 
-#   AnalystHelper::ecdf_fun(CI = T, CI.interval = 0.99) %>% 
-#   mutate(sample = 'ctrl 6') %>% 
-#   rbind(read_len_cdf_tmp %>% 
-#     filter(sample_name == 'panc.6.1.1', biotype == 'SINE') %>% 
-#     pull(read_length) %>% 
-#     AnalystHelper::ecdf_fun(CI = T, CI.interval = 0.99) %>% 
-#     mutate(sample = 'panc 6')) %>% 
-#   rbind(read_len_cdf_tmp %>% 
-#     filter(sample_name == 'panc.7.1.1', biotype == 'SINE') %>% 
-#     pull(read_length) %>% 
-#     AnalystHelper::ecdf_fun(CI = T, CI.interval = 0.99) %>% 
-#     mutate(sample = 'panc 7')) %>% 
-#   ggplot(aes(x = value, y = proportion, min = lwr.CI, ymax = upr.CI, color = sample)) + 
-#   geom_ribbon(alpha = 0.05) + 
-#   geom_step() +
-#   # xlim(130,315) +
-#   scale_color_manual(values = c(three_color_pal[3], three_color_pal[1], three_color_pal[2])) + 
-#   ylab('cumulative proportion (99% CI)') + 
-#   xlab('read length') + 
-#   theme(legend.position = c(0.25, 0.99)) -> plt_ND_1.plt
-devtools::install_github("SwampThingPaul/AnalystHelper")
-
-panc.6.1.1_nanopore_hex_to.plt %>%
-        pull(read_length) %>%
-        AnalystHelper::ecdf_fun(CI = T, CI.interval = 0.99) %>%
-          mutate(sample = 'panc 6') %>%
-  rbind(panc.7.1.1_nanopore_hex_to.plt %>%
-        pull(read_length) %>%
-        AnalystHelper::ecdf_fun(CI = T, CI.interval = 0.99) %>%
-          mutate(sample = 'panc 7')) %>%
-  ggplot(aes(x = value, y = proportion, min = lwr.CI, ymax = upr.CI, color = sample)) +
-  geom_ribbon(alpha = 0.05) +
-  geom_step() +
-  xlim(130,315) +
-  scale_color_manual(values = viridisLite::plasma(20)[c(8,10)], guide = 'none') +
-  ylab('cumulative prop. (99% CI)') +
-  xlab('nanopore SINE read length (bp)') +
-  theme(legend.position = c(0.25, 0.99)) -> plt_ND_2.plt
-
-# p4 <- ggplot(data.frame(l = plt_ND_2.plt$labels$y, x = 1, y = 1)) +
-#       geom_text(aes(x, y, label = l), angle = 90) + 
-#       theme_void() +
-#       coord_cartesian(clip = "off")
-# 
-# panel_ND_layout <- "
-# CA
-# CB
-# "
-# 
-# wrap_plots(plt_ND_1.plt + ylab('') + xlab(''),
-#            plt_ND_2.plt + ylab(''),
-#            p4,
-#            widths = c(0.02,1),
-#            design = panel_ND_layout) -> panel.ND.patchwork
-```
 ## Fig_NE
 ```{r}
 # install.packages('hexbin')
@@ -3877,40 +4299,7 @@ wrap_plots(plt_NE.plt + xlab(''),
            design = panel_SNA_layout) -> panel.SNA.patchwork
   
 ```
-### Fig_Nanopore_patchwork
-```{r}
-import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer, wrap_elements)
 
-
-fig_N_layout <- "
-AB
-AB
-AB
-AD
-CC
-"
-
-wrap_plots(plt_NC.plt,
-           wrap_elements(full = panel.SNA.patchwork, clip = F),
-           guide_area(),
-           plt_ND_2.plt + coord_cartesian(clip = 'off'),
-           # wrap_elements(full = plt_ND_2.plt),
-           design = fig_N_layout, 
-           guides = 'collect',
-           heights = c(1,1,1,1,0.17)) +
-  plot_annotation(tag_levels = 'A') &
-  theme(legend.justification = 'center', legend.position = 'bottom') -> fig.N.patchwork
-
-
-# fig.N.patchwork
-
-save.manuscript.panel(figure = 6,
-                      figure.dir = figure.dir,
-                      name = 'patchwork_full_fig_S6',
-                      width = figure_double_column_width,
-                      height = figure_depth,
-                      plot.in = fig.N.patchwork)
-```
 
 # Fig_S4
 ## Fig_S4A
@@ -4189,56 +4578,7 @@ save.manuscript.panel(figure = 5,
 ```
 
 # Fig_S6
-## Fig_SNA
-```{r}
-import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer)
 
-ctrl.6.1.5_nanopore_hex_to.plt %>%
-  group_by(tx, len, biotype.x, sample) %>%
-  summarize(read_length = mean(read_length)) %>%
-  merge(nanopore_biotype_labels, by.x = 'biotype.x', by.y = 'biotype') %>%
-  mutate(biolabel = factor(biolabel, levels = te_aware_annotation_levels),
-         condition = ifelse(grepl('ctrl', sample), 'ctrl', 'panc')) %>%
-  ggplot(aes(read_length, len, fill = scales::rescale((..count../(sum(..count..) * 1e6))))) +
-  geom_hex(bins = 120) +
-  annotate(geom = 'text', x = 275, y = 150, label = 'ctrl 6') +
-  # geom_vline(xintercept = median(ctrl.6.1.5_nanopore_hex_to.plt$read_length), 
-  #            color = 'grey', linetype = 'dashed') +
-  xlab('avg. observed fragment size (bp)') + ylab('expected size (bp)') +
-  # ggforce::facet_col(~sample) +
-  ggtitle('nanopore exp. vs obs. size -- ctrl 6') + 
-  scale_fill_viridis_c(option = 'viridis', direction = 1, name = 'scaled cpm', breaks = c(0,1)) +
-  theme(legend.position = c(0.95,1), legend.direction = 'horizontal', legend.key.width = unit(1, 'mm'))  +
-  guides(fill = guide_colorbar(title.position = 'left', title.vjust = 1)) +
-  scale_y_continuous(breaks = c(100,200,300,400), limits = c(75,425)) +
-  scale_x_continuous(breaks = c(100,200,300,400), limits = c(75,370)) -> plt_SNA_1.plt
-
-
-panc.7.1.1_nanopore_hex_to.plt %>% 
-  group_by(tx, len, biotype.x, sample) %>% 
-  summarize(read_length = mean(read_length)) %>% 
-  merge(nanopore_biotype_labels, by.x = 'biotype.x', by.y = 'biotype') %>% 
-  mutate(biolabel = factor(biolabel, levels = te_aware_annotation_levels),
-         condition = ifelse(grepl('ctrl', sample), 'ctrl', 'panc')) %>% 
-  ggplot(aes(read_length, len, fill = scales::rescale((..count../(sum(..count..) * 1e6))))) + 
-  geom_hex(bins = 120) +
-  # geom_vline(xintercept = median(panc.7.1.1_nanopore_hex_to.plt$read_length), color = 'grey', linetype = 'dashed') +
-  annotate(geom = 'text', x = 275, y = 150, label = 'panc 7') +
-  xlab('avg. observed fragment size (bp)') + ylab('expected size (bp)') +
-  # ggforce::facet_col(~sample) +
-    ggtitle('nanopore exp. vs obs. size -- ctrl 6') + 
-  scale_fill_viridis_c(option = 'viridis', direction = 1, name = 'scaled cpm', guide = 'none') +
-  scale_y_continuous(breaks = c(100,200,300,400), limits = c(75,425)) +
-  scale_x_continuous(breaks = c(100,200,300,400), limits = c(75,370)) -> plt_SNA_3.plt
-  
-panel_SNA_layout <- "
-AB
-"
-
-wrap_plots(plt_SNA_1.plt + xlab(''),
-           plt_SNA_3.plt + ylab('') + xlab(''),
-           design = panel_SNA_layout) -> panel.SNA.patchwork
-```
 ## Fig_SNA_dep
 ```{r}
 illumina_biotype_to.plt %>% 
@@ -4688,7 +5028,7 @@ save.manuscript.panel(figure = 6,
 
 ```
 
-# Figure_process_aware
+# DEP Figure_process_aware
 ## Fig_4A
 ```{r}
 process.aware.salmon_quant$analysis_set$ctrl_panc_covid$unsplice_data.df %>% 
@@ -4814,7 +5154,7 @@ unsplice_counts_pca.df %>%
 
 ```
 
-# Fig_modeling
+# DEP Fig_modeling
 ## Fig_Modeling -- multi_te
 ```{r}
 # install.packages('glmnet')
@@ -5325,416 +5665,7 @@ binom_prob_thresh.plt
 
 ```
 
-## Binomial
-```{r}
-doMC::registerDoMC(cores = 12)
 
-
-# write_rds(final_alpha_new, file = file.path(output_data.dir, 'final_alpha_new.rds'))
-# 
-# str(final_alpha$liver$entropy)
-
-# final_alpha_new <- read_rds(file = file.path(output_data.dir, 'final_alpha_new.rds'))
-
-inverse.logit.calc <- function(y_hat) { exp(y_hat)/(1+exp(y_hat)) }
-
-
-lapply(final_alpha_new, function(cancer) {
-  lapply(cancer, function(feature_set) {
-    lapply(feature_set, function(alpha) {
-      
-      alpha$perf_list
-      
-    }) %>% bind_rows(.id = 'alpha')
-    
-  }) %>% bind_rows(.id = 'feature_set')
-  
-}) %>% bind_rows(.id = 'cancer') -> alpha_summary
-
-
-alpha_summary %>% 
-  group_by(cancer) %>% 
-  slice(which.max(tpr)) %>% 
-  mutate(auc = as.numeric(auc))-> top_alpha
-
-alpha_summary %>% 
-  filter(feature_set == 'gencode') %>% 
-  group_by(cancer) %>% 
-  slice(which.max(tpr)) -> gencode_alpha
-
-
-alpha_order <- setNames(c(1:nrow(top_alpha)), top_alpha %>% pull(cancer))
-
-imap(alpha_order, function(index, cancer) {
-  message(cancer)
-  
-  feature_set <- top_alpha[index, 7, drop = T]
-  best_alpha <- as.numeric(top_alpha[index, 6, drop = T])
-  gencode_alpha <- as.numeric(gencode_alpha[index, 6, drop = T])
-  
-  best_model <-
-    final_alpha_new[[cancer]][[feature_set]][[best_alpha]]
-
-  gencode_model <-
-    final_alpha_new[[cancer]][['gencode']][[gencode_alpha]]
-
-
-  list('best_model' = best_model,
-       'gencode_model' = gencode_model)
-  
-}) -> model_comparison
-
-
-elife_meta_data %>% 
-  mutate(diagnosis = ifelse(diagnosis == 'Healthy donor', 0, 1)) %>% 
-  select(sample, diagnosis) %>% 
-  column_to_rownames('sample') -> elife_labels
-
-binom_CI <- function(x, n, l) {
-    CI <- binom.test(round(x*n), n, 0.5, alternative =  "two.sided", conf.level = 0.90)$conf.int[l]
-    return(CI)
-}
-
-
-lapply(model_comparison, function(model) {
-  lapply(model, function(comparison) {
-    
-    y_hat_matrix <-
-      comparison$model$fit.preval[, which(comparison$model$lambda == comparison$model$lambda.min)]
-    
-    filt_elife_labels <- elife_labels[rownames(elife_labels) %in% names(y_hat_matrix), ,drop=F]
-    
-    filt_elife_labels <- filt_elife_labels[match(names(y_hat_matrix), rownames(filt_elife_labels)), ]
-    
-    
-    predictions <-
-      ROCR::prediction(
-        labels = filt_elife_labels,
-        predictions = y_hat_matrix,
-        label.ordering = c(0, 1)
-      )
-
-    performances <-
-      ROCR::performance(
-        prediction.obj = predictions,
-        measure = "tpr",
-        x.measure = "fpr"
-      )
-
-    cutoffs <-
-      comparison$perf_list %>% 
-      mutate(n = length(performances@y.values[[1]])) %>% 
-      rowwise() %>%
-      mutate(ci_low = binom_CI(tpr, n, 1),
-             ci_high = binom_CI(tpr, n, 2))
-
-    coef_tmp <-
-      cbind(coef(comparison$model, s = comparison$model$lambda.min))
-
-    beta <- coef_tmp[apply(coef_tmp != 0, 1, any),]
-
-    colnames(beta) <-
-      names(coef(comparison$model, s = comparison$model$lambda.min))
-
-    
-    rocCurve <-
-      as.data.frame(cbind(unlist(slot(
-        performances, "x.values"
-      )[[1]]),
-      unlist(slot(
-        performances, "y.values"
-      )[[1]])))
-
-    colnames(rocCurve) <- c("X", "Y")
-
-    ggplot(rocCurve, aes(x = X, y = Y)) +
-      geom_line() +
-      geom_abline(linetype = "dotted", color = "grey50") +
-      labs(x = "False Positive Rate", y = "True Positive Rate") +
-      ylim(0, 1) + xlim(0, 1) -> rocCurv.plt
-    
-    binomial_model_response_prob <- inverse.logit.calc(y_hat_matrix)
-    
-    list('roc' = rocCurv.plt,
-         'response_prob' = binomial_model_response_prob,
-         'beta' = beta,
-         'perf' = performances,
-         'pred' = predictions,
-         'cutoffs' = cutoffs)
-    
-  })
-}) -> training_performance
-
-training_performance$Esophagus$best_model$beta
-
-
-lapply(training_performance, function(model) {
-  lapply(model, function(cancer) {
-    lapply(model, function(comparison) {
-      length(comparison$beta)
-      
-    }) %>% bind_rows(.id = 'comparison')
-  }) %>% bind_rows(.id = 'model')
-}) %>% bind_rows(.id = 'cancer') %>% distinct() %>% 
-  filter(model == 'best_model')
-
-
-lapply(model_comparison, function(model) {
-  lapply(model, function(comparison) {
-    
-    test_y_hat <- predict(
-      object = comparison$model,
-      s = 'lambda.min',
-      newx = comparison$test_x,
-      newy = comparison$test_y,
-      type = 'response'
-    )
-    
-    test_y_hat <-
-      ifelse(test_y_hat > comparison$perf_list$cut, 1, 0)
-    
-    data.frame('pred' = test_y_hat, 'label' = comparison$test_y) %>% 
-      mutate(result = case_when(
-        lambda.min == label & label == 1 ~ 'TP',
-        lambda.min == label & label == 0 ~ 'TN',
-        lambda.min != label & label == 1 ~ 'FN',
-        lambda.min != label & label == 0 ~ 'FP'
-      )) -> results
-    
-    TP <- sum(results$result == 'TP')
-    TN <- sum(results$result == 'TN')
-    FN <- sum(results$result == 'FN')
-    FP <- sum(results$result == 'FP')
-    
-    sensitivity <- TP/(TP+FN)
-    specificity <- TN/(TN+FP)
-    
-    data.frame('tpr' = sensitivity, 
-               'fpr' = specificity,
-               'n' = nrow(results)) %>% 
-      rowwise() %>%
-      mutate(ci_low = binom_CI(tpr, n, 1),
-             ci_high = binom_CI(tpr, n, 2)) -> cutoffs
-    
-    list('results' = results,
-         'sens' = sensitivity,
-         'spec' = specificity,
-         'cutoffs' = cutoffs)
-    
-  })
-  
-}) -> testing_performance
-
-make_anno_de <- function(de_out) {
-  de_out %>%
-    merge(reference_meta_data$ucsc_rmsk_insert_info.df,
-          by = 'gene',
-          all.x = T) %>%
-    mutate(
-      family = ifelse(
-        ensg %in% reference_meta_data$gencode_lncRNA_gene_names.df$ensg,
-        'GENCODE_lncRNA',
-        family
-      ),
-      family = ifelse(is.na(family), 'GENCODE_coding', family),
-      clade = ifelse(grepl('GENCODE', family), family, clade),
-      clade = ifelse(
-        clade %in% c(
-          'GENCODE_coding',
-          'GENCODE_lncRNA',
-          'LINE',
-          'SINE',
-          'LTR',
-          'DNA',
-          'Simple_repeat'
-        ),
-        clade,
-        'other'
-      ),
-      type = ifelse(grepl('GENCODE', family), 'GENCODE', 'TE'),
-      clade = factor(clade, levels = te_aware_annotation_levels)
-    ) %>%
-    filter(!ensg %in% chrM.filter.list,
-           !grepl('^MT', gene))
-}
-
-
-
-lapply(names(training_performance), function(cancer) {
-  
-  message(cancer)
-  
-  elife_select <- ifelse(cancer == 'Esophagus', 'esoph', tolower(cancer))
-  elife_select <- paste0(elife_select, '_healthy')
-  
-  training_performance[[cancer]]$best_model$beta %>%
-    as.matrix() %>%
-    as.data.frame() %>%
-    rownames_to_column('gene') %>%
-    rename('beta' = V1) -> feature_df
-  
-  feature_df %>% 
-    filter(gene %in% reference_meta_data$ucsc_rmsk_insert_info.df$gene) %>%
-    merge(elife_rmsk_quant[[elife_select]]$deseq$de_out %>% make_anno_de()) %>%
-    ggplot(aes(
-      beta,
-      log2FoldChange,
-      color = clade,
-      fill = after_scale(alpha(color, 0.4))
-    )) +
-    geom_hline(yintercept = 0,
-               linetype = 'dashed',
-               alpha = 0.4) +
-    geom_vline(xintercept = 0,
-               linetype = 'dashed',
-               alpha = 0.4) +
-    geom_point(shape = 21, show.legend = F) +
-    scale_color_manual(values = te_color_pal) +
-    ggtitle(paste0("# non-zero features: ", nrow(feature_df) - 1)) +
-    ggrepel::geom_text_repel(aes(label = gene),
-                             show.legend = F ,
-                             size = txt.mm_to_pts(0.8)) -> beta_plot
-  
-  
-  training_performance[[cancer]]$best_model$roc$data %>%
-    as.data.frame() %>%
-    mutate(model = 'aware') %>%
-    rbind(
-      training_performance[[cancer]]$gencode_model$roc$data %>%
-        as.data.frame() %>%
-        mutate(model = 'naive')
-    ) %>%
-    ggplot(aes(X, Y, color = model)) +
-    geom_line() +
-    geom_abline(linetype = "dotted", color = "grey50") +
-    scale_color_colorblind() +
-    ylab('sensitivity') +
-    xlab('1 - specificity') +
-    ggtitle(cancer) +
-    annotate(
-      "text",
-      label = paste0(
-        "AUC: ",
-        round(as.numeric(training_performance[[cancer]]$best_model$cutoffs$auc), 2),
-        ' > ',
-        round(as.numeric(training_performance[[cancer]]$gencode_model$cutoffs$auc), 2)
-        ),
-        y = 0.125,
-        x = 0.5,
-        size = txt.mm_to_pts(0.8)
-      ) +
-        theme(
-          legend.position = c(0.9, 0.7),
-          legend.title = element_blank(),
-          legend.background = element_blank()
-        ) -> roc.plt
-  
-  training_performance[[cancer]]$best_model$cutoffs %>%
-    mutate(model = 'aware') %>%
-    rbind(training_performance[[cancer]]$gencode_model$cutoffs %>%
-            mutate(model = 'naive')) %>%
-    group_by(model) %>%
-    mutate(model = factor(model, levels = c('naive', 'aware'))) %>%
-    filter(fpr == model_comparison[[cancer]]$best_model$perf_list$fpr) %>%
-    slice(which.max(tpr)) %>%
-    mutate(split = 'Training') %>%
-    ggplot(aes(
-      model,
-      ymin = ci_low,
-      y = tpr,
-      ymax = ci_high
-    )) +
-    geom_point() +
-    geom_errorbar() +
-    geom_text(aes(label = round(tpr, 2)), y = 0.075, size = txt.mm_to_pts(0.8)) +
-    ggtitle(paste0('N: ', training_performance[[cancer]]$best_model$cutoff$n)) +
-    ylim(0, 1) + xlab('') +
-    ylab('sens. @ 90% spec.') +
-    ggforce::facet_row(~ split) -> train.plt
-  
-  testing_performance[[cancer]]$best_model$cutoffs %>%
-    mutate(model = 'aware') %>%
-    rbind(testing_performance[[cancer]]$gencode_model$cutoffs %>%
-            mutate(model = 'naive')) %>%
-    group_by(model) %>%
-    mutate(model = factor(model, levels = c('naive', 'aware'))) %>%
-    mutate(split = 'Testing') %>%
-    ggplot(aes(
-      model,
-      ymin = ci_low,
-      y = tpr,
-      ymax = ci_high
-    )) +
-    geom_point() +
-    geom_errorbar() +
-    geom_text(aes(label = round(tpr, 2)), y = 0.075, size = txt.mm_to_pts(0.8)) +
-    ggtitle(paste0('N: ', testing_performance[[cancer]]$best_model$cutoff$n)) +
-    ylim(0, 1) + xlab('') +
-    ylab('testing sens.') +
-    ggforce::facet_row( ~ split) -> test.plt
-  
-  list('roc' = roc.plt,
-       'train' = train.plt,
-       'test' = test.plt,
-       'beta' = beta_plot)
-  
-}) -> plot_list
-
-# wrap_elements(full = plot_list[[1]]$roc)
-
-```
-## Fig 4 modeling
-```{r}
-import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer, wrap_elements)
-
-fig_4_layout <- "
-ABCD
-EFGH
-IJKL
-MNOP
-QRST
-"
-
-wrap_plots(
-  wrap_elements(full = plot_list[[3]]$roc),
-  plot_list[[3]]$train,
-  plot_list[[3]]$test,
-  plot_list[[3]]$beta,
-  wrap_elements(full = plot_list[[2]]$roc),
-  plot_list[[2]]$train,
-  plot_list[[2]]$test,
-  plot_list[[2]]$beta,
-  wrap_elements(full = plot_list[[1]]$roc),
-  plot_list[[1]]$train,
-  plot_list[[1]]$test,
-  plot_list[[1]]$beta,
-  wrap_elements(full = plot_list[[5]]$roc),
-  plot_list[[5]]$train,
-  plot_list[[5]]$test,
-  plot_list[[5]]$beta,
-  wrap_elements(full = plot_list[[4]]$roc),
-  plot_list[[4]]$train,
-  plot_list[[4]]$test,
-  plot_list[[4]]$beta,
-  widths = c(1.3, 0.7, 0.7, 1),
-  # guides = 'collect',
-  design = fig_4_layout
-) +
-  plot_annotation(tag_levels = 'A') &
-  theme(
-    plot.tag.position = c(0.01, 0.99),
-    legend.position = 'bottom',
-    legend.title = element_text(vjust = 0.5),
-    legend.justification = c(0.5, 0.5)
-  ) -> fig.4.patchwork
-
-save.manuscript.panel(figure = 4,
-                      figure.dir = figure.dir,
-                      name = 'patchwork_full_fig_4',
-                      width = figure_double_column_width,
-                      height = figure_depth,
-                      plot.in = fig.4.patchwork)
-```
 
 
 
@@ -6363,7 +6294,7 @@ save.manuscript.panel(figure = 7,
                       plot.in = fig.model.patchwork)
 ```
 
-
+# DEP TCGA
 ## TCGA GTEx Heatmap
 ```{r}
 tcga_paad_gene_counts %>% 
@@ -6626,7 +6557,7 @@ pca.out %>%
 
 
 
-## TCGA surv heatmap
+## DEP TCGA surv heatmap
 ```{r}
 tcga_paad_dds_norm_counts.df %>% 
   rownames_to_column('gene') %>% 
@@ -6687,6 +6618,88 @@ patchwork::wrap_plots(full = new_hm)
 ```
 
 
+# DEP Fig_S1
+## Fig_S1A/B
+```{r 1B/C}
+
+fig.S1A.plt <- 
+  salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_1v2.plt + xlim(-280,280)
+  
+fig.S1B.plt <- 
+  salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_2v3.plt
+
+```
+## Fig_S1C
+```{r S1A}
+salmon_quant$analysis_set$ctrl_panc_covid$quant_meta %>% 
+  gather(var, value, -sample, -condition, -sex, -context) %>% 
+  mutate(value = as.numeric(value),
+         condition = factor(condition, levels = c('panc', 'ctrl', 'covid'))) -> tidy_quant_meta.df
+
+meta_of_interest <- c('star_multimapped_percent',
+                      'star_uniquely_mapped_percent')
+
+tidy_quant_meta.df %>%  
+  filter(var %in% meta_of_interest) %>% 
+  mutate(var = sub('star_', '', var),
+         var = case_when(var == 'uniquely_mapped_percent' ~ 'uniquely-mapped', 
+                         var == 'multimapped_percent' ~ 'multi-mapped'),
+         var = factor(var, levels = c('uniquely-mapped', 'multi-mapped'))) %>% 
+  ggplot(aes(condition, value, color = condition)) + 
+  geom_boxplot(fill = NA, outlier.colour = NA, show.legend = F) + 
+  geom_point(position = position_jitter(width = 0.2), size = rel(1), alpha = 0.8) +
+  # scale_shape_manual(values = c(21,25)) +
+  ylab('percent mapped') + xlab('') +
+  ggforce::facet_row(~var, scales = 'free_y', strip.position = 'bottom') + 
+  scale_color_manual(values = identity_color_pal) + 
+  theme(legend.position = 'right', legend.justification = 'center') +
+  ggpubr::stat_compare_means(comparisons = list(c('panc', 'covid'),
+                                                c('ctrl', 'covid'), 
+                                                c('ctrl', 'panc')), 
+                             method = 'wilcox.test', size = 2.5, method.args = list(exact =T), label = 'p.signif') -> mapping_rate_dist.plt
+
+fig.S1C.plt <- mapping_rate_dist.plt
+
+
+```
+## Fig_S1D
+```{r S1B}
+s1_flow_chart.plt <- magick::image_read_pdf(path = file.path(figure.dir, 'fig.1', 'complete-seq-diagram-no-process.pdf'))
+flowchart_wrap_figS1D.plt <- wrap_elements(full = magick::image_ggplot(s1_flow_chart.plt))
+```
+### Fig_S1_patchwork
+```{r}
+import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer, wrap_elements)
+
+
+fig_S1_layout <- "
+AB
+CC
+DD
+EE
+"
+
+wrap_plots(fig.S1A.plt,
+           fig.S1B.plt,
+           guide_area(),
+           fig.S1C.plt + coord_cartesian(clip = 'off'),
+           flowchart_wrap_figS1B.plt,
+           design = fig_S1_layout, 
+           guides = 'collect',
+           heights = c(0.55,0.145,1.1,1.3)) + plot_annotation(tag_levels = 'A') & 
+  theme(plot.tag.position = c(0.01, 0.99), 
+        legend.position = 'bottom',
+        legend.title = element_text(vjust = 1.25),
+        legend.justification = c(0.5, 0.5)) -> fig.S1.patchwork
+
+
+save.manuscript.panel(figure = 1,
+                      figure.dir = figure.dir,
+                      name = 'patchwork_full_fig_S1',
+                      width = figure_double_column_width,
+                      height = figure_depth,
+                      plot.in = fig.S1.patchwork)
+```
 
 # DEP Fig_S2
 ## Fig_S2A

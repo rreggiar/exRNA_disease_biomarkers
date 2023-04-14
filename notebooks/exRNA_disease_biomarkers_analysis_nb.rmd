@@ -353,11 +353,11 @@ colnames(discovery_meta_data) <-
 ## external cohorts metadata
 ```{r}
 
-gut_meta_data <-
-  read_csv(file.path(meta_data.dir, 'ext_meta_data', 'GSE133684_meta.txt')) %>%
-  select(sample = Run,
-         diagnosis = disease_state) %>% 
-  mutate(input_vol = 1000, dataset = 'gut')
+# gut_meta_data <-
+#   read_csv(file.path(meta_data.dir, 'ext_meta_data', 'GSE133684_meta.txt')) %>%
+#   select(sample = Run,
+#          diagnosis = disease_state) %>% 
+#   mutate(input_vol = 1000, dataset = 'gut')
 
 elife_meta_data <-
   read_csv(file.path(meta_data.dir, 'ext_meta_data', 'GSE174302_meta.txt')) %>% 
@@ -374,31 +374,31 @@ elife_meta_data <-
   )) %>% 
   mutate(input_vol = 1000, dataset = 'elife')
 
-npj_meta_data <- 
-  read_csv(file.path(meta_data.dir, 'ext_meta_data', 'GSE182824_meta.txt')) %>% 
-  select(
-    sample = Run,
-    age = Age,
-    cohort = Cohort,
-    diagnosis = source_name,
-    gender
-  ) %>%
-  mutate(diagnosis = str_replace_all(
-    string = diagnosis,
-    pattern = ' plasma',
-    replacement = ''
-  )) %>% 
-  mutate(diagnosis = str_replace_all(
-    string = diagnosis,
-    pattern = 'Human ',
-    replacement = ''
-  )) %>% 
-  mutate(diagnosis = str_replace_all(
-    string = diagnosis,
-    pattern = ' donor',
-    replacement = ''
-  )) %>% 
-  mutate(input_vol = 3000, dataset = 'precision_onc')
+# npj_meta_data <- 
+#   read_csv(file.path(meta_data.dir, 'ext_meta_data', 'GSE182824_meta.txt')) %>% 
+#   select(
+#     sample = Run,
+#     age = Age,
+#     cohort = Cohort,
+#     diagnosis = source_name,
+#     gender
+#   ) %>%
+#   mutate(diagnosis = str_replace_all(
+#     string = diagnosis,
+#     pattern = ' plasma',
+#     replacement = ''
+#   )) %>% 
+#   mutate(diagnosis = str_replace_all(
+#     string = diagnosis,
+#     pattern = 'Human ',
+#     replacement = ''
+#   )) %>% 
+#   mutate(diagnosis = str_replace_all(
+#     string = diagnosis,
+#     pattern = ' donor',
+#     replacement = ''
+#   )) %>% 
+#   mutate(input_vol = 3000, dataset = 'precision_onc')
 ```
 ## united metadata
 ```{r}
@@ -407,9 +407,9 @@ import::from(.directory = r_code.dir,
              matching_rbind)
 
 united_metadata_df <- matching_rbind(
-  'gut_meta_data',
+  # 'gut_meta_data',
   'elife_meta_data',
-  'npj_meta_data',
+  # 'npj_meta_data',
   'discovery_meta_data',
   'original_panc_meta_data',
   'original_covid_meta_data'
@@ -476,11 +476,11 @@ elife_gencode_quant <-
 elife_gencode_quant <-
   parse.tximeta.quant.metadata(elife_gencode_quant)
 
-gut_rmsk_quant <-
-  load.tximeta.object.list('gut_rmsk_quant',
-                           'rmsk')
-gut_rmsk_quant <-
-  parse.tximeta.quant.metadata(gut_rmsk_quant)
+# gut_rmsk_quant <-
+#   load.tximeta.object.list('gut_rmsk_quant',
+#                            'rmsk')
+# gut_rmsk_quant <-
+#   parse.tximeta.quant.metadata(gut_rmsk_quant)
 
 ```
 
@@ -499,10 +499,10 @@ merge(internal_rmsk_quant$rmsk$quant_meta,
 qc_fails <- c('panc.6.2.5', 'panc.7.2.5', 'panc.9.2.5', 
               'panc.10.2.5', 'covid.427.0.80', 'covid.381.0.80')
 
-orig_covid_samples <-
-  internal_rmsk_quant$rmsk$quant_meta %>% 
-  filter(grepl('^covid', sample)) %>% 
-  pull(sample)
+# orig_covid_samples <-
+#   internal_rmsk_quant$rmsk$quant_meta %>% 
+#   filter(grepl('^covid', sample)) %>% 
+#   pull(sample)
 
 orig_panc_samples <-
   internal_rmsk_quant$rmsk$quant_meta %>%
@@ -725,46 +725,46 @@ elife_gencode_quant$stomach_healthy <-
 ```
 ## external npj
 ```{r}
-merge(
-  npj_rmsk_quant$rmsk$quant_meta,
-    npj_meta_data,
-    by = 'sample'
-  ) -> npj_merge_meta_for_filt
-
-npj_select_list <-
-  filter(
-    external_quant$ucsc_rmsk_quant$quant_meta,
-    !sample %in% npj_merge_meta_for_filt$sample
-  ) %>% 
-  pull(sample)
-
-external_quant$npj <-
-  subset.tximeta.se(external_quant$ucsc_rmsk_quant,
-                    filter_list = c(npj_select_list))
-
-external_quant$npj_liverCancer <-
-  subset.tximeta.se(external_quant$ucsc_rmsk_quant,
-                    filter_list = c(npj_select_list,
-                                    npj_meta_data %>% 
-                                      filter(!diagnosis %in% c('liver cancer', 'non-cancer')) %>% 
-                                      pull(sample)))
-
-external_quant$npj_liverCirrhosis <-
-  subset.tximeta.se(external_quant$ucsc_rmsk_quant,
-                    filter_list = c(npj_select_list,
-                                    npj_meta_data %>% 
-                                      filter(!diagnosis %in% c('liver cirrhosis', 'non-cancer')) %>% 
-                                      pull(sample)))
+# merge(
+#   npj_rmsk_quant$rmsk$quant_meta,
+#     npj_meta_data,
+#     by = 'sample'
+#   ) -> npj_merge_meta_for_filt
+# 
+# npj_select_list <-
+#   filter(
+#     external_quant$ucsc_rmsk_quant$quant_meta,
+#     !sample %in% npj_merge_meta_for_filt$sample
+#   ) %>% 
+#   pull(sample)
+# 
+# external_quant$npj <-
+#   subset.tximeta.se(external_quant$ucsc_rmsk_quant,
+#                     filter_list = c(npj_select_list))
+# 
+# external_quant$npj_liverCancer <-
+#   subset.tximeta.se(external_quant$ucsc_rmsk_quant,
+#                     filter_list = c(npj_select_list,
+#                                     npj_meta_data %>% 
+#                                       filter(!diagnosis %in% c('liver cancer', 'non-cancer')) %>% 
+#                                       pull(sample)))
+# 
+# external_quant$npj_liverCirrhosis <-
+#   subset.tximeta.se(external_quant$ucsc_rmsk_quant,
+#                     filter_list = c(npj_select_list,
+#                                     npj_meta_data %>% 
+#                                       filter(!diagnosis %in% c('liver cirrhosis', 'non-cancer')) %>% 
+#                                       pull(sample)))
 
 
 ```
 ## external gut
 ```{r}
-merge(
-  gut_rmsk_quant$rmsk$quant_meta,
-    gut_meta_data,
-    by = 'sample'
-  ) -> gut_merge_meta_for_filt
+# merge(
+#   gut_rmsk_quant$rmsk$quant_meta,
+#     gut_meta_data,
+#     by = 'sample'
+#   ) -> gut_merge_meta_for_filt
 
 ```
 
@@ -859,69 +859,69 @@ elife_gencode_quant$stomach_healthy$quant_meta <-
 ```
 ## external npj
 ```{r}
-external_quant$npj$quant_meta <- 
-  merge(
-    external_quant$npj$quant_meta,
-    npj_meta_data,
-    by = 'sample'
-  )
+# external_quant$npj$quant_meta <- 
+#   merge(
+#     external_quant$npj$quant_meta,
+#     npj_meta_data,
+#     by = 'sample'
+#   )
 ```
 ## external gut
 ```{r}
-gut_rmsk_quant$rmsk$quant_meta <- 
-  merge(
-    gut_rmsk_quant$rmsk$quant_meta,
-    gut_meta_data,
-    by = 'sample'
-  )
+# gut_rmsk_quant$rmsk$quant_meta <- 
+#   merge(
+#     gut_rmsk_quant$rmsk$quant_meta,
+#     gut_meta_data,
+#     by = 'sample'
+#   )
 ```
 
 ## construct_analysis_sets
 ```{r}
-import::from(.directory = r_code.dir, 
-             .from = 'helper_analysisFunctions.R', 
-             build.analysis.set)
-
-
-united_analysis_set <- list()
-
-rbind(
-  internal_quant$filtered_data$quant_meta,
-  external_quant$elife$quant_meta %>% select(sample, contains('salmon')),
-  external_quant$npj$quant_meta %>% select(sample, contains('salmon')),
-  gut_quant$ucsc_rmsk_quant$quant_meta %>% select(sample, contains('salmon'))
-) -> united_quant_meta
-
-united_quant_meta %>%
-  merge(united_metadata_df, by = 'sample') %>%
-  mutate(diagnosis = ifelse(
-    diagnosis %in% c('Lung Cancer', 'non-cancer', 'PDAC', 'Liver Cancer'),
-    case_when(
-      diagnosis == 'Lung Cancer' ~ 'lung cancer',
-      diagnosis == 'non-cancer' ~ 'healthy',
-      diagnosis == 'PDAC' ~ 'panc',
-      diagnosis == 'Liver Cancer' ~ 'liver cancer'
-    ),
-    diagnosis
-  )) -> united_analysis_set$quant_meta
-
-rm(united_quant_meta)
-
-united_gxi_tmp <-
-      SparseSummarizedExperiment::cbind(internal_quant$filtered_data$gxi,
-                                        external_quant$ucsc_rmsk_quant$gxi)
-
-united_analysis_set$gxi <-
-      SparseSummarizedExperiment::cbind(united_gxi_tmp,
-                                        gut_quant$ucsc_rmsk_quant$gxi)
-
-united_analysis_set$gxi <-
-  SummarizedExperiment::subset(
-    united_analysis_set$gxi,
-    select = SummarizedExperiment::colData(united_analysis_set$gxi)$names %in% united_analysis_set$quant_meta$sample
-  )
-
-rm(united_gxi_tmp)
+# import::from(.directory = r_code.dir, 
+#              .from = 'helper_analysisFunctions.R', 
+#              build.analysis.set)
+# 
+# 
+# united_analysis_set <- list()
+# 
+# rbind(
+#   internal_quant$filtered_data$quant_meta,
+#   external_quant$elife$quant_meta %>% select(sample, contains('salmon')),
+#   external_quant$npj$quant_meta %>% select(sample, contains('salmon')),
+#   gut_quant$ucsc_rmsk_quant$quant_meta %>% select(sample, contains('salmon'))
+# ) -> united_quant_meta
+# 
+# united_quant_meta %>%
+#   merge(united_metadata_df, by = 'sample') %>%
+#   mutate(diagnosis = ifelse(
+#     diagnosis %in% c('Lung Cancer', 'non-cancer', 'PDAC', 'Liver Cancer'),
+#     case_when(
+#       diagnosis == 'Lung Cancer' ~ 'lung cancer',
+#       diagnosis == 'non-cancer' ~ 'healthy',
+#       diagnosis == 'PDAC' ~ 'panc',
+#       diagnosis == 'Liver Cancer' ~ 'liver cancer'
+#     ),
+#     diagnosis
+#   )) -> united_analysis_set$quant_meta
+# 
+# rm(united_quant_meta)
+# 
+# united_gxi_tmp <-
+#       SparseSummarizedExperiment::cbind(internal_quant$filtered_data$gxi,
+#                                         external_quant$ucsc_rmsk_quant$gxi)
+# 
+# united_analysis_set$gxi <-
+#       SparseSummarizedExperiment::cbind(united_gxi_tmp,
+#                                         gut_quant$ucsc_rmsk_quant$gxi)
+# 
+# united_analysis_set$gxi <-
+#   SummarizedExperiment::subset(
+#     united_analysis_set$gxi,
+#     select = SummarizedExperiment::colData(united_analysis_set$gxi)$names %in% united_analysis_set$quant_meta$sample
+#   )
+# 
+# rm(united_gxi_tmp)
 
 ##
 # salmon_quant$analysis_set$panc_ctrl <- 

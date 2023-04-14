@@ -484,7 +484,7 @@ elife_gencode_quant <-
 
 ```
 
-# filter data
+# filter_data
 ## internal
 ```{r}
 import::from(.directory = r_code.dir,
@@ -768,7 +768,7 @@ elife_gencode_quant$stomach_healthy <-
 
 ```
 
-# merge metadata
+# merge_metadata
 ## internal
 ```{r}
 internal_rmsk_quant$panc_normal$quant_meta <-
@@ -793,7 +793,7 @@ internal_rmsk_quant$covid_ctrl$quant_meta <-
   )
 
 ```
-## external elife
+## external_elife
 ```{r}
 elife_rmsk_quant$rmsk$quant_meta <-
   merge(elife_rmsk_quant$rmsk$quant_meta,
@@ -857,7 +857,7 @@ elife_gencode_quant$stomach_healthy$quant_meta <-
         by = 'sample')
 
 ```
-## external npj
+## external_npj
 ```{r}
 # external_quant$npj$quant_meta <- 
 #   merge(
@@ -866,7 +866,7 @@ elife_gencode_quant$stomach_healthy$quant_meta <-
 #     by = 'sample'
 #   )
 ```
-## external gut
+## external_gut
 ```{r}
 # gut_rmsk_quant$rmsk$quant_meta <- 
 #   merge(
@@ -875,7 +875,6 @@ elife_gencode_quant$stomach_healthy$quant_meta <-
 #     by = 'sample'
 #   )
 ```
-
 ## construct_analysis_sets
 ```{r}
 # import::from(.directory = r_code.dir, 
@@ -1015,7 +1014,7 @@ internal_gencode_quant$panc_normal$deseq <-
 #                         dds_formula = 
 #                           as.formula('~age+gender+input_vol+diagnosis'))
 ```
-## elife de
+## elife_de
 ```{r}
 
 elife_rmsk_quant$rmsk$deseq <- 
@@ -1166,6 +1165,7 @@ internal_rmsk_quant$panc_normal$pca <-
 ```
 
 # Figures
+
 # Fig_1
 ## Fig_flowchart_1A
 ```{r 1A}
@@ -1264,7 +1264,7 @@ internal_rmsk_quant$panc_normal$deseq$norm_counts.df %>%
                          method = 'wilcox', size = txt.mm_to_pts(1.2), 
                          method.args = list(exact = TRUE, paired = F), label = 'p.signif') -> fig.1E.plt
 ```
-### Fig_1_patchwork
+## Fig_1_patchwork
 ```{r Fig1}
 import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer, wrap_elements)
 
@@ -1302,6 +1302,7 @@ save.manuscript.panel(figure = 1,
 
 ```
 
+# Fig_S1
 ## Fig_S1B/C
 ```{r 1B/C}
 internal_gencode_quant$panc_normal$pca$pca_out.df %>%
@@ -1479,7 +1480,7 @@ patchwork::wrap_elements(full = grid::grid.grabExpr(ComplexHeatmap::draw(naive_p
                                                     merge_legend = T)) -> fig.S1C.chm
 
 ```
-### Fig_S1_patchwork
+## Fig_S1_patchwork
 ```{r Fig1}
 import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer, wrap_elements)
 
@@ -1870,7 +1871,7 @@ patchwork::wrap_elements(full = grid::grid.grabExpr(ComplexHeatmap::draw(fig.2D.
                                                     merge_legend = T)) -> fig.2D.chm
   
 ```
-### Fig_2_patchwork
+## Fig_2_patchwork
 ```{r Fig1}
 import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer)
 
@@ -1910,43 +1911,167 @@ save.manuscript.panel(figure = 2,
 
 ```
 
+# Fig_S2
 ## Fig_S2A
 ```{r}
-import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer)
+elife_rmsk_quant$rmsk$deseq$norm_counts.df %>%
+  rownames_to_column('gene') %>%
+  merge(reference_meta_data$ucsc_rmsk_insert_info.df,
+        by = 'gene',
+        all.x = T) %>%
+  mutate(
+    family = ifelse(
+      gene %in% reference_meta_data$gencode_lncRNA_gene_names.df$ensg,
+      'GENCODE_lncRNA',
+      family
+    ),
+    family = ifelse(is.na(family), 'GENCODE_coding', family),
+    clade = ifelse(grepl('GENCODE', family), family, clade),
+    clade = ifelse(
+      clade %in% c(
+        'GENCODE_coding',
+        'GENCODE_lncRNA',
+        'LINE',
+        'SINE',
+        'LTR',
+        'DNA',
+        'Simple_repeat'
+      ),
+      clade,
+      'other'
+    ),
+    type = ifelse(grepl('GENCODE', family), 'GENCODE', 'TE'),
+    clade = factor(clade, levels = te_aware_annotation_levels)
+  ) %>%
+  filter(!gene %in% chrM.filter.list) -> total_annotated_rmsk_counts
 
-total_annotated_rmsk_counts %>% 
-  # sample_n(size = 100) %>%
-  select(contains('panc')) %>% 
-  filter(if_all(everything(.), ~. != 0)) %>% 
-  ggplot() +
-  ggrastr::rasterise(geom_point(aes(x = .panel_x, y = .panel_y), size = txt.mm_to_pts(0.2), alpha = 0.4)) +
-  theme(axis.text.x = element_blank()) +
-  ggforce::facet_matrix(vars(panc.1.2.3:panc.6.1.1)) -> panc_paired_scatter
-  
+total_annotated_rmsk_counts %>%
+  gather(sample, count, -gene, -clade, -family, -type) %>%
+  filter(count > 0) %>%
+  merge(elife_rmsk_quant$rmsk$quant_met,
+        by = 'sample') -> tidy_total_annotated_rmsk_counts
+
+tidy_total_annotated_rmsk_counts %>%
+  group_by(sample, diagnosis, clade) %>% 
+  summarize(clade_sum = sum(count)) %>%
+  mutate(clade_frac = clade_sum / sum(clade_sum)) %>%
+  merge(elife_rmsk_quant$rmsk$quant_meta %>% select(-diagnosis),
+        by = 'sample') %>%
+  distinct() %>%
+  ggplot(aes(sample, clade_frac, fill = clade, color = diagnosis)) +
+  geom_col(color = 'white', show.legend = T) +
+  scale_fill_manual(values = te_color_pal, name = 'biotype/clade') +
+  ggforce::facet_col(~ diagnosis, scales = 'free_x', space = 'free') +
+  scale_y_continuous(expand = c(0, 0)) +
+  ylab('normalized count fraction') +
+  theme(axis.text.x = element_blank(),
+        axis.text.y = element_text(size = base_size-1),
+        axis.ticks.x = element_blank()) -> fig.S2A.plt
+```
+## Fig_S2B
+```{r}
+elife_rmsk_quant$rmsk$quant_meta %>% 
+  mutate(reference = 'Repeat-aware') %>%
+  rbind(
+    elife_gencode_quant$txonly$quant_meta %>%
+      mutate(reference = 'Repeat-naive')
+  ) %>%
+  mutate(reference = factor(reference, levels = c('Repeat-naive', 'Repeat-aware')),
+         sample = factor(sample)) %>%
+  ggplot(aes(reference, salmon_percent_mapped, shape = gender)) +
+  geom_boxplot(fill = NA, outlier.shape = NULL, aes(group = reference), show.legend = F) +
+  geom_point(size = txt.mm_to_pts(0.8), aes(fill = after_scale(alpha(color, 0.4)))) +
+  geom_line(
+    aes(group = sample),
+    alpha = 0.2,
+    show.legend = F
+  ) +
+  ylab('% of reads mapped') + xlab('') + 
+  scale_shape_manual(values = setNames(disc_identity_shape_pal, c('male', 'female'))) +
+  # scale_color_manual(values = elife_identity_color_pal) +
+  ggforce::facet_row( ~ diagnosis, strip.position = 'bottom') +
+  ggpubr::stat_compare_means(comparisons = list(c('Repeat-naive', 'Repeat-aware')), 
+                           method = 'wilcox', size = txt.mm_to_pts(1.2), 
+                           method.args = list(exact = TRUE, paired = T), label = 'p.signif') -> fig.S2B.plt
+```
+## Fig_S4_patchwork
+```{r}
+import::from(.from = 'patchwork',
+             plot_annotation,
+             wrap_plots,
+             guide_area,
+             plot_spacer,
+             wrap_elements)
 
 fig_S2_layout <- "
 AA
-AA
-AA
-AA
+BB
+CC
 "
 
-wrap_plots(panc_paired_scatter,
-           design = fig_S2_layout, 
-           guides = 'collect',
-           heights = c(1.25,0.225,1,1, .75)) + plot_annotation(tag_levels = 'A') & 
-  theme(plot.tag.position = c(0.01, 0.99), 
-        legend.position = 'bottom',
-        legend.title = element_text(vjust = 1),
-        legend.justification = c(0.5, 0.5)) -> fig.S2.patchwork
+wrap_plots(
+  fig.S2A.plt,
+  guide_area(),
+  fig.S2B.plt + coord_cartesian(clip = 'off') + theme(axis.text.x = element_text(angle = 40, hjust = 1)),
+  heights = c(1.5, 0.2, 0.7),
+  guides = 'collect',
+  design = fig_S2_layout
+) +
+  plot_annotation(tag_levels = 'A') &
+  theme(
+    plot.tag.position = c(0.01, 0.99),
+    legend.position = 'bottom',
+    legend.title = element_text(vjust = 0.5),
+    legend.justification = c(0.5, 0.5)
+  ) -> fig.S2.patchwork
 
-save.manuscript.panel(figure = 2,
-                      figure.dir = figure.dir,
-                      name = 'patchwork_full_fig_S2',
-                      width = figure_double_column_width,
-                      height = figure_depth,
-                      plot.in = fig.S2.patchwork)
+save.manuscript.panel(
+  figure = 2,
+  figure.dir = figure.dir,
+  name = 'patchwork_full_fig_S2',
+  width = figure_double_column_width,
+  height = figure_depth,
+  plot.in = fig.S2.patchwork
+)
+```
 
+## Fig_S2A
+```{r}
+# import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer)
+# 
+# total_annotated_rmsk_counts %>% 
+#   # sample_n(size = 100) %>%
+#   select(contains('panc')) %>% 
+#   filter(if_all(everything(.), ~. != 0)) %>% 
+#   ggplot() +
+#   ggrastr::rasterise(geom_point(aes(x = .panel_x, y = .panel_y), size = txt.mm_to_pts(0.2), alpha = 0.4)) +
+#   theme(axis.text.x = element_blank()) +
+#   ggforce::facet_matrix(vars(panc.1.2.3:panc.6.1.1)) -> panc_paired_scatter
+#   
+# 
+# fig_S2_layout <- "
+# AA
+# AA
+# AA
+# AA
+# "
+# 
+# wrap_plots(panc_paired_scatter,
+#            design = fig_S2_layout, 
+#            guides = 'collect',
+#            heights = c(1.25,0.225,1,1, .75)) + plot_annotation(tag_levels = 'A') & 
+#   theme(plot.tag.position = c(0.01, 0.99), 
+#         legend.position = 'bottom',
+#         legend.title = element_text(vjust = 1),
+#         legend.justification = c(0.5, 0.5)) -> fig.S2.patchwork
+# 
+# save.manuscript.panel(figure = 2,
+#                       figure.dir = figure.dir,
+#                       name = 'patchwork_full_fig_S2',
+#                       width = figure_double_column_width,
+#                       height = figure_depth,
+#                       plot.in = fig.S2.patchwork)
+# 
 
 ```
 
@@ -2417,87 +2542,7 @@ save.manuscript.panel(figure = 3,
                       plot.in = fig.S3.patchwork)
 ```
 
-## Fig_S4
-```{r}
 
-elife_rmsk_quant$rmsk$quant_meta %>% 
-  mutate(reference = 'Repeat-aware') %>%
-  rbind(
-    elife_gencode_quant$txonly$quant_meta %>%
-      mutate(reference = 'Repeat-naive')
-  ) %>%
-  mutate(reference = factor(reference, levels = c('Repeat-naive', 'Repeat-aware')),
-         sample = factor(sample)) %>%
-  ggplot(aes(reference, salmon_percent_mapped, shape = gender)) +
-  geom_boxplot(fill = NA, outlier.shape = NULL, aes(group = reference), show.legend = F) +
-  geom_point(size = txt.mm_to_pts(0.8), aes(fill = after_scale(alpha(color, 0.4)))) +
-  geom_line(
-    aes(group = sample),
-    alpha = 0.2,
-    show.legend = F
-  ) +
-  ylab('% of reads mapped') + xlab('') + 
-  scale_shape_manual(values = setNames(disc_identity_shape_pal, c('male', 'female'))) +
-  # scale_color_manual(values = elife_identity_color_pal) +
-  ggforce::facet_row( ~ diagnosis, strip.position = 'bottom') +
-  ggpubr::stat_compare_means(comparisons = list(c('Repeat-naive', 'Repeat-aware')), 
-                           method = 'wilcox', size = txt.mm_to_pts(1.2), 
-                           method.args = list(exact = TRUE, paired = T), label = 'p.signif') -> fig.S4B.plt
-
-elife_rmsk_quant$rmsk$deseq$norm_counts.df %>%
-  rownames_to_column('gene') %>%
-  merge(reference_meta_data$ucsc_rmsk_insert_info.df,
-        by = 'gene',
-        all.x = T) %>%
-  mutate(
-    family = ifelse(
-      gene %in% reference_meta_data$gencode_lncRNA_gene_names.df$ensg,
-      'GENCODE_lncRNA',
-      family
-    ),
-    family = ifelse(is.na(family), 'GENCODE_coding', family),
-    clade = ifelse(grepl('GENCODE', family), family, clade),
-    clade = ifelse(
-      clade %in% c(
-        'GENCODE_coding',
-        'GENCODE_lncRNA',
-        'LINE',
-        'SINE',
-        'LTR',
-        'DNA',
-        'Simple_repeat'
-      ),
-      clade,
-      'other'
-    ),
-    type = ifelse(grepl('GENCODE', family), 'GENCODE', 'TE'),
-    clade = factor(clade, levels = te_aware_annotation_levels)
-  ) %>%
-  filter(!gene %in% chrM.filter.list) -> total_annotated_rmsk_counts
-
-total_annotated_rmsk_counts %>%
-  gather(sample, count, -gene, -clade, -family, -type) %>%
-  filter(count > 0) %>%
-  merge(elife_rmsk_quant$rmsk$quant_met,
-        by = 'sample') -> tidy_total_annotated_rmsk_counts
-
-tidy_total_annotated_rmsk_counts %>%
-  group_by(sample, diagnosis, clade) %>% 
-  summarize(clade_sum = sum(count)) %>%
-  mutate(clade_frac = clade_sum / sum(clade_sum)) %>%
-  merge(elife_rmsk_quant$rmsk$quant_meta %>% select(-diagnosis),
-        by = 'sample') %>%
-  distinct() %>%
-  ggplot(aes(sample, clade_frac, fill = clade, color = diagnosis)) +
-  geom_col(color = 'white', show.legend = T) +
-  scale_fill_manual(values = te_color_pal, name = 'biotype/clade') +
-  ggforce::facet_col(~ diagnosis, scales = 'free_x', space = 'free') +
-  scale_y_continuous(expand = c(0, 0)) +
-  ylab('normalized count fraction') +
-  theme(axis.text.x = element_blank(),
-        axis.ticks.x = element_blank()) -> fig.S4A.plt
-
-```
 
 ### FINAL_RESUB external TE-only
 ```{r}
@@ -2600,47 +2645,6 @@ tidy_total_annotated_rmsk_counts %>%
 
 ```
 
-### Fig_S4_patchwork
-```{r}
-import::from(.from = 'patchwork',
-             plot_annotation,
-             wrap_plots,
-             guide_area,
-             plot_spacer,
-             wrap_elements)
-
-fig_S4_layout <- "
-AA
-BB
-CC
-"
-
-wrap_plots(
-  fig.S4A.plt,
-  guide_area(),
-  fig.S4B.plt + coord_cartesian(clip = 'off') + theme(axis.text.x = element_text(angle = 40, hjust = 1)),
-  heights = c(1.5, 0.2, 0.7),
-  guides = 'collect',
-  design = fig_S4_layout
-) +
-  plot_annotation(tag_levels = 'A') &
-  theme(
-    plot.tag.position = c(0.01, 0.99),
-    legend.position = 'bottom',
-    legend.title = element_text(vjust = 0.5),
-    legend.justification = c(0.5, 0.5)
-  ) -> fig.S4.patchwork
-
-save.manuscript.panel(
-  figure = 4,
-  figure.dir = figure.dir,
-  name = 'patchwork_full_fig_S4',
-  width = figure_double_column_width,
-  height = figure_depth,
-  plot.in = fig.S4.patchwork
-)
-```
-
 
 # Fig_S1
 ## Fig_S1A/B
@@ -2723,77 +2727,6 @@ save.manuscript.panel(figure = 1,
                       width = figure_double_column_width,
                       height = figure_depth,
                       plot.in = fig.S1.patchwork)
-```
-
-# Fig_S2
-## Fig_S2A
-```{r S2A}
-salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_corr_out.df %>% 
-  group_by(pc) %>% 
-  mutate(pc = paste0('PC', pc)) %>% 
-  filter(!grepl('num', var),
-         ! var %in% c('input_vol', 'age'),
-         grepl('map', var), grepl('percent', var)) %>% 
-  top_n(7, wt = abs(cor)) %>% 
-  mutate(var = ifelse(var == 'salmon_percent_mapped', 'salmon_mapped_percent', var)) %>% 
-  dplyr::rename('gencode' = 'cor') -> salmon_pca_corr_top_7.df
-
-ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_corr_out.df %>% 
-  group_by(pc) %>% 
-  mutate(pc = paste0('PC', pc)) %>%
-  mutate(var = ifelse(var == 'salmon_percent_mapped', 'salmon_mapped_percent', var)) %>% 
-  dplyr::rename('Repeat-aware' = 'cor') -> ucsc.rmsk.salmon_pca_corr_compare.df
-
-salmon_pca_corr_top_7.df %>% 
-  merge(ucsc.rmsk.salmon_pca_corr_compare.df, by = c('pc', 'var')) %>% 
-  gather(reference, cor, -pc, -var) %>% 
-  filter(reference == 'Repeat-aware') %>% 
-  ggplot(aes(reorder(var, -abs(cor)),cor, fill = reference)) + 
-  geom_col(color = 'white', position = position_dodge()) +
-  # coord_flip() + 
-  ggforce::facet_col(~pc) + 
-  xlab('') + ylab('correlation between metric and PC (pearson)') + 
-  geom_hline(yintercept = c(-0.5, 0.5), linetype = 'dashed', alpha = 0.4) + 
-  theme(legend.position = 'top', legend.justification = 'center', 
-        axis.text.x = element_text(angle = 60, hjust = 1)) + 
-  scale_fill_manual(values = c('black', 'grey')) -> pca_correlation_top7.plt
-  
-fig.S2A.plt <- pca_correlation_top7.plt
-```
-## Fig_S2B
-```{r S2B}
-
-
-meta_grob_input_table %>% 
-  select(-num, -old_name) %>% 
-  gridExtra::tableGrob(theme = gridExtra::ttheme_minimal(base_size = 8,
-                                                         core = list(padding=unit(c(1, 3.25), "mm"))), 
-                       rows = NULL) -> fig.S2B.meta_table.grob
-
-```
-### Fig_S2_patchwork
-```{r Fig1}
-import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer)
-
-
-fig_S2_layout <- "
-AB
-AB
-"
-
-wrap_plots(fig.S2A.plt,
-           patchwork::wrap_elements(full = fig.S2B.meta_table.grob, ignore_tag = F),
-           design = fig_S2_layout, 
-           widths = c(1,1)) + plot_annotation(tag_levels = 'A') -> fig.S2.patchwork
-
-save.manuscript.panel(figure = 2,
-                      figure.dir = figure.dir,
-                      name = 'patchwork_full_fig_S2',
-                      width = figure_double_column_width,
-                      height = figure_depth,
-                      plot.in = fig.S2.patchwork)
-
-
 ```
 
 # Fig_3
@@ -6766,5 +6699,76 @@ patchwork::wrap_plots(full = new_hm)
 ```
 
 
+
+# DEP Fig_S2
+## Fig_S2A
+```{r S2A}
+salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_corr_out.df %>% 
+  group_by(pc) %>% 
+  mutate(pc = paste0('PC', pc)) %>% 
+  filter(!grepl('num', var),
+         ! var %in% c('input_vol', 'age'),
+         grepl('map', var), grepl('percent', var)) %>% 
+  top_n(7, wt = abs(cor)) %>% 
+  mutate(var = ifelse(var == 'salmon_percent_mapped', 'salmon_mapped_percent', var)) %>% 
+  dplyr::rename('gencode' = 'cor') -> salmon_pca_corr_top_7.df
+
+ucsc.rmsk.salmon_quant$analysis_set$ctrl_panc_covid$deseq$pca$pca_corr_out.df %>% 
+  group_by(pc) %>% 
+  mutate(pc = paste0('PC', pc)) %>%
+  mutate(var = ifelse(var == 'salmon_percent_mapped', 'salmon_mapped_percent', var)) %>% 
+  dplyr::rename('Repeat-aware' = 'cor') -> ucsc.rmsk.salmon_pca_corr_compare.df
+
+salmon_pca_corr_top_7.df %>% 
+  merge(ucsc.rmsk.salmon_pca_corr_compare.df, by = c('pc', 'var')) %>% 
+  gather(reference, cor, -pc, -var) %>% 
+  filter(reference == 'Repeat-aware') %>% 
+  ggplot(aes(reorder(var, -abs(cor)),cor, fill = reference)) + 
+  geom_col(color = 'white', position = position_dodge()) +
+  # coord_flip() + 
+  ggforce::facet_col(~pc) + 
+  xlab('') + ylab('correlation between metric and PC (pearson)') + 
+  geom_hline(yintercept = c(-0.5, 0.5), linetype = 'dashed', alpha = 0.4) + 
+  theme(legend.position = 'top', legend.justification = 'center', 
+        axis.text.x = element_text(angle = 60, hjust = 1)) + 
+  scale_fill_manual(values = c('black', 'grey')) -> pca_correlation_top7.plt
+  
+fig.S2A.plt <- pca_correlation_top7.plt
+```
+## Fig_S2B
+```{r S2B}
+
+
+meta_grob_input_table %>% 
+  select(-num, -old_name) %>% 
+  gridExtra::tableGrob(theme = gridExtra::ttheme_minimal(base_size = 8,
+                                                         core = list(padding=unit(c(1, 3.25), "mm"))), 
+                       rows = NULL) -> fig.S2B.meta_table.grob
+
+```
+### Fig_S2_patchwork
+```{r Fig1}
+import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer)
+
+
+fig_S2_layout <- "
+AB
+AB
+"
+
+wrap_plots(fig.S2A.plt,
+           patchwork::wrap_elements(full = fig.S2B.meta_table.grob, ignore_tag = F),
+           design = fig_S2_layout, 
+           widths = c(1,1)) + plot_annotation(tag_levels = 'A') -> fig.S2.patchwork
+
+save.manuscript.panel(figure = 2,
+                      figure.dir = figure.dir,
+                      name = 'patchwork_full_fig_S2',
+                      width = figure_double_column_width,
+                      height = figure_depth,
+                      plot.in = fig.S2.patchwork)
+
+
+```
 
 

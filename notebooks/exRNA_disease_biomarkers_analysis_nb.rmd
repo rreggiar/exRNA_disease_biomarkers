@@ -1792,21 +1792,15 @@ internal_rmsk_quant$panc_normal$deseq$norm_counts.df %>%
     clade = ifelse(grepl('GENCODE', family), family, clade),
     clade = ifelse(
       clade %in% c(
-        'GENCODE_coding',
-        'GENCODE_lncRNA',
-        'LINE',
-        'SINE',
-        'LTR',
-        'DNA',
-        'Simple_repeat'
+        te_alone_annotation_levels
       ),
       clade,
       'other'
     ),
     type = ifelse(grepl('GENCODE', family), 'GENCODE', 'TE'),
-    clade = factor(clade, levels = te_aware_annotation_levels)
+    clade = factor(clade, levels = te_alone_annotation_levels)
   ) %>%
-  filter(!gene %in% chrM.filter.list, !grepl('GENCODE', clade)) -> total_annotated_rmsk_counts
+  filter(!gene %in% chrM.filter.list, !is.na(clade)) -> total_annotated_rmsk_counts
 
 total_annotated_rmsk_counts %>%
   gather(sample, count, -gene, -clade, -family, -type) %>%
@@ -1823,7 +1817,7 @@ tidy_total_annotated_rmsk_counts %>%
   distinct() %>%
   ggplot(aes(sample, clade_frac, fill = clade, color = diagnosis)) +
   geom_col(color = 'white', show.legend = T) +
-  scale_fill_manual(values = te_color_pal, name = 'biotype/clade') +
+  scale_fill_manual(values = te_alone_color_pal, name = 'biotype/clade') +
   ggforce::facet_row(~ diagnosis + stage, scales = 'free_x', space = 'free') +
   scale_y_continuous(expand = c(0, 0)) +
   xlab('N = {normal: 22, panc: 10}') + ylab('normalized count fraction') +
@@ -2720,6 +2714,57 @@ tidy_total_annotated_rmsk_counts %>%
         axis.ticks.x = element_blank()) -> fig.S4A.plt
 
 ```
+
+### FINAL_RESUB te only
+```{r}
+elife_rmsk_quant$rmsk$deseq$norm_counts.df %>%
+  rownames_to_column('gene') %>%
+  merge(reference_meta_data$ucsc_rmsk_insert_info.df,
+        by = 'gene',
+        all.x = T) %>%
+  mutate(
+    family = ifelse(
+      gene %in% reference_meta_data$gencode_lncRNA_gene_names.df$ensg,
+      'GENCODE_lncRNA',
+      family
+    ),
+    family = ifelse(is.na(family), 'GENCODE_coding', family),
+    clade = ifelse(grepl('GENCODE', family), family, clade),
+    clade = ifelse(
+      clade %in% c(
+        te_alone_annotation_levels
+      ),
+      clade,
+      'other'
+    ),
+    type = ifelse(grepl('GENCODE', family), 'GENCODE', 'TE'),
+    clade = factor(clade, levels = te_alone_annotation_levels)
+  ) %>% 
+  filter(!gene %in% chrM.filter.list, !is.na(clade)) -> total_annotated_rmsk_counts
+
+total_annotated_rmsk_counts %>%
+  gather(sample, count, -gene, -clade, -family, -type) %>%
+  filter(count > 0) %>%
+  merge(elife_rmsk_quant$rmsk$quant_meta,
+        by = 'sample') -> tidy_total_annotated_rmsk_counts
+
+tidy_total_annotated_rmsk_counts %>%
+  group_by(sample, diagnosis, clade) %>% 
+  summarize(clade_sum = sum(count)) %>%
+  mutate(clade_frac = clade_sum / sum(clade_sum)) %>%
+  merge(elife_rmsk_quant$rmsk$quant_meta %>% select(-diagnosis),
+        by = 'sample') %>%
+  distinct() %>%
+  ggplot(aes(sample, clade_frac, fill = clade, color = diagnosis)) +
+  geom_col(color = 'white', show.legend = T) +
+  scale_fill_manual(values = te_alone_color_pal, name = 'biotype/clade') +
+  ggforce::facet_col(~ diagnosis, scales = 'free_x', space = 'free') +
+  scale_y_continuous(expand = c(0, 0)) +
+  ylab('normalized count fraction') +
+  theme(axis.text.x = element_blank(),
+        axis.ticks.x = element_blank()) #-> fig.S4A.plt
+```
+
 ### Fig_S4_patchwork
 ```{r}
 import::from(.from = 'patchwork',

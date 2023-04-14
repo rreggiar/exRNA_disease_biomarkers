@@ -1994,7 +1994,7 @@ elife_rmsk_quant$rmsk$quant_meta %>%
                            method = 'wilcox', size = txt.mm_to_pts(1.2), 
                            method.args = list(exact = TRUE, paired = T), label = 'p.signif') -> fig.S2B.plt
 ```
-## Fig_S4_patchwork
+## Fig_S2_patchwork
 ```{r}
 import::from(.from = 'patchwork',
              plot_annotation,
@@ -2035,47 +2035,7 @@ save.manuscript.panel(
 )
 ```
 
-## Fig_S2A
-```{r}
-# import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer)
-# 
-# total_annotated_rmsk_counts %>% 
-#   # sample_n(size = 100) %>%
-#   select(contains('panc')) %>% 
-#   filter(if_all(everything(.), ~. != 0)) %>% 
-#   ggplot() +
-#   ggrastr::rasterise(geom_point(aes(x = .panel_x, y = .panel_y), size = txt.mm_to_pts(0.2), alpha = 0.4)) +
-#   theme(axis.text.x = element_blank()) +
-#   ggforce::facet_matrix(vars(panc.1.2.3:panc.6.1.1)) -> panc_paired_scatter
-#   
-# 
-# fig_S2_layout <- "
-# AA
-# AA
-# AA
-# AA
-# "
-# 
-# wrap_plots(panc_paired_scatter,
-#            design = fig_S2_layout, 
-#            guides = 'collect',
-#            heights = c(1.25,0.225,1,1, .75)) + plot_annotation(tag_levels = 'A') & 
-#   theme(plot.tag.position = c(0.01, 0.99), 
-#         legend.position = 'bottom',
-#         legend.title = element_text(vjust = 1),
-#         legend.justification = c(0.5, 0.5)) -> fig.S2.patchwork
-# 
-# save.manuscript.panel(figure = 2,
-#                       figure.dir = figure.dir,
-#                       name = 'patchwork_full_fig_S2',
-#                       width = figure_double_column_width,
-#                       height = figure_depth,
-#                       plot.in = fig.S2.patchwork)
-# 
-
-```
-
-# New Fig_3
+# Fig_3
 ## Fig_3A
 ```{r}
 
@@ -2357,7 +2317,7 @@ lapply(c(de_out_list), function(de_out) {
 
 
 ```
-### Fig_3_patchwork
+## Fig_3_patchwork
 ```{r}
 import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer, wrap_elements)
 
@@ -2394,7 +2354,141 @@ save.manuscript.panel(figure = 3,
                       plot.in = fig.3.patchwork)
 ```
 
-## Fig_S3
+# Fig_S3
+## Fig_S3A
+```{r}
+
+internal_rmsk_quant$panc_normal$deseq$norm_counts.df %>%
+  rownames_to_column('gene') %>%
+  merge(reference_meta_data$ucsc_rmsk_insert_info.df,
+        by = 'gene',
+        all.x = T) %>%
+  mutate(
+    family = ifelse(
+      gene %in% reference_meta_data$gencode_lncRNA_gene_names.df$ensg,
+      'GENCODE_lncRNA',
+      family
+    ),
+    family = ifelse(is.na(family), 'GENCODE_coding', family),
+    clade = ifelse(grepl('GENCODE', family), family, clade),
+    clade = ifelse(
+      clade %in% c(
+        te_alone_annotation_levels
+      ),
+      clade,
+      'other'
+    ),
+    type = ifelse(grepl('GENCODE', family), 'GENCODE', 'TE'),
+    clade = factor(clade, levels = te_alone_annotation_levels)
+  ) %>%
+  filter(!gene %in% chrM.filter.list, !is.na(clade)) -> total_annotated_rmsk_counts
+
+total_annotated_rmsk_counts %>%
+  gather(sample, count, -gene, -clade, -family, -type) %>%
+  filter(count > 0) %>%
+  merge(internal_rmsk_quant$panc_normal$quant_meta,
+        by = 'sample') -> tidy_total_annotated_rmsk_counts
+
+tidy_total_annotated_rmsk_counts %>%
+  group_by(sample, diagnosis, clade) %>%
+  summarize(clade_sum = sum(count)) %>%
+  mutate(clade_frac = clade_sum / sum(clade_sum)) %>%
+  merge(internal_rmsk_quant$panc_normal$quant_meta %>% select(-diagnosis),
+        by = 'sample') %>%
+  distinct() %>%
+  ggplot(aes(sample, clade_frac, fill = clade, color = diagnosis)) +
+  geom_col(color = 'white', show.legend = T) +
+  scale_fill_manual(values = te_alone_color_pal, name = 'biotype/clade') +
+  ggforce::facet_row(~ diagnosis + stage, scales = 'free_x', space = 'free') +
+  scale_y_continuous(expand = c(0, 0)) +
+  xlab('N = {normal: 22, panc: 10}') + ylab('normalized count fraction') +
+  theme(axis.text.x = element_blank(),
+        axis.ticks.x = element_blank()) -> fig.S3A.plt
+
+```
+## Fig_S3B
+```{r}
+elife_rmsk_quant$rmsk$deseq$norm_counts.df %>%
+  rownames_to_column('gene') %>%
+  merge(reference_meta_data$ucsc_rmsk_insert_info.df,
+        by = 'gene',
+        all.x = T) %>%
+  mutate(
+    family = ifelse(
+      gene %in% reference_meta_data$gencode_lncRNA_gene_names.df$ensg,
+      'GENCODE_lncRNA',
+      family
+    ),
+    family = ifelse(is.na(family), 'GENCODE_coding', family),
+    clade = ifelse(grepl('GENCODE', family), family, clade),
+    clade = ifelse(
+      clade %in% c(
+        te_alone_annotation_levels
+      ),
+      clade,
+      'other'
+    ),
+    type = ifelse(grepl('GENCODE', family), 'GENCODE', 'TE'),
+    clade = factor(clade, levels = te_alone_annotation_levels)
+  ) %>% 
+  filter(!gene %in% chrM.filter.list, !is.na(clade)) -> total_annotated_rmsk_counts
+
+total_annotated_rmsk_counts %>%
+  gather(sample, count, -gene, -clade, -family, -type) %>%
+  filter(count > 0) %>%
+  merge(elife_rmsk_quant$rmsk$quant_meta,
+        by = 'sample') -> tidy_total_annotated_rmsk_counts
+
+tidy_total_annotated_rmsk_counts %>%
+  group_by(sample, diagnosis, clade) %>% 
+  summarize(clade_sum = sum(count)) %>%
+  mutate(clade_frac = clade_sum / sum(clade_sum)) %>%
+  merge(elife_rmsk_quant$rmsk$quant_meta %>% select(-diagnosis),
+        by = 'sample') %>%
+  distinct() %>%
+  ggplot(aes(sample, clade_frac, fill = clade, color = diagnosis)) +
+  geom_col(color = 'white', show.legend = T) +
+  scale_fill_manual(values = te_alone_color_pal, name = 'biotype/clade') +
+  ggforce::facet_col(~ diagnosis, scales = 'free_x', space = 'free') +
+  scale_y_continuous(expand = c(0, 0)) +
+  ylab('normalized count fraction') +
+  theme(axis.text.x = element_blank(),
+        axis.ticks.x = element_blank()) -> fig.S3B.plt
+```
+## Fig_S3_patchwork
+```{r}
+import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer, wrap_elements)
+
+fig_S3_layout <- "
+AA
+CC
+BB
+BB
+"
+
+wrap_plots(fig.S3A.plt,
+           fig.S3B.plt,
+           guide_area(),
+           heights = c(0.75,0.125,1.5),
+           guides = 'collect',
+           design = fig_S3_layout) +
+  plot_annotation(tag_levels = 'A') &
+  theme(plot.tag.position = c(0.01, 0.99), 
+        legend.position = 'bottom',
+        legend.title = element_text(vjust = 0.5),
+        legend.justification = c(0.5, 0.5)) -> fig.S3.patchwork
+
+save.manuscript.panel(figure = 3,
+                      figure.dir = figure.dir,
+                      name = 'patchwork_full_fig_S3',
+                      width = figure_double_column_width,
+                      height = figure_depth,
+                      plot.in = fig.S3.patchwork)
+```
+
+
+# Fig_S4
+## Fig_S4A-E
 ```{r}
 
 lapply(c(de_out_list), function(de_out) {
@@ -2462,6 +2556,9 @@ lapply(c(de_out_list), function(de_out) {
   return(plt)
   
 }) -> ma_plt_list
+```
+## Fig_S4F
+```{r}
 calc_entropy(
   elife_rmsk_quant$rmsk$deseq$norm_counts.df,
   elife_meta_data,
@@ -2502,9 +2599,9 @@ calc_entropy(
     label = 'p.signif'
   ) +
   theme(axis.text.x = element_text(angle = 40, hjust = 1),
-        strip.text = element_text(size = txt.mm_to_pts(1.5))) -> fig.S3.F
+        strip.text = element_text(size = txt.mm_to_pts(1.5))) -> fig.S4.F
 ```
-### Fig_S3_patchwork
+## Fig_S4_patchwork
 ```{r}
 import::from(.from = 'patchwork', plot_annotation, wrap_plots, guide_area, plot_spacer, wrap_elements)
 
@@ -2527,123 +2624,24 @@ wrap_plots(ma_plt_list[[1]] + ggtitle('liver cancer'),
            heights = c(0.75,0.75,0.75,1.75),
            # widths = c(0.75, 1.25),
            guides = 'collect',
-           design = fig_S3_layout) +
+           design = fig_S4_layout) +
   plot_annotation(tag_levels = 'A') &
   theme(plot.tag.position = c(0.01, 0.99), 
         legend.position = 'bottom',
         legend.title = element_text(vjust = 0.5),
-        legend.justification = c(0.5, 0.5)) -> fig.S3.patchwork
+        legend.justification = c(0.5, 0.5)) -> fig.S4.patchwork
 
-save.manuscript.panel(figure = 3,
+save.manuscript.panel(figure = 4,
                       figure.dir = figure.dir,
-                      name = 'patchwork_full_fig_S3',
+                      name = 'patchwork_full_fig_S4',
                       width = figure_double_column_width,
                       height = figure_depth,
-                      plot.in = fig.S3.patchwork)
+                      plot.in = fig.S4.patchwork)
 ```
 
 
 
-### FINAL_RESUB external TE-only
-```{r}
-elife_rmsk_quant$rmsk$deseq$norm_counts.df %>%
-  rownames_to_column('gene') %>%
-  merge(reference_meta_data$ucsc_rmsk_insert_info.df,
-        by = 'gene',
-        all.x = T) %>%
-  mutate(
-    family = ifelse(
-      gene %in% reference_meta_data$gencode_lncRNA_gene_names.df$ensg,
-      'GENCODE_lncRNA',
-      family
-    ),
-    family = ifelse(is.na(family), 'GENCODE_coding', family),
-    clade = ifelse(grepl('GENCODE', family), family, clade),
-    clade = ifelse(
-      clade %in% c(
-        te_alone_annotation_levels
-      ),
-      clade,
-      'other'
-    ),
-    type = ifelse(grepl('GENCODE', family), 'GENCODE', 'TE'),
-    clade = factor(clade, levels = te_alone_annotation_levels)
-  ) %>% 
-  filter(!gene %in% chrM.filter.list, !is.na(clade)) -> total_annotated_rmsk_counts
 
-total_annotated_rmsk_counts %>%
-  gather(sample, count, -gene, -clade, -family, -type) %>%
-  filter(count > 0) %>%
-  merge(elife_rmsk_quant$rmsk$quant_meta,
-        by = 'sample') -> tidy_total_annotated_rmsk_counts
-
-tidy_total_annotated_rmsk_counts %>%
-  group_by(sample, diagnosis, clade) %>% 
-  summarize(clade_sum = sum(count)) %>%
-  mutate(clade_frac = clade_sum / sum(clade_sum)) %>%
-  merge(elife_rmsk_quant$rmsk$quant_meta %>% select(-diagnosis),
-        by = 'sample') %>%
-  distinct() %>%
-  ggplot(aes(sample, clade_frac, fill = clade, color = diagnosis)) +
-  geom_col(color = 'white', show.legend = T) +
-  scale_fill_manual(values = te_alone_color_pal, name = 'biotype/clade') +
-  ggforce::facet_col(~ diagnosis, scales = 'free_x', space = 'free') +
-  scale_y_continuous(expand = c(0, 0)) +
-  ylab('normalized count fraction') +
-  theme(axis.text.x = element_blank(),
-        axis.ticks.x = element_blank()) #-> fig.S4A.plt
-```
-### FINAL_RESUB internal TE-only
-```{r}
-
-internal_rmsk_quant$panc_normal$deseq$norm_counts.df %>%
-  rownames_to_column('gene') %>%
-  merge(reference_meta_data$ucsc_rmsk_insert_info.df,
-        by = 'gene',
-        all.x = T) %>%
-  mutate(
-    family = ifelse(
-      gene %in% reference_meta_data$gencode_lncRNA_gene_names.df$ensg,
-      'GENCODE_lncRNA',
-      family
-    ),
-    family = ifelse(is.na(family), 'GENCODE_coding', family),
-    clade = ifelse(grepl('GENCODE', family), family, clade),
-    clade = ifelse(
-      clade %in% c(
-        te_alone_annotation_levels
-      ),
-      clade,
-      'other'
-    ),
-    type = ifelse(grepl('GENCODE', family), 'GENCODE', 'TE'),
-    clade = factor(clade, levels = te_alone_annotation_levels)
-  ) %>%
-  filter(!gene %in% chrM.filter.list, !is.na(clade)) -> total_annotated_rmsk_counts
-
-total_annotated_rmsk_counts %>%
-  gather(sample, count, -gene, -clade, -family, -type) %>%
-  filter(count > 0) %>%
-  merge(internal_rmsk_quant$panc_normal$quant_meta,
-        by = 'sample') -> tidy_total_annotated_rmsk_counts
-
-tidy_total_annotated_rmsk_counts %>%
-  group_by(sample, diagnosis, clade) %>%
-  summarize(clade_sum = sum(count)) %>%
-  mutate(clade_frac = clade_sum / sum(clade_sum)) %>%
-  merge(internal_rmsk_quant$panc_normal$quant_meta %>% select(-diagnosis),
-        by = 'sample') %>%
-  distinct() %>%
-  ggplot(aes(sample, clade_frac, fill = clade, color = diagnosis)) +
-  geom_col(color = 'white', show.legend = T) +
-  scale_fill_manual(values = te_alone_color_pal, name = 'biotype/clade') +
-  ggforce::facet_row(~ diagnosis + stage, scales = 'free_x', space = 'free') +
-  scale_y_continuous(expand = c(0, 0)) +
-  xlab('N = {normal: 22, panc: 10}') + ylab('normalized count fraction') +
-  theme(axis.text.x = element_blank(),
-        axis.ticks.x = element_blank())
-
-```
 
 
 # Fig_S1

@@ -3228,8 +3228,6 @@ table(panc_nanopore_read_length.df$biotype) %>%
 
 panc_nanopore_read_length.df %>% 
   group_by(biotype) %>% 
-  # mutate(biotype = factor(biotype, levels = c('SINE', ')))
-  # filter(!grepl('ctrl', sample)) %>% 
   merge(nanopore_biotype_labels, by = 'biotype') %>% 
   mutate(biolabel = factor(biolabel, levels = te_aware_annotation_levels),
          sample = case_when(sample == 'panc.7.1.1' ~ 'panc 7', 
@@ -3241,7 +3239,7 @@ panc_nanopore_read_length.df %>%
   scale_fill_manual(values = viridisLite::plasma(20)[c(8,10)]) +
   coord_cartesian(clip = 'off') +
   ylab('proportion of nanopore reads') + xlab('nanopore read length (bp)') +
-  theme(legend.position = c(0.55,0.99), legend.direction = 'horizontal', plot.margin = margin(r = 3, unit = 'mm')) -> plt_NC.plt
+  theme(legend.position = c(0.55,0.99), legend.direction = 'horizontal', plot.margin = margin(r = 3, unit = 'mm')) -> plt_S5A.plt
 ```
 ### Fig_S5B
 ```{r}
@@ -3285,7 +3283,7 @@ BB
 
 wrap_plots(plt_NE.plt + xlab(''),
            plt_SNA_3.plt,
-           design = panel_SNA_layout) -> panel.SNA.patchwork
+           design = panel_SNA_layout) -> panel.S5B.patchwork
 ```
 ### Fig_S5C
 ```{r}
@@ -3306,7 +3304,7 @@ panc.6.1.1_nanopore_hex_to.plt %>%
   scale_color_manual(values = viridisLite::plasma(20)[c(8,10)], guide = 'none') +
   ylab('cumulative prop. (99% CI)') +
   xlab('nanopore SINE read length (bp)') +
-  theme(legend.position = c(0.25, 0.99)) -> plt_ND_2.plt
+  theme(legend.position = c(0.25, 0.99)) -> plt_S5C.plt
 ```
 ### Fig_S5_patchwork
 ```{r}
@@ -3321,10 +3319,10 @@ AD
 CC
 "
 
-wrap_plots(plt_NC.plt,
-           wrap_elements(full = panel.SNA.patchwork, clip = F),
+wrap_plots(plt_S5A.plt,
+           wrap_elements(full = panel.S5B.patchwork, clip = F),
            guide_area(),
-           plt_ND_2.plt + coord_cartesian(clip = 'off'),
+           plt_S5C.plt + coord_cartesian(clip = 'off'),
            design = fig_S5_layout, 
            guides = 'collect',
            heights = c(1,1,1,1,0.17)) +
@@ -3356,7 +3354,7 @@ panc_compare_annotated.df %>%
          label = paste0('y', ' ', ' = ',b,' + ',m,'x; adj. R2 = ', r2), 
          size = rel(3.75), alpha = 0.8) + 
   scale_color_manual(values = te_color_pal) + 
-  scale_fill_manual(values = te_color_pal)-> plt_SN2B.plt
+  scale_fill_manual(values = te_color_pal)-> plt_S6A.plt
 ```
 ### Fig_S6B
 ```{r}
@@ -3374,7 +3372,7 @@ panc_compare_annotated.df %>%
          label = paste0('y', ' ', ' = ',b,' + ',m,'x; adj. R2 = ', r2), 
          size = rel(3.75), alpha = 0.8) +
   scale_color_manual(values = te_color_pal) + 
-  scale_fill_manual(values = te_color_pal) -> plt_SN2C.plt
+  scale_fill_manual(values = te_color_pal) -> plt_S6B.plt
 ```
 ### Fig_S6_patchwork
 ```{r}
@@ -3387,9 +3385,9 @@ BB
 DD
 "
 
-wrap_plots(plt_SN2B.plt + ggtitle('panc 7 nanopore v illumina'),
+wrap_plots(plt_S6A.plt + ggtitle('panc 7 nanopore v illumina'),
            guide_area(),
-           plt_SN2C.plt + ggtitle('panc 6 nanopore v illumina'),
+           plt_S6B.plt + ggtitle('panc 6 nanopore v illumina'),
            guides = 'collect',
            design = fig_S6_layout,
            heights = c(1,0.25,1,1)) +

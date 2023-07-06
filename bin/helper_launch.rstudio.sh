@@ -46,4 +46,4 @@ docker run --rm -p 127.0.0.1:"${PORT}":8787 -e DISABLE_AUTH=true \
 	-v "${DOT_GIT}" \
 	-v "${GIT_CONFIG}" \
 	-v "$SSH_AUTH_SOCK:$SSH_AUTH_SOCK" \
-	kimlab_rstudio:latest
+	kimlab_rstudio:memes

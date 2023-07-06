@@ -503,10 +503,10 @@ merge(internal_rmsk_quant$rmsk$quant_meta,
 qc_fails <- c('panc.6.2.5', 'panc.7.2.5', 'panc.9.2.5', 
               'panc.10.2.5', 'covid.427.0.80', 'covid.381.0.80')
 
-# orig_covid_samples <-
-#   internal_rmsk_quant$rmsk$quant_meta %>% 
-#   filter(grepl('^covid', sample)) %>% 
-#   pull(sample)
+orig_covid_samples <-
+  internal_rmsk_quant$rmsk$quant_meta %>%
+  filter(grepl('^covid', sample)) %>%
+  pull(sample)
 
 orig_panc_samples <-
   internal_rmsk_quant$rmsk$quant_meta %>%
@@ -1002,6 +1002,13 @@ internal_rmsk_quant$panc_normal$deseq <-
                         dds_formula = 
                           as.formula('~age+gender+input_vol+diagnosis'))
 
+
+internal_rmsk_quant$panc_normal$deseq$norm_counts.df %>%
+  as.data.frame() %>% 
+  rownames_to_column('gene') %>% 
+  write_csv(file.path(output_data.dir, 'panc_normal_normalized_counts_20230703.csv'))
+
+
 internal_gencode_quant$panc_normal$deseq <- 
   run.de.seq.individual(input_se = internal_gencode_quant$panc_normal,
                         type = 'gxi',
@@ -1206,7 +1213,7 @@ internal_rmsk_quant$panc_normal$quant_meta %>%
   ggforce::facet_row( ~ diagnosis, strip.position = 'bottom') +
   ggpubr::stat_compare_means(comparisons = list(c('Repeat-naive', 'Repeat-aware')), 
                            method = 'wilcox', size = txt.mm_to_pts(1.2), 
-                           method.args = list(exact = TRUE, paired = T), label = 'p.signif') -> fig.1D.plt
+                           method.args = list(exact = TRUE, paired = T)) -> fig.1D.plt
 
 
 
@@ -1268,7 +1275,7 @@ internal_rmsk_quant$panc_normal$deseq$norm_counts.df %>%
   ggforce::facet_row(~ type, strip.position = 'bottom', scales = 'free_y') +
   ggpubr::stat_compare_means(comparisons = list(c('panc', 'normal')), 
                          method = 'wilcox', size = txt.mm_to_pts(1.2), 
-                         method.args = list(exact = TRUE, paired = F), label = 'p.signif') -> fig.1E.plt
+                         method.args = list(exact = TRUE, paired = F)) -> fig.1E.plt
 ```
 ### Fig_1_patchwork
 ```{r Fig1}
@@ -1659,7 +1666,7 @@ calc_entropy(
     method = 'wilcox',
     size = 2.5,
     method.args = list(exact = TRUE, paired = F),
-    label = 'p.signif'
+    # label = 'p.signif'
   ) +
   theme(axis.text.x = element_text(angle = 40, hjust = 1),
         strip.text = element_text(size = txt.mm_to_pts(1.5))) -> fig.2B.plt
